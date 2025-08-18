@@ -4,6 +4,8 @@ import requests
 import base64
 import json
 from dotenv import load_dotenv
+from discord.ext import commands
+from github_sync import GitHubSync
 
 # Charger les variables d'environnement du fichier .env
 load_dotenv()
@@ -13,8 +15,6 @@ intents = discord.Intents.default()
 intents.message_content = True
 
 # Créer le bot Discord avec support des commandes
-from discord.ext import commands
-from github_sync import GitHubSync
 
 client = commands.Bot(command_prefix='!', intents=intents)
 
