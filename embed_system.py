@@ -208,7 +208,7 @@ class EmbedManagerView(discord.ui.View):
 
     def get_edit_embed(self):
         embed = discord.Embed(
-            title="<:EditLOGO:1391511560500940942> Edit Embed",
+            title="<:EditLOGO:1407071307022995508> Edit Embed",
             description="Which embed would you like to edit?",
             color=discord.Color.orange()
         )
@@ -225,7 +225,7 @@ class EmbedManagerView(discord.ui.View):
 
     def get_delete_embed(self):
         embed = discord.Embed(
-            title="<:DeleteLOGO:1391511582261116938> Delete Embed",
+            title="<:DeleteLOGO:1407071421363916841> Delete Embed",
             description="Which embed would you like to delete?",
             color=discord.Color.red()
         )
@@ -242,21 +242,21 @@ class EmbedManagerView(discord.ui.View):
 
     def get_image_settings_embed(self):
         embed = discord.Embed(
-            title="<:ImageLOGO:1391530555517960263> Image Settings",
+            title="<:ImageLOGO:1407072328134951043> Image Settings",
             description="Configure image settings for your embed",
             color=discord.Color.purple()
         )
 
         status = ""
         if self.current_embed.image_url:
-            status += "<:SucessLOGO:1391511887065121020> Classic Image: Set\n"
+            status += "<:SucessLOGO:1407071637840592977> Classic Image: Set\n"
         else:
-            status += "<:ErrorLOGO:1391511903196549201> Classic Image: Not set\n"
+            status += "<:ErrorLOGO:1407071682031648850> Classic Image: Not set\n"
 
         if self.current_embed.thumbnail_url:
-            status += "<:SucessLOGO:1391511887065121020> Thumbnail: Set\n"
+            status += "<:SucessLOGO:1407071637840592977> Thumbnail: Set\n"
         else:
-            status += "<:ErrorLOGO:1391511903196549201> Thumbnail: Not set\n"
+            status += "<:ErrorLOGO:1407071682031648850> Thumbnail: Not set\n"
 
         embed.add_field(
             name="Current Status",
@@ -273,7 +273,7 @@ class EmbedManagerView(discord.ui.View):
 
     def get_waiting_image_embed(self):
         embed = discord.Embed(
-            title="<:UploadLOGO:1391530531916742726> Upload Image",
+            title="<:UploadLOGO:1407072005567545478> Upload Image",
             description="Please send an image file in this channel.\n\n**Only you can upload the image for security reasons.**",
             color=discord.Color.blue()
         )
@@ -287,7 +287,7 @@ class EmbedManagerView(discord.ui.View):
 
     def get_image_format_embed(self):
         embed = discord.Embed(
-            title="<:ImageLOGO:1391530555517960263> Image Format Selection",
+            title="<:ImageLOGO:1407072328134951043> Image Format Selection",
             description="How would you like the image to appear in your embed?",
             color=discord.Color.gold()
         )
@@ -301,7 +301,7 @@ class EmbedManagerView(discord.ui.View):
 
     def get_publish_embed(self):
         embed = discord.Embed(
-            title="<:SendLOGO:1391511616138379294> Publish Embed",
+            title="<:SendLOGO:1407071529015181443> Publish Embed",
             description="Please choose the embed you want to post and the channel where you want to publish it.",
             color=discord.Color.green()
         )
@@ -310,14 +310,14 @@ class EmbedManagerView(discord.ui.View):
         if self.selected_embed_index is not None:
             selected_embed = self.embeds_data["created"][self.selected_embed_index]
             embed_title = selected_embed.get("title", "Untitled")[:30]
-            status += f"<:SucessLOGO:1391511887065121020> Selected Embed: {embed_title}\n"
+            status += f"<:SucessLOGO:1407071637840592977> Selected Embed: {embed_title}\n"
         else:
-            status += "<:ErrorLOGO:1391511903196549201> Embed: Not selected\n"
+            status += "<:ErrorLOGO:1407071682031648850> Embed: Not selected\n"
 
         if self.selected_channel:
-            status += f"<:SucessLOGO:1391511887065121020> Selected Channel: #{self.selected_channel.name}\n"
+            status += f"<:SucessLOGO:1407071637840592977> Selected Channel: #{self.selected_channel.name}\n"
         else:
-            status += "<:ErrorLOGO:1391511903196549201> Channel: Not selected\n"
+            status += "<:ErrorLOGO:1407071682031648850> Channel: Not selected\n"
 
         if status:
             embed.add_field(
@@ -366,7 +366,7 @@ class EmbedManagerView(discord.ui.View):
             image_url_button = discord.ui.Button(
                 label="Image URL",
                 style=discord.ButtonStyle.primary,
-                emoji="<:URLLOGO:1391530519560454185>",
+                emoji="<:URLLOGO:1407071963809054931>",
                 row=0
             )
 
@@ -379,7 +379,7 @@ class EmbedManagerView(discord.ui.View):
             upload_image_button = discord.ui.Button(
                 label="Upload Image",
                 style=discord.ButtonStyle.secondary,
-                emoji="<:UploadLOGO:1391530531916742726>",
+                emoji="<:UploadLOGO:1407072005567545478>",
                 row=0
             )
 
@@ -395,7 +395,7 @@ class EmbedManagerView(discord.ui.View):
             clear_button = discord.ui.Button(
                 label="Clear Images",
                 style=discord.ButtonStyle.danger,
-                emoji="<:DeleteLOGO:1391511582261116938>",
+                emoji="<:DeleteLOGO:1407071421363916841>",
                 row=0
             )
 
@@ -469,7 +469,7 @@ class EmbedManagerView(discord.ui.View):
                     publish_button = discord.ui.Button(
                         label="Publish",
                         style=discord.ButtonStyle.success,
-                        emoji="<:SendLOGO:1391511616138379294>"
+                        emoji="<:SendLOGO:1407071529015181443>"
                     )
 
                     async def publish_final_callback(interaction):
@@ -488,7 +488,7 @@ class EmbedManagerView(discord.ui.View):
 
                         if not has_content:
                             error_embed = discord.Embed(
-                                title="<:ErrorLOGO:1391511903196549201> Empty Embed",
+                                title="<:ErrorLOGO:1407071682031648850> Empty Embed",
                                 description="The embed must have at least some content (title, description, footer, image, thumbnail, or message content).",
                                 color=discord.Color.red()
                             )
@@ -552,7 +552,7 @@ class EmbedManagerView(discord.ui.View):
 
                             # Success message in English
                             success_embed = discord.Embed(
-                                title="<:SucessLOGO:1391511887065121020> Successfully Published",
+                                title="<:SucessLOGO:1407071637840592977> Successfully Published",
                                 description=f"Your embed has been published successfully in {self.selected_channel.mention}!",
                                 color=discord.Color.green()
                             )
@@ -572,14 +572,14 @@ class EmbedManagerView(discord.ui.View):
 
                         except discord.Forbidden:
                             error_embed = discord.Embed(
-                                title="<:ErrorLOGO:1391511903196549201> Permission Error",
+                                title="<:ErrorLOGO:1407071682031648850> Permission Error",
                                 description="I don't have permission to send messages in that channel.",
                                 color=discord.Color.red()
                             )
                             await interaction.response.send_message(embed=error_embed, ephemeral=True)
                         except Exception as e:
                             error_embed = discord.Embed(
-                                title="<:ErrorLOGO:1391511903196549201> Error",
+                                title="<:ErrorLOGO:1407071682031648850> Error",
                                 description=f"An error occurred while publishing: {str(e)}",
                                 color=discord.Color.red()
                             )
@@ -740,7 +740,7 @@ class EmbedManagerView(discord.ui.View):
             async def author_callback(interaction):
                 view = AuthorSettingsView(self.current_embed, interaction.guild, self)
                 embed = discord.Embed(
-                    title="<:ParticipantsLOGO:1391530606977880145> Author Settings",
+                    title="<:ParticipantLOGO:1407072406329360478> Author Settings",
                     description="Configure the embed author settings",
                     color=discord.Color.orange()
                 )
@@ -914,7 +914,7 @@ class ImageFormatView(discord.ui.View):
 
         await interaction.response.edit_message(embed=embed, view=self.parent_view)
 
-    @discord.ui.button(label="Thumbnail Image", style=discord.ButtonStyle.secondary, emoji="🔍")
+    @discord.ui.button(label="Thumbnail Image", style=discord.ButtonStyle.secondary, emoji="<:ImageLOGO:1407072328134951043>")
     async def thumbnail_image(self, interaction: discord.Interaction, button: discord.ui.Button):
         # Save the image data (keep the local file path)
         self.embed_data.thumbnail_url = self.image_url
@@ -933,7 +933,7 @@ class ImageFormatView(discord.ui.View):
 
 class ImageURLModal(discord.ui.Modal):
     def __init__(self, embed_data, parent_view):
-        super().__init__(title='<:URLLOGO:1391530519560454185> Set Image URL')
+        super().__init__(title='<:URLLOGO:1407071963809054931> Set Image URL')
         self.embed_data = embed_data
         self.parent_view = parent_view
 
@@ -1195,7 +1195,7 @@ class DeleteConfirmView(discord.ui.View):
 
         # Send ephemeral confirmation
         confirm_embed = discord.Embed(
-            title="<:SucessLOGO:1391511887065121020> Embed Deleted",
+            title="<:SucessLOGO:1407071637840592977> Embed Deleted",
             description="The embed has been successfully deleted.",
             color=discord.Color.green()
         )
@@ -1267,7 +1267,7 @@ class BasicParametersModal(discord.ui.Modal):
                 self.description.value.strip() or 
                 self.footer.value.strip()):
             error_embed = discord.Embed(
-                title="<:ErrorLOGO:1391511903196549201> Validation Error",
+                title="<:ErrorLOGO:1407071682031648850> Validation Error",
                 description="At least one field (Message Content, Title, Description, or Footer) must be filled.",
                 color=discord.Color.red()
             )
@@ -1328,7 +1328,7 @@ class AuthorSettingsView(discord.ui.View):
         self.toggle_button.emoji = "<:ONLOGO:1391530620366094440>" if self.embed_data.author_enabled else "<:OFFLOGO:1391535388065271859>"
 
         embed = discord.Embed(
-            title="<:ParticipantsLOGO:1391530606977880145> Author Settings",
+            title="<:ParticipantLOGO:1407072406329360478> Author Settings",
             description="Configure the embed author settings",
             color=discord.Color.orange()
         )
@@ -1380,7 +1380,7 @@ class DecorationSettingsView(discord.ui.View):
 
     def get_embed(self):
         embed = discord.Embed(
-            title="<:DecorationLOGO:1391530410655219722> Decoration Settings",
+            title="<:DecorationLOGO:1407147708027895828> Decoration Settings",
             description="Toggle Bot Standard decoration for your embed:",
             color=discord.Color.purple()
         )
@@ -1396,7 +1396,7 @@ class DecorationSettingsView(discord.ui.View):
 
         return embed
 
-    @discord.ui.button(label="Bot Standard", style=discord.ButtonStyle.secondary, emoji="🤖")
+    @discord.ui.button(label="Bot Standard", style=discord.ButtonStyle.secondary, emoji="<:BotLOGO:1407071803150569472>")
     async def toggle_bot_standard(self, interaction: discord.Interaction, button: discord.ui.Button):
         # Toggle between bot_standard and none
         if self.embed_data.decoration_preset == "bot_standard":
@@ -1432,14 +1432,14 @@ class DecorationSettingsView(discord.ui.View):
 
 class CustomAuthorModal(discord.ui.Modal):
     def __init__(self, embed_data, guild, parent_view):
-        super().__init__(title='<:ParticipantsLOGO:1391530606977880145> Set Custom Author')
+        super().__init__(title='<:ParticipantLOGO:1407072406329360478> Set Custom Author')
         self.embed_data = embed_data
         self.guild = guild
         self.parent_view = parent_view
 
         self.user_input = discord.ui.TextInput(
             label='User ID or Username',
-            placeholder='Enter user ID (e.g., 123456789) or username',
+            placeholder='Enter user ID or username',
             required=True,
             max_length=100
         )
@@ -1473,7 +1473,7 @@ class CustomAuthorModal(discord.ui.Modal):
 
             # Update the author settings view
             embed = discord.Embed(
-                title="<:ParticipantsLOGO:1391530606977880145> Author Settings",
+                title="<:ParticipantLOGO:1407072406329360478> Author Settings",
                 description="Configure the embed author settings",
                 color=discord.Color.orange()
             )
@@ -1501,7 +1501,7 @@ class CustomAuthorModal(discord.ui.Modal):
                 self.parent_view.parent_view.save_current_embed()
         else:
             error_embed = discord.Embed(
-                title="<:SucessLOGO:1391511887065121020> User Not Found",
+                title="<:ErrorLOGO:1407071682031648850> User Not Found",
                 description="Could not find a user with that ID or username in this server.",
                 color=discord.Color.red()
             )
@@ -1539,16 +1539,16 @@ class EmbedCommand(commands.Cog):
                             # Delete local file after successful sync
                             try:
                                 os.remove(file_path)
-                                print(f"<:DeleteLOGO:1391511582261116938> Fichier local supprimé: {file_path}")
+                                print(f"<:ErrorLOGO:1407071682031648850> Fichier local supprimé: {file_path}")
                             except Exception as e:
-                                print(f"<:WarningLOGO:1391533273267572890> Erreur lors de la suppression locale: {e}")
+                                print(f"<:ErrorLOGO:1407071682031648850> Erreur lors de la suppression locale: {e}")
 
                             # Return GitHub raw URL from public pictures repo
                             filename = os.path.basename(file_path)
                             github_url = f"https://raw.githubusercontent.com/TheBlueEL/pictures/main/{filename}"
                             return github_url
                         else:
-                            print("<:SucessLOGO:1391511887065121020> Échec de la synchronisation, fichier local conservé")
+                            print("<:ErrorLOGO:1407071682031648850> Échec de la synchronisation, fichier local conservé")
                             return None
             return None
         except Exception as e:
@@ -1583,8 +1583,7 @@ class EmbedCommand(commands.Cog):
 
                         # Create embed showing the image for confirmation
                         embed = discord.Embed(
-                            title="<:ImageLOGO:1391530555517960263> Image Format Selection",
-                            description="<:SucessLOGO:1391511887065121020> **Image successfully uploaded!**\n\nHow would you like the image to appear in your embed?",
+                            title="<:ImageLOGO:1407072328134951043> Image Format Selection",                         description="<:SucessLOGO:1407071637840592977> **Image successfully uploaded!**\n\nHow would you like the image to appear in your embed?",
                             color=discord.Color.green()
                         )
 
@@ -1619,7 +1618,7 @@ class EmbedCommand(commands.Cog):
                         pass
 
                     error_embed = discord.Embed(
-                        title="<:SucessLOGO:1391511887065121020> Invalid File Type",
+                        title="<:ErrorLOGO:1407071682031648850> Invalid File Type",
                         description="Please upload only image files with these extensions:\n`.png`, `.jpg`, `.jpeg`, `.gif`, `.webp`, `.bmp`, `.svg`",
                         color=discord.Color.red()
                     )
@@ -1634,7 +1633,7 @@ class EmbedCommand(commands.Cog):
     async def embed_command(self, interaction: discord.Interaction):
         if not interaction.user.guild_permissions.manage_messages:
             embed = discord.Embed(
-                title="<:SucessLOGO:1391511887065121020> Permission Denied",
+                title="<:ErrorLOGO:1407071682031648850> Permission Denied",
                 description="You need 'Manage Messages' permission to use this command.",
                 color=discord.Color.red()
             )
