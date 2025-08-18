@@ -127,7 +127,7 @@ class EmbedManagerView(discord.ui.View):
         created_count = len(self.embeds_data["created"])
 
         embed = discord.Embed(
-            title="Embed Manager",
+            title="<:SettingLOGO:1407071854593839239> Embed Manager",
             color=0x5865F2
         )
 
