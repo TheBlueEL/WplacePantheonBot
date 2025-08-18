@@ -41,7 +41,7 @@ class GitHubSync:
             # Fichiers à exclure de la synchronisation
             excluded_files = {
                 '.git', '.gitignore', 'README.md', '.replit', 'replit.nix', 
-                'pyproject.toml', 'uv.lock', '.env', '__pycache__', 
+                'pyproject.toml', 'uv.lock', '__pycache__', 
                 '.DS_Store', 'Thumbs.db'
             }
             
