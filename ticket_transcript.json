@@ -1,2 +1,114 @@
 {
+    "1407429146375753778": {
+        "server_info": {
+            "server_name": "Wplace - Pantheon",
+            "server_id": 1405303213711953930,
+            "channel_name": "closed-ticket-number",
+            "channel_id": 1407429146375753778
+        },
+        "ticket_info": {
+            "ticket_owner": {
+                "name": "Unknown User",
+                "username": "Unknown",
+                "id": null,
+                "avatar_url": null
+            },
+            "ticket_name": "closed-ticket-number",
+            "panel_name": "🎟️ Default Ticket",
+            "panel_emoji": "🎟️",
+            "created_at": "2025-08-19T18:21:17.736454",
+            "transcript_saved_by": {
+                "name": "TheBlueEL",
+                "username": "theblueel",
+                "id": 723144097015136296,
+                "avatar_url": "https://cdn.discordapp.com/avatars/723144097015136296/1d4e46f4d9d44fd56cbf476be2342715.png?size=1024"
+            }
+        },
+        "statistics": {
+            "total_messages": 3,
+            "attachments_saved": 0,
+            "attachments_skipped": 0,
+            "users_in_transcript": {
+                "『🤖』Wplace - Pantheon - Wplace - Pantheon#3262": {
+                    "message_count": 3,
+                    "is_bot": true,
+                    "roles": [
+                        "@everyone",
+                        "『🤖』Wplace - Pantheon"
+                    ]
+                }
+            }
+        },
+        "messages": [
+            {
+                "id": 1407429148544208969,
+                "author": {
+                    "name": "『🤖』Wplace - Pantheon",
+                    "username": "Wplace - Pantheon#3262",
+                    "id": 1398023438169538771,
+                    "bot": true,
+                    "avatar_url": "https://cdn.discordapp.com/avatars/1398023438169538771/aeb550598236a2f9dfbb816016ccf4a8.png?size=1024"
+                },
+                "content": "<@723144097015136296> Welcome to your ticket!",
+                "timestamp": "2025-08-19T18:20:57.782000+00:00",
+                "embeds": [
+                    {
+                        "footer": {
+                            "text": "Ticket Bot - Ticket Bot"
+                        },
+                        "flags": 0,
+                        "color": 5793266,
+                        "type": "rich",
+                        "description": "Support will be with you shortly. To close this ticket.",
+                        "title": "🎫 Default Ticket"
+                    }
+                ],
+                "attachments": []
+            },
+            {
+                "id": 1407429186951446679,
+                "author": {
+                    "name": "『🤖』Wplace - Pantheon",
+                    "username": "Wplace - Pantheon#3262",
+                    "id": 1398023438169538771,
+                    "bot": true,
+                    "avatar_url": "https://cdn.discordapp.com/avatars/1398023438169538771/aeb550598236a2f9dfbb816016ccf4a8.png?size=1024"
+                },
+                "content": "",
+                "timestamp": "2025-08-19T18:21:06.939000+00:00",
+                "embeds": [
+                    {
+                        "flags": 0,
+                        "color": 15158332,
+                        "type": "rich",
+                        "description": "Closing the ticket in 3 seconds...",
+                        "title": "🔒 Closing Ticket..."
+                    }
+                ],
+                "attachments": []
+            },
+            {
+                "id": 1407429200922673163,
+                "author": {
+                    "name": "『🤖』Wplace - Pantheon",
+                    "username": "Wplace - Pantheon#3262",
+                    "id": 1398023438169538771,
+                    "bot": true,
+                    "avatar_url": "https://cdn.discordapp.com/avatars/1398023438169538771/aeb550598236a2f9dfbb816016ccf4a8.png?size=1024"
+                },
+                "content": "",
+                "timestamp": "2025-08-19T18:21:10.270000+00:00",
+                "embeds": [
+                    {
+                        "flags": 0,
+                        "color": 5763719,
+                        "type": "rich",
+                        "description": "This ticket has been closed. What would you like to do?",
+                        "title": "🔒 Ticket Closed"
+                    }
+                ],
+                "attachments": []
+            }
+        ]
+    }
 }
