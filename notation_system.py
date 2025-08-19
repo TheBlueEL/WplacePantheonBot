@@ -104,6 +104,12 @@ class VotingView(discord.ui.View):
         success = notation_manager.add_vote(self.artwork_data.artwork_id, interaction.user.id, self.current_rating)
         
         if success:
+            # Get updated artwork data with new average
+            updated_data = notation_manager.get_artwork_by_id(self.artwork_data.artwork_id)
+            if updated_data:
+                self.artwork_data.average_rating = updated_data.average_rating
+                self.artwork_data.votes = updated_data.votes
+
             stars_display = ""
             for i in range(5):
                 if i < self.current_rating:
@@ -117,6 +123,51 @@ class VotingView(discord.ui.View):
                 color=discord.Color.green(),
                 timestamp=datetime.utcnow()
             )
+
+            # Update the original message with new rating
+            try:
+                # Find the original message and update it
+                channel = interaction.channel
+                async for message in channel.history(limit=50):
+                    if (message.author == self.bot and message.embeds and 
+                        "Wplace Pantheon" in message.embeds[0].title and
+                        self.artwork_data.title in message.embeds[0].description):
+                        
+                        # Create updated embed with new rating
+                        updated_embed = discord.Embed(
+                            title="<:WplacePantheonLOGO:1407152471226187776> Wplace Pantheon",
+                            color=discord.Color.purple(),
+                            timestamp=datetime.utcnow()
+                        )
+
+                        # Add image if available
+                        if self.artwork_data.image_url:
+                            updated_embed.set_image(url=self.artwork_data.image_url)
+                        else:
+                            updated_embed.set_thumbnail(url=self.bot.user.display_avatar.url)
+
+                        # Create description with updated rating
+                        description = f"**Title:** {self.artwork_data.title}\n"
+                        description += f"**Description:** {self.artwork_data.description}\n"
+                        if self.artwork_data.location:
+                            description += f"**Location:** {self.artwork_data.location}\n"
+                        
+                        rating_display = notation_manager.get_rating_display(self.artwork_data.average_rating)
+                        description += f"**Global Rating:** {rating_display}"
+                        
+                        updated_embed.description = description
+
+                        # Set footer
+                        bot_name = get_bot_name(self.bot)
+                        updated_embed.set_footer(text=f"{bot_name} | Wplace Pantheon", icon_url=self.bot.user.display_avatar.url)
+
+                        # Update the original message
+                        original_view = RandomArtView(self.artwork_data, self.bot)
+                        await message.edit(embed=updated_embed, view=original_view)
+                        break
+            except Exception as e:
+                print(f"Error updating original message: {e}")
+
         else:
             embed = discord.Embed(
                 title="❌ Already Voted",
@@ -354,6 +405,28 @@ class NotationManager:
                 return True
         
         return False
+
+    def get_artwork_by_id(self, artwork_id):
+        """Get artwork data by ID"""
+        notation_data = self.load_notation_data()
+        
+        for artwork in notation_data.get("artworks", []):
+            if artwork.get("artwork_id") == artwork_id:
+                # Convert to NotationData object
+                notation_artwork = NotationData()
+                notation_artwork.artwork_id = artwork.get("artwork_id")
+                notation_artwork.title = artwork.get("title", "")
+                notation_artwork.description = artwork.get("description", "")
+                notation_artwork.author_name = artwork.get("author_name", "Anonymous")
+                notation_artwork.image_url = artwork.get("image_url", "")
+                notation_artwork.location = artwork.get("location", "")
+                notation_artwork.votes = artwork.get("votes", [])
+                notation_artwork.average_rating = artwork.get("average_rating", 0.0)
+                notation_artwork.last_shown = artwork.get("last_shown")
+                notation_artwork.times_shown = artwork.get("times_shown", 0)
+                return notation_artwork
+        
+        return None
 
     def get_rating_display(self, average_rating):
         if average_rating == 0:
