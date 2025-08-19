@@ -12,5 +12,13 @@
     },
     "1407426909612281948": {
         "status": "closed"
+    },
+    "1407428058163445920": {
+        "original_name": "Ticket Number 1-0004",
+        "status": "open",
+        "created_by": 723144097015136296,
+        "created_at": "2025-08-19T18:16:37.936171",
+        "ticket_type": "Ticket Number 1",
+        "transcript_saved": false
     }
 }
