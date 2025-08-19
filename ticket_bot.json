@@ -110,7 +110,7 @@
         "log_channel_id": 1405303214643085314
     },
     "ticket_counters": {
-        "Ticket Number 1": 4
+        "Ticket Number 1": 5
     },
     "closed_tickets": {
         "1407426909612281948": {
@@ -118,6 +118,13 @@
             "channel_id": 1407426909612281948,
             "closed_by": 723144097015136296,
             "closed_at": "2025-08-19T18:12:18.042745",
+            "permissions": {}
+        },
+        "1407429146375753778": {
+            "original_name": "ticket-number-1-0005",
+            "channel_id": 1407429146375753778,
+            "closed_by": 723144097015136296,
+            "closed_at": "2025-08-19T18:23:56.846404",
             "permissions": {}
         }
     }
