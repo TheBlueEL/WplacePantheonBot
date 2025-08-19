@@ -33,6 +33,10 @@ async def on_ready():
     await client.load_extension('embed_system')
     print('Embed system loaded!')
     
+    # Charger le système Pantheon
+    await client.load_extension('pantheon_system')
+    print('Pantheon system loaded!')
+    
     # Synchroniser les commandes slash
     try:
         synced = await client.tree.sync()
