@@ -750,7 +750,7 @@ class SubPanelSelect(discord.ui.Select):
 
         if self.action_type == "edit":
             view = SubPanelEditView(self.panel_id, sub_panel_id)
-            embed = create_sub_panel_edit_embed(data, self.panel_id, sub_panel_id)
+            embed = create_sub_panel_edit_embed(data, self.panel_id, self.sub_panel_id)
             await interaction.response.edit_message(embed=embed, view=view)
         elif self.action_type == "delete":
             # Delete sub-panel
@@ -1733,10 +1733,15 @@ class ConfirmCloseView(discord.ui.View):
                 if not member.bot and member.id not in staff_members and not member.guild_permissions.administrator:
                     await interaction.channel.set_permissions(member, view_channel=False)
 
-            # Rename the ticket
+            # Rename the ticket (with delay to avoid rate limiting)
             ticket_type = ticket_name.split('-')[0]
             new_channel_name = f"closed-{ticket_type}-{ticket_name.split('-')[1]}"
-            await interaction.channel.edit(name=new_channel_name)
+
+            # Only rename if it's not already closed
+            if not interaction.channel.name.startswith("closed-"):
+                await asyncio.sleep(1)  # Small delay to prevent rate limiting
+                await interaction.channel.edit(name=new_channel_name)
+
 
             # Log ticket closing
             await log_ticket_action(interaction.guild, "ticket_closed", {
@@ -1915,8 +1920,6 @@ class TicketEditDetailView(discord.ui.View):
 class PermissionSelectView(discord.ui.View):
     def __init__(self, panel_id, sub_panel_id):
         super().__init__(timeout=None)
-        self.panel_id = panel_id
-        self.sub_panel_id = sub_panel_id
         self.add_item(PermissionSelect(panel_id, sub_panel_id))
         self.add_item(BackButton("sub_panel_edit", panel_id, sub_panel_id))
 
@@ -2254,7 +2257,7 @@ def create_ticket_edit_overview_embed(data, panel_id):
 def create_permission_edit_embed(panel_id, permission_type):
     """Create permission edit embed"""
     data = load_ticket_data()
-    permissions = data["tickets"][panel_id]["permissions"][permission_type]
+    permissions = data["tickets"][panel_id]["sub_panels"][self.sub_panel_id]["permissions"][permission_type]
 
     type_names = {
         "owner": "Ticket Owner",
@@ -2416,6 +2419,741 @@ async def handle_ai_message(message):
 
     return False
 
+# Helper function to check if a channel is a ticket channel
+def is_ticket_channel(channel_name):
+    """Check if a channel name matches the ticket channel pattern."""
+    # Check if channel name contains ticket patterns
+    return any(pattern in channel_name for pattern in ['-0', '-1', '-2', '-3', '-4', '-5', '-6', '-7', '-8', '-9']) or channel_name.startswith("closed-")
+
+# Helper function to update ticket status in @ticket_data.json
+def update_ticket_status(channel_id, new_data):
+    """Update ticket status in @ticket_data.json."""
+    try:
+        with open('ticket_data.json', 'r', encoding='utf-8') as f:
+            ticket_data = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        ticket_data = {}
+
+    ticket_data[str(channel_id)] = new_data
+    with open('ticket_data.json', 'w', encoding='utf-8') as f:
+        json.dump(ticket_data, f, indent=4, ensure_ascii=False)
+
+# Helper function to remove ticket status from @ticket_data.json
+def remove_ticket_status(channel_id):
+    """Remove ticket status from @ticket_data.json when the ticket is deleted."""
+    try:
+        with open('ticket_data.json', 'r', encoding='utf-8') as f:
+            ticket_data = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return  # If the file doesn't exist or is corrupted, there's nothing to remove
+
+    channel_id_str = str(channel_id)
+    if channel_id_str in ticket_data:
+        del ticket_data[channel_id_str]
+
+        with open('ticket_data.json', 'w', encoding='utf-8') as f:
+            json.dump(ticket_data, f, indent=4, ensure_ascii=False)
+
+# Persistent views setup function for main bot
+def setup_persistent_views(bot):
+    """Setup persistent views when bot starts"""
+    try:
+        # Add persistent views with custom_id
+        data = load_ticket_data()
+
+        # Ensure data structure is complete
+        if not isinstance(data, dict):
+            print("❌ Invalid ticket data structure")
+            return
+
+        # Add views for published panels
+        tickets = data.get("tickets", {})
+        if isinstance(tickets, dict):
+            for panel_id in tickets:
+                try:
+                    view = PublishedTicketView(panel_id)
+                    bot.add_view(view)
+                except Exception as e:
+                    print(f"❌ Error adding view for panel {panel_id}: {e}")
+
+        # Add ticket close views
+        bot.add_view(TicketCloseView())
+        bot.add_view(TicketClosedActionsView())
+
+        print("✅ Ticket system persistent views loaded successfully")
+    except Exception as e:
+        print(f"❌ Error setting up ticket persistent views: {e}")
+        # Initialize with empty data if there's an error
+        try:
+            empty_data = {
+                "tickets": {},
+                "staff_roles": [],
+                "settings": {
+                    "default_embed": {
+                        "title": "",
+                        "outside_description": "",
+                        "description": "Support will be with you shortly. To close this ticket.",
+                        "thumbnail": "",
+                        "image": "",
+                        "footer": f"{get_bot_name()} - Ticket Bot"
+                    },
+                    "button_enabled": True,
+                    "button_emoji": "🔒",
+                    "button_label": "Close Ticket",
+                    "ai_enabled": False,
+                    "log_settings": {
+                        "ticket_opened": True,
+                        "ticket_claimed": True,
+                        "ticket_closed": True,
+                        "ticket_deleted": True,
+                        "ticket_reopened": True,
+                        "transcript_saved": True
+                    }
+                },
+                "ticket_counters": {},
+                "closed_tickets": {}
+            }
+            save_ticket_data(empty_data)
+            print("✅ Initialized empty ticket data structure")
+        except Exception as init_error:
+            print(f"❌ Failed to initialize ticket data: {init_error}")
+
+# New Views for Logs and Closed Tickets
+class LogsManagementView(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+
+    @discord.ui.button(label='Set Log Channel', style=discord.ButtonStyle.primary, emoji='📍', row=0)
+    async def set_log_channel(self, interaction: discord.Interaction, button: discord.ui.Button):
+        view = discord.ui.View(timeout=None)
+        view.add_item(LogChannelSelect())
+        view.add_item(BackButton("logs"))
+
+        embed = discord.Embed(
+            title="📍 Set Log Channel",
+            description="Select the channel where ticket logs will be sent:",
+            color=0x2b2d31
+        )
+        await interaction.response.edit_message(embed=embed, view=view)
+
+    @discord.ui.button(label='🎫 Ticket Opened', style=discord.ButtonStyle.success, row=1)
+    async def toggle_opened_logs(self, interaction: discord.Interaction, button: discord.ui.Button):
+        data = load_ticket_data()
+        if "log_settings" not in data["settings"]:
+            data["settings"]["log_settings"] = {}
+
+        current = data["settings"]["log_settings"].get("ticket_opened", True)
+        data["settings"]["log_settings"]["ticket_opened"] = not current
+        save_ticket_data(data)
+
+        view = LogsManagementView()
+        embed = create_logs_management_embed(data, interaction.guild)
+        await interaction.response.edit_message(embed=embed, view=view)
+
+    @discord.ui.button(label='✋ Ticket Claimed', style=discord.ButtonStyle.success, row=1)
+    async def toggle_claimed_logs(self, interaction: discord.Interaction, button: discord.ui.Button):
+        data = load_ticket_data()
+        if "log_settings" not in data["settings"]:
+            data["settings"]["log_settings"] = {}
+
+        current = data["settings"]["log_settings"].get("ticket_claimed", True)
+        data["settings"]["log_settings"]["ticket_claimed"] = not current
+        save_ticket_data(data)
+
+        view = LogsManagementView()
+        embed = create_logs_management_embed(data, interaction.guild)
+        await interaction.response.edit_message(embed=embed, view=view)
+
+    @discord.ui.button(label='🔒 Ticket Closed', style=discord.ButtonStyle.success, row=1)
+    async def toggle_closed_logs(self, interaction: discord.Interaction, button: discord.ui.Button):
+        data = load_ticket_data()
+        if "log_settings" not in data["settings"]:
+            data["settings"]["log_settings"] = {}
+
+        current = data["settings"]["log_settings"].get("ticket_closed", True)
+        data["settings"]["log_settings"]["ticket_closed"] = not current
+        save_ticket_data(data)
+
+        view = LogsManagementView()
+        embed = create_logs_management_embed(data, interaction.guild)
+        await interaction.response.edit_message(embed=embed, view=view)
+
+    @discord.ui.button(label='🗑️ Ticket Deleted', style=discord.ButtonStyle.success, row=2)
+    async def toggle_deleted_logs(self, interaction: discord.Interaction, button: discord.ui.Button):
+        data = load_ticket_data()
+        if "log_settings" not in data["settings"]:
+            data["settings"]["log_settings"] = {}
+
+        current = data["settings"]["log_settings"].get("ticket_deleted", True)
+        data["settings"]["log_settings"]["ticket_deleted"] = not current
+        save_ticket_data(data)
+
+        view = LogsManagementView()
+        embed = create_logs_management_embed(data, interaction.guild)
+        await interaction.response.edit_message(embed=embed, view=view)
+
+    @discord.ui.button(label='📄 Transcript', style=discord.ButtonStyle.success, row=2)
+    async def toggle_transcript_logs(self, interaction: discord.Interaction, button: discord.ui.Button):
+        data = load_ticket_data()
+        if "log_settings" not in data["settings"]:
+            data["settings"]["log_settings"] = {}
+
+        current = data["settings"]["log_settings"].get("transcript_saved", True)
+        data["settings"]["log_settings"]["transcript_saved"] = not current
+        save_ticket_data(data)
+
+        view = LogsManagementView()
+        embed = create_logs_management_embed(data, interaction.guild)
+        await interaction.response.edit_message(embed=embed, view=view)
+
+    @discord.ui.button(label='Back', style=discord.ButtonStyle.secondary, emoji='🔙', row=2)
+    async def back_to_main(self, interaction: discord.Interaction, button: discord.ui.Button):
+        view = TicketPanelView()
+        data = load_ticket_data()
+        embed = create_ticket_panel_embed(data)
+        await interaction.response.edit_message(embed=embed, view=view)
+
+class LogChannelSelect(discord.ui.ChannelSelect):
+    def __init__(self):
+        super().__init__(
+            placeholder="Select a channel for logs",
+            channel_types=[discord.ChannelType.text],
+            min_values=1,
+            max_values=1
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        data = load_ticket_data()
+        data["settings"]["log_channel_id"] = self.values[0].id
+        save_ticket_data(data)
+
+        view = LogsManagementView()
+        embed = create_logs_management_embed(data, interaction.guild)
+        await interaction.response.edit_message(embed=embed, view=view)
+
+class TicketClosedActionsView(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+
+    @discord.ui.button(label='Reopen', style=discord.ButtonStyle.success, emoji='🔓', custom_id='persistent_reopen_ticket')
+    async def reopen_ticket(self, interaction: discord.Interaction, button: discord.ui.Button):
+        try:
+            await interaction.response.defer(ephemeral=True)
+
+            data = load_ticket_data()
+            channel_data = data.get("closed_tickets", {}).get(str(interaction.channel.id))
+
+            if not channel_data:
+                await interaction.followup.send("❌ Ticket data not found.", ephemeral=True)
+                return
+
+            # Restore original name (with delay to avoid rate limiting)
+            original_name = channel_data["original_name"]
+
+            # Only rename if it's currently closed
+            if interaction.channel.name.startswith("closed-"):
+                await asyncio.sleep(2)  # Delay to prevent rate limiting
+                await interaction.channel.edit(name=original_name)
+
+
+            # Restore permissions
+            for member_id, perms in channel_data["permissions"].items():
+                member = interaction.guild.get_member(int(member_id))
+                if member:
+                    await interaction.channel.set_permissions(
+                        member,
+                        view_channel=perms["view_channel"],
+                        send_messages=perms["send_messages"],
+                        read_message_history=perms["read_message_history"]
+                    )
+
+            # Remove from closed tickets
+            del data["closed_tickets"][str(interaction.channel.id)]
+            save_ticket_data(data)
+
+            # Log reopening
+            await log_ticket_action(interaction.guild, "ticket_reopened", {
+                "channel": interaction.channel.mention,
+                "reopened_by": interaction.user
+            })
+
+            # Send new message for reopening instead of editing
+            reopen_embed = discord.Embed(
+                title="🔓 Ticket Reopened",
+                description="This ticket has been reopened successfully!",
+                color=0x57f287
+            )
+
+            close_view = TicketCloseView()
+            await interaction.channel.send(embed=reopen_embed, view=close_view)
+
+            await interaction.followup.send("✅ Ticket reopened successfully!", ephemeral=True)
+
+            # Update ticket status
+            update_ticket_status(interaction.channel.id, {"status": "open"})
+
+        except Exception as e:
+            await interaction.followup.send(f"❌ Error reopening ticket: {str(e)}", ephemeral=True)
+
+    @discord.ui.button(label='Delete', style=discord.ButtonStyle.danger, emoji='🗑️', custom_id='persistent_delete_ticket')
+    async def delete_ticket(self, interaction: discord.Interaction, button: discord.ui.Button):
+        try:
+            await interaction.response.defer(ephemeral=True)
+
+            # Log deletion
+            await log_ticket_action(interaction.guild, "ticket_deleted", {
+                "channel": interaction.channel.mention,
+                "deleted_by": interaction.user
+            })
+
+            # Remove from closed tickets data
+            data = load_ticket_data()
+            if str(interaction.channel.id) in data.get("closed_tickets", {}):
+                del data["closed_tickets"][str(interaction.channel.id)]
+                save_ticket_data(data)
+
+            # Send deletion message as a new message
+            deletion_embed = discord.Embed(
+                title="🗑️ Deleting Ticket...",
+                description="Deleting the ticket in 3 seconds...",
+                color=discord.Color.red()
+            )
+            await interaction.channel.send(embed=deletion_embed)
+            await asyncio.sleep(3)
+
+            # Delete the channel
+            await interaction.channel.delete(reason=f"Ticket deleted by {interaction.user}")
+
+            # Remove ticket status
+            remove_ticket_status(interaction.channel.id)
+
+        except Exception as e:
+            await interaction.followup.send(f"❌ Error deleting ticket: {str(e)}", ephemeral=True)
+
+    @discord.ui.button(label='Transcript', style=discord.ButtonStyle.primary, emoji='📄', custom_id='persistent_save_transcript')
+    async def save_transcript(self, interaction: discord.Interaction, button: discord.ui.Button):
+        try:
+            await interaction.response.defer(ephemeral=True)
+
+            # Get ticket data
+            data = load_ticket_data()
+
+            # Find ticket owner and panel info
+            ticket_owner = None
+            panel_name = "Unknown Panel"
+            panel_emoji = "🎟️"
+            ticket_type = "unknown"
+
+            # Extract ticket type from channel name
+            channel_name = interaction.channel.name
+            if channel_name.startswith("closed-"):
+                # For closed tickets: closed-support-0001 -> support
+                parts = channel_name.replace("closed-", "").split('-')
+                if len(parts) >= 1:
+                    ticket_type = parts[0]
+            else:
+                # For regular tickets: support-0001 -> support
+                parts = channel_name.split('-')
+                if len(parts) >= 1:
+                    ticket_type = parts[0]
+
+            # Find matching panel with better search
+            for panel_id, panel in data.get("tickets", {}).items():
+                if "sub_panels" in panel:
+                    for sub_panel_id, sub_panel in panel["sub_panels"].items():
+                        sub_panel_name = sub_panel["name"].lower().strip()
+                        if sub_panel_name == ticket_type.lower().strip():
+                            # Prioritize panel_title, then ticket_title, then title
+                            panel_title = sub_panel.get("panel_title") or sub_panel.get("ticket_title") or sub_panel.get("title", "Default Panel")
+                            panel_name = f"🎟️ {panel_title}"
+                            break
+                    else:
+                        continue
+                    break
+            else:
+                # If no exact match found, try partial matching
+                for panel_id, panel in data.get("tickets", {}).items():
+                    if "sub_panels" in panel:
+                        for sub_panel_id, sub_panel in panel["sub_panels"].items():
+                            sub_panel_name = sub_panel["name"].lower().strip()
+                            if ticket_type.lower().strip() in sub_panel_name or sub_panel_name in ticket_type.lower().strip():
+                                panel_title = sub_panel.get("panel_title") or sub_panel.get("ticket_title") or sub_panel.get("title", "Default Panel")
+                                panel_name = f"🎟️ {panel_title}"
+                                break
+                        else:
+                            continue
+                        break
+
+            # Find ticket owner from closed ticket data or channel permissions
+            ticket_owner_id = None
+            closed_ticket_data = data.get("closed_tickets", {}).get(str(interaction.channel.id))
+
+            if closed_ticket_data and "permissions" in closed_ticket_data:
+                # Find owner from closed ticket permissions
+                for member_id_str, perms in closed_ticket_data["permissions"].items():
+                    member = interaction.guild.get_member(int(member_id_str))
+                    if member and not member.bot and not any(role.id in data.get("staff_roles", []) for role in member.roles):
+                        ticket_owner = member
+                        ticket_owner_id = member.id
+                        break
+
+            if not ticket_owner:
+                # Find from current channel members
+                for member in interaction.channel.members:
+                    if not member.bot and member != interaction.guild.me:
+                        perms = interaction.channel.permissions_for(member)
+                        if perms.send_messages and not any(role.id in data.get("staff_roles", []) for role in member.roles):
+                            ticket_owner_id = member.id
+                            ticket_owner = member
+                            break
+
+            # If still not found, get from first message
+            if not ticket_owner:
+                async for message in interaction.channel.history(limit=100, oldest_first=True):
+                    if not message.author.bot and message.author != interaction.guild.me:
+                        ticket_owner = message.author
+                        ticket_owner_id = message.author.id
+                        break
+
+            # Generate enhanced transcript
+            transcript_data = {
+                "server_info": {
+                    "server_name": interaction.guild.name,
+                    "server_id": interaction.guild.id,
+                    "channel_name": interaction.channel.name,
+                    "channel_id": interaction.channel.id
+                },
+                "ticket_info": {
+                    "ticket_owner": {
+                        "name": ticket_owner.display_name if ticket_owner else "Unknown User",
+                        "username": f"{ticket_owner.name}#{ticket_owner.discriminator}" if ticket_owner and ticket_owner.discriminator != "0" else ticket_owner.name if ticket_owner else "Unknown",
+                        "id": ticket_owner_id,
+                        "avatar_url": ticket_owner.display_avatar.url if ticket_owner else None
+                    },
+                    "ticket_name": interaction.channel.name,
+                    "panel_name": panel_name,
+                    "panel_emoji": panel_emoji,
+                    "created_at": datetime.now().isoformat(),
+                    "transcript_saved_by": {
+                        "name": interaction.user.display_name,
+                        "username": f"{interaction.user.name}#{interaction.user.discriminator}" if interaction.user.discriminator != "0" else interaction.user.name,
+                        "id": interaction.user.id,
+                        "avatar_url": interaction.user.display_avatar.url
+                    }
+                },
+                "statistics": {
+                    "total_messages": 0,
+                    "attachments_saved": 0,
+                    "attachments_skipped": 0,
+                    "users_in_transcript": {}
+                },
+                "messages": []
+            }
+
+            # Count messages and get participants
+            message_count = 0
+            attachments_count = 0
+            users_in_transcript = {}
+
+            async for message in interaction.channel.history(limit=None, oldest_first=True):
+                message_count += 1
+                attachments_count += len(message.attachments)
+
+                # Track users
+                user_key = f"{message.author.display_name} - {message.author.name}#{message.author.discriminator}" if message.author.discriminator != "0" else f"{message.author.display_name} - {message.author.name}"
+                if user_key not in users_in_transcript:
+                    users_in_transcript[user_key] = {
+                        "message_count": 0,
+                        "is_bot": message.author.bot,
+                        "roles": [role.name for role in message.author.roles] if hasattr(message.author, 'roles') else []
+                    }
+                users_in_transcript[user_key]["message_count"] += 1
+
+                message_data = {
+                    "id": message.id,
+                    "author": {
+                        "name": message.author.display_name,
+                        "username": f"{message.author.name}#{message.author.discriminator}" if message.author.discriminator != "0" else message.author.name,
+                        "id": message.author.id,
+                        "bot": message.author.bot,
+                        "avatar_url": message.author.display_avatar.url
+                    },
+                    "content": message.content,
+                    "timestamp": message.created_at.isoformat(),
+                    "embeds": [embed.to_dict() for embed in message.embeds],
+                    "attachments": [{"filename": att.filename, "url": att.url, "size": att.size} for att in message.attachments]
+                }
+                transcript_data["messages"].append(message_data)
+
+            # Update statistics
+            transcript_data["statistics"]["total_messages"] = message_count
+            transcript_data["statistics"]["attachments_saved"] = attachments_count
+            transcript_data["statistics"]["attachments_skipped"] = 0
+            transcript_data["statistics"]["users_in_transcript"] = users_in_transcript
+
+            # Save to transcript file
+            try:
+                with open('ticket_transcript.json', 'r', encoding='utf-8') as f:
+                    transcripts = json.load(f)
+            except (FileNotFoundError, json.JSONDecodeError):
+                transcripts = {}
+
+            transcripts[str(interaction.channel.id)] = transcript_data
+
+            with open('ticket_transcript.json', 'w', encoding='utf-8') as f:
+                json.dump(transcripts, f, indent=4, ensure_ascii=False)
+
+            # Create transcript file
+            transcript_filename = f"transcript_{interaction.channel.name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
+            transcript_content = []
+
+            # Generate readable transcript
+            transcript_content.append(f"=== TICKET TRANSCRIPT ===")
+            transcript_content.append(f"Server: {interaction.guild.name}")
+            transcript_content.append(f"Channel: #{interaction.channel.name}")
+            transcript_content.append(f"Owner: {ticket_owner.display_name if ticket_owner else 'Unknown'}")
+            transcript_content.append(f"Panel Type: {panel_name}")
+            transcript_content.append(f"Saved by: {interaction.user.display_name}")
+            transcript_content.append(f"Date: {datetime.now().strftime('%d/%m/%Y at %H:%M:%S')}")
+            transcript_content.append(f"Messages: {message_count}")
+            transcript_content.append(f"Participants: {len(users_in_transcript)}")
+            transcript_content.append("=" * 50)
+            transcript_content.append("")
+
+            # Add all messages
+            for msg_data in transcript_data["messages"]:
+                timestamp = datetime.fromisoformat(msg_data["timestamp"]).strftime('%d/%m/%Y %H:%M:%S')
+                author_name = msg_data["author"]["name"]
+                content = msg_data["content"] or "[No content message]"
+
+                transcript_content.append(f"[{timestamp}] {author_name}: {content}")
+
+                # Add embeds info if any
+                if msg_data["embeds"]:
+                    transcript_content.append(f"   └── {len(msg_data['embeds'])} embed(s)")
+
+                # Add attachments info if any
+                if msg_data["attachments"]:
+                    for att in msg_data["attachments"]:
+                        transcript_content.append(f"   └── File: {att['filename']} ({att['size']} bytes)")
+
+                transcript_content.append("")
+
+            # Save transcript file
+            with open(transcript_filename, 'w', encoding='utf-8') as f:
+                f.write('\n'.join(transcript_content))
+
+            # Log transcript saving with file attachment
+            await log_ticket_action(interaction.guild, "transcript_saved", {
+                "channel": interaction.channel.mention,
+                "saved_by": interaction.user,
+                "message_count": message_count,
+                "ticket_type": ticket_type,
+                "transcript_file": transcript_filename,
+                "ticket_owner": ticket_owner.mention if ticket_owner else "Unknown",
+                "panel_name": panel_name
+            })
+
+            # Send ephemeral success message without modifying the main embed
+            await interaction.followup.send("✅ Transcript saved successfully and sent to logs!", ephemeral=True)
+
+            # Update ticket status
+            update_ticket_status(interaction.channel.id, {"transcript_saved": True})
+
+        except Exception as e:
+            await interaction.followup.send(f"❌ Error saving transcript: {str(e)}", ephemeral=True)
+
+# Logging system
+async def log_ticket_action(guild, action_type, details):
+    """Log ticket actions to a specified channel with simplified styling like the example."""
+    data = load_ticket_data()
+    log_channel_id = data["settings"].get("log_channel_id")
+    log_settings = data["settings"].get("log_settings", {})
+
+    # Check if this log type is enabled
+    if not log_settings.get(action_type, True):
+        return
+
+    log_channel = guild.get_channel(log_channel_id) if log_channel_id else None
+
+    if not log_channel:
+        print("Log channel not configured or not found.")
+        return
+
+    # Get user object from details - extract ID from mention properly
+    user = None
+    user_mention = ""
+
+    # Extract user object from various possible keys in 'details'
+    user_keys_to_check = ["created_by", "claimed_by", "closed_by", "reopened_by", "deleted_by", "saved_by"]
+    found_user = None
+
+    for key in user_keys_to_check:
+        if key in details:
+            user_data = details[key]
+            if isinstance(user_data, discord.User):
+                found_user = user_data
+                break
+            elif isinstance(user_data, discord.Member):
+                found_user = user_data
+                break
+            elif isinstance(user_data, int):
+                # If it's an ID, try to get the member
+                found_user = guild.get_member(user_data)
+                if found_user:
+                    break
+            elif isinstance(user_data, str) and "<@" in user_data and ">" in user_data:
+                # If it's a mention, extract ID and get member
+                user_id_str = user_data.replace("<@", "").replace(">", "").replace("!", "")
+                try:
+                    user_id = int(user_id_str)
+                    found_user = guild.get_member(user_id)
+                    if found_user:
+                        break
+                except ValueError:
+                    pass # Ignore if ID is not valid
+
+    user = found_user # Assign the found user to the 'user' variable
+
+    # Color mapping for different actions (left border color)
+    color_mapping = {
+        "ticket_opened": 0x57f287,  # Green
+        "ticket_claimed": 0xfee75c, # Yellow
+        "ticket_closed": 0xed4245,  # Red
+        "ticket_reopened": 0x57f287, # Green
+        "ticket_deleted": 0x99aab5,  # Gray
+        "transcript_saved": 0x5865f2  # Blurple
+    }
+
+    # Action mapping
+    action_mapping = {
+        "ticket_opened": "Created",
+        "ticket_claimed": "Claimed",
+        "ticket_closed": "Closed",
+        "ticket_reopened": "Reopened",
+        "ticket_deleted": "Deleted",
+        "transcript_saved": "Transcript Saved"
+    }
+
+    # Extract ticket info from channel mention
+    channel_name = "Unknown"
+    ticket_name = "Unknown"
+    ticket_type = "unknown"
+
+    if "channel" in details:
+        channel_mention = details["channel"]
+        if isinstance(channel_mention, discord.TextChannel): # If it's already a channel object
+            channel_name = channel_mention.name
+        elif isinstance(channel_mention, str) and "<#" in channel_mention:
+            channel_id_str = channel_mention.replace("<#", "").replace(">", "")
+            try:
+                channel_id = int(channel_id_str)
+                channel_obj = guild.get_channel(channel_id)
+                if channel_obj:
+                    channel_name = channel_obj.name
+            except ValueError:
+                pass
+        else:
+            channel_name = channel_mention
+
+    # Extract ticket info from channel name
+    if "-" in channel_name:
+        if channel_name.startswith("closed-"):
+            # For closed tickets: closed-support-0048 -> support, Ticket-0048
+            parts = channel_name.replace("closed-", "").split('-')
+            if len(parts) >= 2: # Expecting at least type and number
+                ticket_type = parts[0]
+                ticket_name = f"Ticket-{parts[1]}"
+        else:
+            # For regular tickets: support-0048 -> support, Ticket-0048
+            parts = channel_name.split("-")
+            if len(parts) >= 2: # Expecting at least type and number
+                ticket_type = parts[0]
+                ticket_name = f"Ticket-{parts[1]}"
+
+    # Find panel info - better search logic
+    panel_name = "🎟️ Default Panel"
+
+    # Check if panel_name is already provided in details
+    if "panel_name" in details and details["panel_name"]:
+        panel_name = f"🎟️ {details['panel_name']}"
+    elif "ticket_type" in details:
+        ticket_type = details["ticket_type"]
+        # Search for matching panel
+        for panel_id, panel in data.get("tickets", {}).items():
+            if "sub_panels" in panel:
+                for sub_panel_id, sub_panel in panel["sub_panels"].items():
+                    sub_panel_name = sub_panel["name"].lower().strip()
+                    if sub_panel_name == ticket_type.lower().strip():
+                        # Prioritize panel_title, then ticket_title, then title
+                        panel_title = sub_panel.get("panel_title") or sub_panel.get("ticket_title") or sub_panel.get("title", "Default Panel")
+                        panel_name = f"🎟️ {panel_title}"
+                        break
+                else:
+                    continue
+                break
+    else:
+        # Try to find panel from extracted ticket_type
+        for panel_id, panel in data.get("tickets", {}).items():
+            if "sub_panels" in panel:
+                for sub_panel_id, sub_panel in panel["sub_panels"].items():
+                    sub_panel_name = sub_panel["name"].lower().strip()
+                    if sub_panel_name == ticket_type.lower().strip():
+                        panel_title = sub_panel.get("panel_title") or sub_panel.get("ticket_title") or sub_panel.get("title", "Default Panel")
+                        panel_name = f"🎟️ {panel_title}"
+                        break
+                else:
+                    continue
+                break
+
+    # Create simplified embed like the example
+    embed = discord.Embed(
+        color=color_mapping.get(action_type, 0x7289da)
+    )
+
+    # Set user as author with avatar (top of embed) - this is crucial
+    if user:
+        embed.set_author(
+            name=user.display_name,
+            icon_url=user.display_avatar.url
+        )
+    else:
+        # Fallback if user not found
+        embed.set_author(
+            name="Unknown User",
+            icon_url="https://cdn.discordapp.com/embed/avatars/0.png"
+        )
+
+    # Create the main content fields exactly like the example
+    logged_info = f"**Logged Info**\nTicket: {ticket_name}\nAction: {action_mapping.get(action_type, 'Action')}"
+
+    panel_info = f"**Panel**\n{panel_name}"
+
+    embed.add_field(name="", value=logged_info, inline=True)
+    embed.add_field(name="", value=panel_info, inline=True)
+
+    # For transcript action, add simplified info
+    if action_type == "transcript_saved" and "message_count" in details:
+        embed.add_field(name="", value=f"**Messages:** {details['message_count']}", inline=False)
+
+    # Send the log message
+    if action_type == "transcript_saved" and "transcript_file" in details:
+        # Send with transcript file attachment but don't overload the embed
+        try:
+            with open(details["transcript_file"], 'rb') as f:
+                file = discord.File(f, filename=details["transcript_file"])
+                await log_channel.send(embed=embed, file=file)
+
+            # Clean up the file after sending
+            import os
+            os.remove(details["transcript_file"])
+        except Exception as e:
+            print(f"Error sending transcript file: {e}")
+            await log_channel.send(embed=embed)
+    else:
+        await log_channel.send(embed=embed)
+
+# setup commands
 def setup_ticket_system(bot):
     """Setup ticket system"""
     # Définir l'instance globale du bot
@@ -2489,10 +3227,15 @@ def setup_ticket_system(bot):
                 if not member.bot and member.id not in staff_members and not member.guild_permissions.administrator:
                     await interaction.channel.set_permissions(member, view_channel=False)
 
-            # Rename the ticket
+            # Rename the ticket (with delay to avoid rate limiting)
             ticket_type = ticket_name.split('-')[0]
             new_channel_name = f"closed-{ticket_type}-{ticket_name.split('-')[1]}"
-            await interaction.channel.edit(name=new_channel_name)
+
+            # Only rename if it's not already closed
+            if not interaction.channel.name.startswith("closed-"):
+                await asyncio.sleep(1)  # Small delay to prevent rate limiting
+                await interaction.channel.edit(name=new_channel_name)
+
 
             # Log ticket closing
             await log_ticket_action(interaction.guild, "ticket_closed", {
@@ -2619,9 +3362,466 @@ def setup_ticket_system(bot):
                 await interaction.response.send_message("❌ Ce ticket n'est pas dans l'état fermé ou les données sont introuvables.", ephemeral=True)
                 return
 
-            # Restore original name
+            # Restore original name (with delay to avoid rate limiting)
             original_name = channel_data["original_name"]
-            await interaction.channel.edit(name=original_name)
+
+            # Only rename if it's currently closed
+            if interaction.channel.name.startswith("closed-"):
+                await asyncio.sleep(2)  # Delay to prevent rate limiting
+                await interaction.channel.edit(name=original_name)
+
+
+            # Restore permissions
+            for member_id, perms in channel_data.get("permissions", {}).items():
+                member = interaction.guild.get_member(int(member_id))
+                if member:
+                    await interaction.channel.set_permissions(
+                        member,
+                        view_channel=perms["view_channel"],
+                        send_messages=perms["send_messages"],
+                        read_message_history=perms["read_message_history"]
+                    )
+
+            # Remove from closed tickets
+            if str(interaction.channel.id) in data["closed_tickets"]:
+                del data["closed_tickets"][str(interaction.channel.id)]
+                save_ticket_data(data)
+
+            # Log reopening
+            await log_ticket_action(interaction.guild, "ticket_reopened", {
+                "channel": interaction.channel.mention,
+                "reopened_by": interaction.user
+            })
+
+            # Send reopening message with new close button
+            reopen_embed = discord.Embed(
+                title="🔓 Ticket Reopened",
+                description="This ticket has been reopened successfully!",
+                color=0x57f287
+            )
+
+            # Create new close view
+            close_view = TicketCloseView()
+            await interaction.channel.send(embed=reopen_embed, view=close_view)
+
+            # Update ticket status
+            update_ticket_status(interaction.channel.id, {
+                "status": "open",
+                "original_name": original_name,
+                "reopened_by": interaction.user.id,
+                "reopened_at": datetime.now().isoformat()
+            })
+
+        except Exception as e:
+            await interaction.response.send_message(f"❌ Erreur lors de la réouverture du ticket: {str(e)}", ephemeral=True)
+
+    @bot.tree.command(name="transcript", description="Sauvegarde la transcription du ticket")
+    async def transcript_command(interaction: discord.Interaction):
+        # Check if the command is used in a ticket channel
+        channel_name = interaction.channel.name
+        is_ticket = any(pattern in channel_name for pattern in ['-0', '-1', '-2', '-3', '-4', '-5', '-6', '-7', '-8', '-9']) or channel_name.startswith("closed-")
+
+        if not is_ticket:
+            await interaction.response.send_message("❌ Cette commande ne peut être utilisée que dans un channel de ticket.", ephemeral=True)
+            return
+
+        try:
+            await interaction.response.defer(ephemeral=True)
+
+            # Get ticket data
+            data = load_ticket_data()
+
+            # Find ticket owner and panel info
+            ticket_owner = None
+            panel_name = "Unknown Panel"
+            panel_emoji = "🎟️"
+            ticket_type = "unknown"
+
+            # Extract ticket type from channel name
+            if channel_name.startswith("closed-"):
+                # For closed tickets: closed-support-0001 -> support
+                parts = channel_name.replace("closed-", "").split('-')
+                if len(parts) >= 1:
+                    ticket_type = parts[0]
+            else:
+                # For regular tickets: support-0001 -> support
+                parts = channel_name.split('-')
+                if len(parts) >= 1:
+                    ticket_type = parts[0]
+
+            # Find matching panel
+            for panel_id, panel in data.get("tickets", {}).items():
+                if "sub_panels" in panel:
+                    for sub_panel_id, sub_panel in panel["sub_panels"].items():
+                        sub_panel_name = sub_panel["name"].lower().strip()
+                        if sub_panel_name == ticket_type.lower().strip():
+                            panel_name = sub_panel.get("panel_title", sub_panel.get("ticket_title", sub_panel.get("title", "Panel par Défaut")))
+                            panel_emoji = sub_panel.get("panel_emoji", sub_panel.get("button_emoji", "🎟️"))
+                            break
+                    else:
+                        continue
+                    break
+
+            # Find ticket owner
+            for member in interaction.channel.members:
+                if not member.bot and member != interaction.guild.me:
+                    perms = interaction.channel.permissions_for(member)
+                    if perms.send_messages and not any(role.id in data.get("staff_roles", []) for role in member.roles):
+                        ticket_owner = member
+                        break
+
+            if not ticket_owner:
+                async for message in interaction.channel.history(limit=100, oldest_first=True):
+                    if not message.author.bot and message.author != interaction.guild.me:
+                        ticket_owner = message.author
+                        break
+
+            # Generate transcript
+            transcript_data = {
+                "server_info": {
+                    "server_name": interaction.guild.name,
+                    "server_id": interaction.guild.id,
+                    "channel_name": interaction.channel.name,
+                    "channel_id": interaction.channel.id
+                },
+                "ticket_info": {
+                    "ticket_owner": {
+                        "name": ticket_owner.display_name if ticket_owner else "Utilisateur Inconnu",
+                        "username": f"{ticket_owner.name}#{ticket_owner.discriminator}" if ticket_owner and ticket_owner.discriminator != "0" else ticket_owner.name if ticket_owner else "Inconnu",
+                        "id": ticket_owner.id if ticket_owner else None,
+                        "avatar_url": ticket_owner.display_avatar.url if ticket_owner else None
+                    },
+                    "ticket_name": interaction.channel.name,
+                    "panel_name": panel_name,
+                    "panel_emoji": panel_emoji,
+                    "created_at": datetime.now().isoformat(),
+                    "transcript_saved_by": {
+                        "name": interaction.user.display_name,
+                        "username": f"{interaction.user.name}#{interaction.user.discriminator}" if interaction.user.discriminator != "0" else interaction.user.name,
+                        "id": interaction.user.id,
+                        "avatar_url": interaction.user.display_avatar.url
+                    }
+                },
+                "messages": []
+            }
+
+            # Count messages
+            message_count = 0
+            async for message in interaction.channel.history(limit=None, oldest_first=True):
+                message_count += 1
+                message_data = {
+                    "id": message.id,
+                    "author": {
+                        "name": message.author.display_name,
+                        "username": f"{message.author.name}#{message.author.discriminator}" if message.author.discriminator != "0" else message.author.name,
+                        "id": message.author.id,
+                        "bot": message.author.bot,
+                        "avatar_url": message.author.display_avatar.url
+                    },
+                    "content": message.content,
+                    "timestamp": message.created_at.isoformat(),
+                    "embeds": [embed.to_dict() for embed in message.embeds],
+                    "attachments": [{"filename": att.filename, "url": att.url, "size": att.size} for att in message.attachments]
+                }
+                transcript_data["messages"].append(message_data)
+
+            # Save to transcript file
+            try:
+                with open('ticket_transcript.json', 'r', encoding='utf-8') as f:
+                    transcripts = json.load(f)
+            except (FileNotFoundError, json.JSONDecodeError):
+                transcripts = {}
+
+            transcripts[str(interaction.channel.id)] = transcript_data
+
+            with open('ticket_transcript.json', 'w', encoding='utf-8') as f:
+                json.dump(transcripts, f, indent=4, ensure_ascii=False)
+
+            # Create readable transcript file
+            transcript_filename = f"transcript_{interaction.channel.name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
+            transcript_content = []
+
+            transcript_content.append(f"=== TRANSCRIPTION TICKET ===")
+            transcript_content.append(f"Serveur: {interaction.guild.name}")
+            transcript_content.append(f"Canal: #{interaction.channel.name}")
+            transcript_content.append(f"Propriétaire: {ticket_owner.display_name if ticket_owner else 'Inconnu'}")
+            transcript_content.append(f"Type de Panel: {panel_name}")
+            transcript_content.append(f"Sauvegardé par: {interaction.user.display_name}")
+            transcript_content.append(f"Date: {datetime.now().strftime('%d/%m/%Y à %H:%M:%S')}")
+            transcript_content.append(f"Messages: {message_count}")
+            transcript_content.append("=" * 50)
+            transcript_content.append("")
+
+            # Add all messages
+            for msg_data in transcript_data["messages"]:
+                timestamp = datetime.fromisoformat(msg_data["timestamp"]).strftime('%d/%m/%Y %H:%M:%S')
+                author_name = msg_data["author"]["name"]
+                content = msg_data["content"] or "[No content message]"
+
+                transcript_content.append(f"[{timestamp}] {author_name}: {content}")
+
+                # Add embed details
+                if msg_data["embeds"]:
+                    for i, embed_data in enumerate(msg_data["embeds"], 1):
+                        transcript_content.append(f"   └── Embed {i}:")
+                        if embed_data.get("title"):
+                            transcript_content.append(f"       Title: {embed_data['title']}")
+                        if embed_data.get("description"):
+                            transcript_content.append(f"       Description: {embed_data['description'][:200]}{'...' if len(embed_data.get('description', '')) > 200 else ''}")
+                        if embed_data.get("fields"):
+                            transcript_content.append(f"       Fields: {len(embed_data['fields'])}")
+
+                if msg_data["attachments"]:
+                    for att in msg_data["attachments"]:
+                        transcript_content.append(f"   └── File: {att['filename']} ({att['size']} bytes)")
+
+                transcript_content.append("")
+
+            # Save transcript file
+            with open(transcript_filename, 'w', encoding='utf-8') as f:
+                f.write('\n'.join(transcript_content))
+
+            # Log transcript saving
+            await log_ticket_action(interaction.guild, "transcript_saved", {
+                "channel": interaction.channel.mention,
+                "saved_by": interaction.user,
+                "message_count": message_count,
+                "ticket_type": ticket_type,
+                "transcript_file": transcript_filename,
+                "ticket_owner": ticket_owner.mention if ticket_owner else "Inconnu",
+                "panel_name": panel_name
+            })
+
+            await interaction.followup.send("✅ Transcript saved successfully and sent to logs!", ephemeral=True)
+
+            # Update ticket status
+            update_ticket_status(interaction.channel.id, {"transcript_saved": True})
+
+        except Exception as e:
+            await interaction.followup.send(f"❌ Erreur lors de la sauvegarde de la transcription: {str(e)}", ephemeral=True)
+
+    @bot.event
+    async def on_message(message):
+        """Handle AI responses in ticket channels"""
+        await handle_ai_message(message)
+
+# setup commands
+def setup_ticket_system(bot):
+    """Setup ticket system"""
+    # Définir l'instance globale du bot
+    set_bot_instance(bot)
+
+    @bot.tree.command(name="ticket_panel", description="Open the ticket management panel")
+    async def ticket_panel(interaction: discord.Interaction):
+        data = load_ticket_data()
+        view = TicketPanelView()
+        embed = create_ticket_panel_embed(data)
+
+        await interaction.response.send_message(embed=embed, view=view, ephemeral=False)
+
+    @bot.tree.command(name="close", description="Ferme le ticket actuel")
+    async def close_command(interaction: discord.Interaction):
+        # Check if the command is used in a ticket channel
+        channel_name = interaction.channel.name
+        is_ticket = any(pattern in channel_name for pattern in ['-0', '-1', '-2', '-3', '-4', '-5', '-6', '-7', '-8', '-9'])
+
+        if not is_ticket:
+            await interaction.response.send_message("❌ Cette commande ne peut être utilisée que dans un channel de ticket.", ephemeral=True)
+            return
+
+        try:
+            # Save ticket data before closing
+            data = load_ticket_data()
+            if "closed_tickets" not in data:
+                data["closed_tickets"] = {}
+
+            ticket_name = interaction.channel.name
+            ticket_data = {
+                "original_name": ticket_name,
+                "channel_id": interaction.channel.id,
+                "closed_by": interaction.user.id,
+                "closed_at": datetime.now().isoformat(),
+                "permissions": {}
+            }
+
+            # Save current permissions
+            for member in interaction.channel.members:
+                if not member.bot:
+                    perms = interaction.channel.permissions_for(member)
+                    ticket_data["permissions"][str(member.id)] = {
+                        "view_channel": perms.view_channel,
+                        "send_messages": perms.send_messages,
+                        "read_message_history": perms.read_message_history
+                    }
+
+            data["closed_tickets"][str(interaction.channel.id)] = ticket_data
+            save_ticket_data(data)
+
+            # Send closing message
+            closing_embed = discord.Embed(
+                title="🔒 Closing Ticket...",
+                description="Closing the ticket in 3 seconds...",
+                color=discord.Color.red()
+            )
+            await interaction.response.send_message(embed=closing_embed, ephemeral=False)
+            await asyncio.sleep(3)
+
+            # Remove non-staff members
+            staff_roles = data.get("staff_roles", [])
+            staff_members = []
+            for role_id in staff_roles:
+                role = interaction.guild.get_role(role_id)
+                if role:
+                    for member in role.members:
+                        staff_members.append(member.id)
+
+            for member in interaction.channel.members:
+                if not member.bot and member.id not in staff_members and not member.guild_permissions.administrator:
+                    await interaction.channel.set_permissions(member, view_channel=False)
+
+            # Rename the ticket (with delay to avoid rate limiting)
+            ticket_type = ticket_name.split('-')[0]
+            new_channel_name = f"closed-{ticket_type}-{ticket_name.split('-')[1]}"
+
+            # Only rename if it's not already closed
+            if not interaction.channel.name.startswith("closed-"):
+                await asyncio.sleep(1)  # Small delay to prevent rate limiting
+                await interaction.channel.edit(name=new_channel_name)
+
+
+            # Log ticket closing
+            await log_ticket_action(interaction.guild, "ticket_closed", {
+                "channel": interaction.channel.mention,
+                "closed_by": interaction.user
+            })
+
+            # Send closed actions view
+            closed_embed = discord.Embed(
+                title="🔒 Ticket Closed",
+                description="This ticket has been closed. What would you like to do?",
+                color=0x57f287
+            )
+
+            closed_view = TicketClosedActionsView()
+            await interaction.channel.send(embed=closed_embed, view=closed_view)
+
+            # Update ticket status
+            update_ticket_status(interaction.channel.id, {"status": "closed"})
+
+        except Exception as e:
+            await interaction.followup.send(f"❌ Erreur lors de la fermeture du ticket: {str(e)}", ephemeral=True)
+
+    @bot.tree.command(name="delete", description="Supprime le ticket actuel")
+    async def delete_command(interaction: discord.Interaction):
+        # Check if the command is used in a ticket channel
+        channel_name = interaction.channel.name
+        is_ticket = any(pattern in channel_name for pattern in ['-0', '-1', '-2', '-3', '-4', '-5', '-6', '-7', '-8', '-9']) or channel_name.startswith("closed-")
+
+        if not is_ticket:
+            await interaction.response.send_message("❌ Cette commande ne peut être utilisée que dans un channel de ticket.", ephemeral=True)
+            return
+
+        try:
+            # Log deletion
+            await log_ticket_action(interaction.guild, "ticket_deleted", {
+                "channel": interaction.channel.mention,
+                "deleted_by": interaction.user
+            })
+
+            # Send deletion message
+            deletion_embed = discord.Embed(
+                title="🗑️ Deleting Ticket...",
+                description="Deleting the ticket in 3 seconds...",
+                color=discord.Color.red()
+            )
+            await interaction.response.send_message(embed=deletion_embed, ephemeral=False)
+            await asyncio.sleep(3)
+
+            # Delete the channel
+            await interaction.channel.delete(reason=f"Ticket supprimé par {interaction.user}")
+
+            # Remove ticket status
+            remove_ticket_status(interaction.channel.id)
+
+        except Exception as e:
+            await interaction.response.send_message(f"❌ Erreur lors de la suppression du ticket: {str(e)}", ephemeral=True)
+
+    @bot.tree.command(name="claim", description="Prend possession du ticket, supprime tous les autres staff")
+    async def claim_command(interaction: discord.Interaction):
+        # Check if the command is used in a ticket channel
+        channel_name = interaction.channel.name
+        is_ticket = any(pattern in channel_name for pattern in ['-0', '-1', '-2', '-3', '-4', '-5', '-6', '-7', '-8', '-9'])
+
+        if not is_ticket:
+            embed = discord.Embed(
+                title="❌ Erreur",
+                description="Cette commande ne peut être utilisée que dans un channel de ticket.",
+                color=discord.Color.red()
+            )
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+            return
+
+        try:
+            # Get the staff roles from the ticket data
+            data = load_ticket_data()
+            staff_roles = data.get("staff_roles", [])
+
+            # Identify staff members to keep based on the command executor's roles
+            staff_to_keep = [interaction.user.id]
+            for role_id in staff_roles:
+                role = interaction.guild.get_role(role_id)
+                if role and interaction.user.top_role >= role:
+                    for member in role.members:
+                        if member.top_role <= interaction.user.top_role:
+                            staff_to_keep.append(member.id)
+
+            # Remove all other staff members from the ticket
+            for member in interaction.channel.members:
+                if not member.bot and member.id not in staff_to_keep and not member.guild_permissions.administrator:
+                    await interaction.channel.set_permissions(member, view_channel=False)
+
+            # Log ticket claiming
+            await log_ticket_action(interaction.guild, "ticket_claimed", {
+                "channel": interaction.channel.mention,
+                "claimed_by": interaction.user
+            })
+
+            embed = discord.Embed(
+                title="✅ Ticket Claimed",
+                description="This ticket has been claimed.",
+                color=discord.Color.green()
+            )
+            await interaction.response.send_message(embed=embed)
+
+        except Exception as e:
+            await interaction.response.send_message(f"❌ Erreur lors de la prise en charge: {str(e)}", ephemeral=True)
+
+    @bot.tree.command(name="reopen", description="Rouvre un ticket fermé")
+    async def reopen_command(interaction: discord.Interaction):
+        # Check if the command is used in a ticket channel
+        channel_name = interaction.channel.name
+        is_closed_ticket = channel_name.startswith("closed-")
+
+        if not is_closed_ticket:
+            await interaction.response.send_message("❌ Cette commande ne peut être utilisée que dans un ticket fermé.", ephemeral=True)
+            return
+
+        try:
+            data = load_ticket_data()
+            channel_data = data.get("closed_tickets", {}).get(str(interaction.channel.id))
+
+            if not channel_data:
+                await interaction.response.send_message("❌ Ce ticket n'est pas dans l'état fermé ou les données sont introuvables.", ephemeral=True)
+                return
+
+            # Restore original name (with delay to avoid rate limiting)
+            original_name = channel_data["original_name"]
+
+            # Only rename if it's currently closed
+            if interaction.channel.name.startswith("closed-"):
+                await asyncio.sleep(2)  # Delay to prevent rate limiting
+                await interaction.channel.edit(name=original_name)
+
 
             # Restore permissions
             for member_id, perms in channel_data.get("permissions", {}).items():
@@ -2956,446 +4156,6 @@ def setup_persistent_views(bot):
         except Exception as init_error:
             print(f"❌ Failed to initialize ticket data: {init_error}")
 
-# New Views for Logs and Closed Tickets
-class LogsManagementView(discord.ui.View):
-    def __init__(self):
-        super().__init__(timeout=None)
-
-    @discord.ui.button(label='Set Log Channel', style=discord.ButtonStyle.primary, emoji='📍', row=0)
-    async def set_log_channel(self, interaction: discord.Interaction, button: discord.ui.Button):
-        view = discord.ui.View(timeout=None)
-        view.add_item(LogChannelSelect())
-        view.add_item(BackButton("logs"))
-
-        embed = discord.Embed(
-            title="📍 Set Log Channel",
-            description="Select the channel where ticket logs will be sent:",
-            color=0x2b2d31
-        )
-        await interaction.response.edit_message(embed=embed, view=view)
-
-    @discord.ui.button(label='🎫 Ticket Opened', style=discord.ButtonStyle.success, row=1)
-    async def toggle_opened_logs(self, interaction: discord.Interaction, button: discord.ui.Button):
-        data = load_ticket_data()
-        if "log_settings" not in data["settings"]:
-            data["settings"]["log_settings"] = {}
-
-        current = data["settings"]["log_settings"].get("ticket_opened", True)
-        data["settings"]["log_settings"]["ticket_opened"] = not current
-        save_ticket_data(data)
-
-        view = LogsManagementView()
-        embed = create_logs_management_embed(data, interaction.guild)
-        await interaction.response.edit_message(embed=embed, view=view)
-
-    @discord.ui.button(label='✋ Ticket Claimed', style=discord.ButtonStyle.success, row=1)
-    async def toggle_claimed_logs(self, interaction: discord.Interaction, button: discord.ui.Button):
-        data = load_ticket_data()
-        if "log_settings" not in data["settings"]:
-            data["settings"]["log_settings"] = {}
-
-        current = data["settings"]["log_settings"].get("ticket_claimed", True)
-        data["settings"]["log_settings"]["ticket_claimed"] = not current
-        save_ticket_data(data)
-
-        view = LogsManagementView()
-        embed = create_logs_management_embed(data, interaction.guild)
-        await interaction.response.edit_message(embed=embed, view=view)
-
-    @discord.ui.button(label='🔒 Ticket Closed', style=discord.ButtonStyle.success, row=1)
-    async def toggle_closed_logs(self, interaction: discord.Interaction, button: discord.ui.Button):
-        data = load_ticket_data()
-        if "log_settings" not in data["settings"]:
-            data["settings"]["log_settings"] = {}
-
-        current = data["settings"]["log_settings"].get("ticket_closed", True)
-        data["settings"]["log_settings"]["ticket_closed"] = not current
-        save_ticket_data(data)
-
-        view = LogsManagementView()
-        embed = create_logs_management_embed(data, interaction.guild)
-        await interaction.response.edit_message(embed=embed, view=view)
-
-    @discord.ui.button(label='🗑️ Ticket Deleted', style=discord.ButtonStyle.success, row=2)
-    async def toggle_deleted_logs(self, interaction: discord.Interaction, button: discord.ui.Button):
-        data = load_ticket_data()
-        if "log_settings" not in data["settings"]:
-            data["settings"]["log_settings"] = {}
-
-        current = data["settings"]["log_settings"].get("ticket_deleted", True)
-        data["settings"]["log_settings"]["ticket_deleted"] = not current
-        save_ticket_data(data)
-
-        view = LogsManagementView()
-        embed = create_logs_management_embed(data, interaction.guild)
-        await interaction.response.edit_message(embed=embed, view=view)
-
-    @discord.ui.button(label='📄 Transcript', style=discord.ButtonStyle.success, row=2)
-    async def toggle_transcript_logs(self, interaction: discord.Interaction, button: discord.ui.Button):
-        data = load_ticket_data()
-        if "log_settings" not in data["settings"]:
-            data["settings"]["log_settings"] = {}
-
-        current = data["settings"]["log_settings"].get("transcript_saved", True)
-        data["settings"]["log_settings"]["transcript_saved"] = not current
-        save_ticket_data(data)
-
-        view = LogsManagementView()
-        embed = create_logs_management_embed(data, interaction.guild)
-        await interaction.response.edit_message(embed=embed, view=view)
-
-    @discord.ui.button(label='Back', style=discord.ButtonStyle.secondary, emoji='🔙', row=2)
-    async def back_to_main(self, interaction: discord.Interaction, button: discord.ui.Button):
-        view = TicketPanelView()
-        data = load_ticket_data()
-        embed = create_ticket_panel_embed(data)
-        await interaction.response.edit_message(embed=embed, view=view)
-
-class LogChannelSelect(discord.ui.ChannelSelect):
-    def __init__(self):
-        super().__init__(
-            placeholder="Select a channel for logs",
-            channel_types=[discord.ChannelType.text],
-            min_values=1,
-            max_values=1
-        )
-
-    async def callback(self, interaction: discord.Interaction):
-        data = load_ticket_data()
-        data["settings"]["log_channel_id"] = self.values[0].id
-        save_ticket_data(data)
-
-        view = LogsManagementView()
-        embed = create_logs_management_embed(data, interaction.guild)
-        await interaction.response.edit_message(embed=embed, view=view)
-
-class TicketClosedActionsView(discord.ui.View):
-    def __init__(self):
-        super().__init__(timeout=None)
-
-    @discord.ui.button(label='Reopen', style=discord.ButtonStyle.success, emoji='🔓', custom_id='persistent_reopen_ticket')
-    async def reopen_ticket(self, interaction: discord.Interaction, button: discord.ui.Button):
-        try:
-            await interaction.response.defer(ephemeral=True)
-
-            data = load_ticket_data()
-            channel_data = data.get("closed_tickets", {}).get(str(interaction.channel.id))
-
-            if not channel_data:
-                await interaction.followup.send("❌ Ticket data not found.", ephemeral=True)
-                return
-
-            # Restore original name
-            original_name = channel_data["original_name"]
-            await interaction.channel.edit(name=original_name)
-
-            # Restore permissions
-            for member_id, perms in channel_data["permissions"].items():
-                member = interaction.guild.get_member(int(member_id))
-                if member:
-                    await interaction.channel.set_permissions(
-                        member,
-                        view_channel=perms["view_channel"],
-                        send_messages=perms["send_messages"],
-                        read_message_history=perms["read_message_history"]
-                    )
-
-            # Remove from closed tickets
-            del data["closed_tickets"][str(interaction.channel.id)]
-            save_ticket_data(data)
-
-            # Log reopening
-            await log_ticket_action(interaction.guild, "ticket_reopened", {
-                "channel": interaction.channel.mention,
-                "reopened_by": interaction.user
-            })
-
-            # Send new message for reopening instead of editing
-            reopen_embed = discord.Embed(
-                title="🔓 Ticket Reopened",
-                description="This ticket has been reopened successfully!",
-                color=0x57f287
-            )
-
-            close_view = TicketCloseView()
-            await interaction.channel.send(embed=reopen_embed, view=close_view)
-
-            await interaction.followup.send("✅ Ticket reopened successfully!", ephemeral=True)
-
-            # Update ticket status
-            update_ticket_status(interaction.channel.id, {"status": "open"})
-
-        except Exception as e:
-            await interaction.followup.send(f"❌ Error reopening ticket: {str(e)}", ephemeral=True)
-
-    @discord.ui.button(label='Delete', style=discord.ButtonStyle.danger, emoji='🗑️', custom_id='persistent_delete_ticket')
-    async def delete_ticket(self, interaction: discord.Interaction, button: discord.ui.Button):
-        try:
-            await interaction.response.defer(ephemeral=True)
-
-            # Log deletion
-            await log_ticket_action(interaction.guild, "ticket_deleted", {
-                "channel": interaction.channel.mention,
-                "deleted_by": interaction.user
-            })
-
-            # Remove from closed tickets data
-            data = load_ticket_data()
-            if str(interaction.channel.id) in data.get("closed_tickets", {}):
-                del data["closed_tickets"][str(interaction.channel.id)]
-                save_ticket_data(data)
-
-            # Send deletion message as a new message
-            deletion_embed = discord.Embed(
-                title="🗑️ Deleting Ticket...",
-                description="Deleting the ticket in 3 seconds...",
-                color=discord.Color.red()
-            )
-            await interaction.channel.send(embed=deletion_embed)
-            await asyncio.sleep(3)
-
-            # Delete the channel
-            await interaction.channel.delete(reason=f"Ticket deleted by {interaction.user}")
-
-            # Remove ticket status
-            remove_ticket_status(interaction.channel.id)
-
-        except Exception as e:
-            await interaction.followup.send(f"❌ Error deleting ticket: {str(e)}", ephemeral=True)
-
-    @discord.ui.button(label='Transcript', style=discord.ButtonStyle.primary, emoji='📄', custom_id='persistent_save_transcript')
-    async def save_transcript(self, interaction: discord.Interaction, button: discord.ui.Button):
-        try:
-            await interaction.response.defer(ephemeral=True)
-
-            # Get ticket data
-            data = load_ticket_data()
-
-            # Find ticket owner and panel info
-            ticket_owner = None
-            panel_name = "Unknown Panel"
-            panel_emoji = "🎟️"
-            ticket_type = "unknown"
-
-            # Extract ticket type from channel name - handle both regular and closed tickets
-            channel_name = interaction.channel.name
-            if channel_name.startswith("closed-"):
-                # For closed tickets: closed-support-0001 -> support
-                parts = channel_name.replace("closed-", "").split('-')
-                if len(parts) >= 1:
-                    ticket_type = parts[0]
-            else:
-                # For regular tickets: support-0001 -> support
-                parts = channel_name.split('-')
-                if len(parts) >= 1:
-                    ticket_type = parts[0]
-
-            # Find matching panel with better search
-            for panel_id, panel in data.get("tickets", {}).items():
-                if "sub_panels" in panel:
-                    for sub_panel_id, sub_panel in panel["sub_panels"].items():
-                        sub_panel_name = sub_panel["name"].lower().strip()
-                        if sub_panel_name == ticket_type.lower().strip():
-                            # Prioritize panel_title, then ticket_title, then title
-                            panel_title = sub_panel.get("panel_title") or sub_panel.get("ticket_title") or sub_panel.get("title", "Default Panel")
-                            panel_name = f"🎟️ {panel_title}"
-                            break
-                    else:
-                        continue
-                    break
-            else:
-                # If no exact match found, try partial matching
-                for panel_id, panel in data.get("tickets", {}).items():
-                    if "sub_panels" in panel:
-                        for sub_panel_id, sub_panel in panel["sub_panels"].items():
-                            sub_panel_name = sub_panel["name"].lower().strip()
-                            if ticket_type.lower().strip() in sub_panel_name or sub_panel_name in ticket_type.lower().strip():
-                                panel_title = sub_panel.get("panel_title") or sub_panel.get("ticket_title") or sub_panel.get("title", "Default Panel")
-                                panel_name = f"🎟️ {panel_title}"
-                                break
-                        else:
-                            continue
-                        break
-
-            # Find ticket owner from closed ticket data or channel permissions
-            ticket_owner_id = None
-            closed_ticket_data = data.get("closed_tickets", {}).get(str(interaction.channel.id))
-
-            if closed_ticket_data and "permissions" in closed_ticket_data:
-                # Find owner from closed ticket permissions
-                for member_id_str, perms in closed_ticket_data["permissions"].items():
-                    member = interaction.guild.get_member(int(member_id_str))
-                    if member and not member.bot and not any(role.id in data.get("staff_roles", []) for role in member.roles):
-                        ticket_owner = member
-                        ticket_owner_id = member.id
-                        break
-
-            if not ticket_owner:
-                # Find from current channel members
-                for member in interaction.channel.members:
-                    if not member.bot and member != interaction.guild.me:
-                        perms = interaction.channel.permissions_for(member)
-                        if perms.send_messages and not any(role.id in data.get("staff_roles", []) for role in member.roles):
-                            ticket_owner_id = member.id
-                            ticket_owner = member
-                            break
-
-            # If still not found, get from first message
-            if not ticket_owner:
-                async for message in interaction.channel.history(limit=100, oldest_first=True):
-                    if not message.author.bot and message.author != interaction.guild.me:
-                        ticket_owner = message.author
-                        ticket_owner_id = message.author.id
-                        break
-
-            # Generate enhanced transcript
-            transcript_data = {
-                "server_info": {
-                    "server_name": interaction.guild.name,
-                    "server_id": interaction.guild.id,
-                    "channel_name": interaction.channel.name,
-                    "channel_id": interaction.channel.id
-                },
-                "ticket_info": {
-                    "ticket_owner": {
-                        "name": ticket_owner.display_name if ticket_owner else "Unknown User",
-                        "username": f"{ticket_owner.name}#{ticket_owner.discriminator}" if ticket_owner and ticket_owner.discriminator != "0" else ticket_owner.name if ticket_owner else "Unknown",
-                        "id": ticket_owner_id,
-                        "avatar_url": ticket_owner.display_avatar.url if ticket_owner else None
-                    },
-                    "ticket_name": interaction.channel.name,
-                    "panel_name": panel_name,
-                    "panel_emoji": panel_emoji,
-                    "created_at": datetime.now().isoformat(),
-                    "transcript_saved_by": {
-                        "name": interaction.user.display_name,
-                        "username": f"{interaction.user.name}#{interaction.user.discriminator}" if interaction.user.discriminator != "0" else interaction.user.name,
-                        "id": interaction.user.id,
-                        "avatar_url": interaction.user.display_avatar.url
-                    }
-                },
-                "statistics": {
-                    "total_messages": 0,
-                    "attachments_saved": 0,
-                    "attachments_skipped": 0,
-                    "users_in_transcript": {}
-                },
-                "messages": []
-            }
-
-            # Count messages and get participants
-            message_count = 0
-            attachments_count = 0
-            users_in_transcript = {}
-
-            async for message in interaction.channel.history(limit=None, oldest_first=True):
-                message_count += 1
-                attachments_count += len(message.attachments)
-
-                # Track users
-                user_key = f"{message.author.display_name} - {message.author.name}#{message.author.discriminator}" if message.author.discriminator != "0" else f"{message.author.display_name} - {message.author.name}"
-                if user_key not in users_in_transcript:
-                    users_in_transcript[user_key] = {
-                        "message_count": 0,
-                        "is_bot": message.author.bot,
-                        "roles": [role.name for role in message.author.roles] if hasattr(message.author, 'roles') else []
-                    }
-                users_in_transcript[user_key]["message_count"] += 1
-
-                message_data = {
-                    "id": message.id,
-                    "author": {
-                        "name": message.author.display_name,
-                        "username": f"{message.author.name}#{message.author.discriminator}" if message.author.discriminator != "0" else message.author.name,
-                        "id": message.author.id,
-                        "bot": message.author.bot,
-                        "avatar_url": message.author.display_avatar.url
-                    },
-                    "content": message.content,
-                    "timestamp": message.created_at.isoformat(),
-                    "embeds": [embed.to_dict() for embed in message.embeds],
-                    "attachments": [{"filename": att.filename, "url": att.url, "size": att.size} for att in message.attachments]
-                }
-                transcript_data["messages"].append(message_data)
-
-            # Update statistics
-            transcript_data["statistics"]["total_messages"] = message_count
-            transcript_data["statistics"]["attachments_saved"] = attachments_count
-            transcript_data["statistics"]["attachments_skipped"] = 0
-            transcript_data["statistics"]["users_in_transcript"] = users_in_transcript
-
-            # Save to transcript file
-            try:
-                with open('ticket_transcript.json', 'r', encoding='utf-8') as f:
-                    transcripts = json.load(f)
-            except (FileNotFoundError, json.JSONDecodeError):
-                transcripts = {}
-
-            transcripts[str(interaction.channel.id)] = transcript_data
-
-            with open('ticket_transcript.json', 'w', encoding='utf-8') as f:
-                json.dump(transcripts, f, indent=4, ensure_ascii=False)
-
-            # Create transcript file
-            transcript_filename = f"transcript_{interaction.channel.name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
-            transcript_content = []
-
-            # Generate readable transcript
-            transcript_content.append(f"=== TICKET TRANSCRIPT ===")
-            transcript_content.append(f"Server: {interaction.guild.name}")
-            transcript_content.append(f"Channel: #{interaction.channel.name}")
-            transcript_content.append(f"Owner: {ticket_owner.display_name if ticket_owner else 'Unknown'}")
-            transcript_content.append(f"Panel Type: {panel_name}")
-            transcript_content.append(f"Saved by: {interaction.user.display_name}")
-            transcript_content.append(f"Date: {datetime.now().strftime('%d/%m/%Y at %H:%M:%S')}")
-            transcript_content.append(f"Messages: {message_count}")
-            transcript_content.append(f"Participants: {len(users_in_transcript)}")
-            transcript_content.append("=" * 50)
-            transcript_content.append("")
-
-            # Add all messages
-            for msg_data in transcript_data["messages"]:
-                timestamp = datetime.fromisoformat(msg_data["timestamp"]).strftime('%d/%m/%Y %H:%M:%S')
-                author_name = msg_data["author"]["name"]
-                content = msg_data["content"] or "[No content message]"
-
-                transcript_content.append(f"[{timestamp}] {author_name}: {content}")
-
-                # Add embeds info if any
-                if msg_data["embeds"]:
-                    transcript_content.append(f"   └── {len(msg_data['embeds'])} embed(s)")
-
-                # Add attachments info if any
-                if msg_data["attachments"]:
-                    for att in msg_data["attachments"]:
-                        transcript_content.append(f"   └── File: {att['filename']} ({att['size']} bytes)")
-
-                transcript_content.append("")
-
-            # Save transcript file
-            with open(transcript_filename, 'w', encoding='utf-8') as f:
-                f.write('\n'.join(transcript_content))
-
-            # Log transcript saving with file attachment
-            await log_ticket_action(interaction.guild, "transcript_saved", {
-                "channel": interaction.channel.mention,
-                "saved_by": interaction.user,
-                "message_count": message_count,
-                "ticket_type": ticket_type,
-                "transcript_file": transcript_filename,
-                "ticket_owner": ticket_owner.mention if ticket_owner else "Unknown",
-                "panel_name": panel_name
-            })
-
-            # Send ephemeral success message without modifying the main embed
-            await interaction.followup.send("✅ Transcript saved successfully and sent to logs!", ephemeral=True)
-
-            # Update ticket status
-            update_ticket_status(interaction.channel.id, {"transcript_saved": True})
-
-        except Exception as e:
-            await interaction.followup.send(f"❌ Error saving transcript: {str(e)}", ephemeral=True)
-
 # Helper functions for logs
 def create_logs_management_embed(data, guild):
     """Create logs management embed"""
@@ -3543,7 +4303,7 @@ async def log_ticket_action(guild, action_type, details):
     if "-" in channel_name:
         if channel_name.startswith("closed-"):
             # For closed tickets: closed-support-0048 -> support, Ticket-0048
-            parts = channel_name.replace("closed-", "").split("-")
+            parts = channel_name.replace("closed-", "").split('-')
             if len(parts) >= 2: # Expecting at least type and number
                 ticket_type = parts[0]
                 ticket_name = f"Ticket-{parts[1]}"
