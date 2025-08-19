@@ -3076,7 +3076,7 @@ class TicketClosedActionsView(discord.ui.View):
     @discord.ui.button(label='Reopen', style=discord.ButtonStyle.success, emoji='🔓', custom_id='persistent_reopen_ticket')
     async def reopen_ticket(self, interaction: discord.Interaction, button: discord.ui.Button):
         try:
-            await interaction.response.defer(ephemeral=True)
+            await interaction.response.defer()
 
             data = load_ticket_data()
             channel_data = data.get("closed_tickets", {}).get(str(interaction.channel.id))
@@ -3110,17 +3110,28 @@ class TicketClosedActionsView(discord.ui.View):
                 "reopened_by": interaction.user.mention
             })
 
-            # Send new message for reopening instead of editing
+            # Send new message for reopening with proper close button
             reopen_embed = discord.Embed(
                 title="🔓 Ticket Reopened",
                 description="This ticket has been reopened successfully!",
                 color=0x57f287
             )
 
-            close_view = TicketCloseView()
-            await interaction.channel.send(embed=reopen_embed, view=close_view)
+            # Get the correct close button text from the ticket data
+            channel_name = original_name
+            ticket_type = channel_name.split('-')[0] if '-' in channel_name else "unknown"
+            close_button_text = "🔒"
+            
+            # Find the sub-panel configuration for close button text
+            for panel_id, panel in data.get("tickets", {}).items():
+                if "sub_panels" in panel:
+                    for sub_panel_id, sub_panel in panel["sub_panels"].items():
+                        if sub_panel["name"].lower() == ticket_type.lower():
+                            close_button_text = sub_panel.get("close_button_text", "🔒")
+                            break
 
-            await interaction.followup.send("✅ Ticket reopened successfully!", ephemeral=True)
+            close_view = TicketCloseView(close_button_text, interaction.channel.id)
+            await interaction.edit_original_response(embed=reopen_embed, view=close_view)
 
             # Update ticket status
             update_ticket_status(interaction.channel.id, {"status": "open"})
@@ -3447,7 +3458,7 @@ def create_logs_management_embed(data, guild):
 
 # Logging system
 async def log_ticket_action(guild, action_type, details):
-    """Log ticket actions to a specified channel with enhanced styling."""
+    """Log ticket actions to a specified channel with compact styling."""
     data = load_ticket_data()
     log_channel_id = data["settings"].get("log_channel_id")
     log_settings = data["settings"].get("log_settings", {})
@@ -3462,49 +3473,33 @@ async def log_ticket_action(guild, action_type, details):
         print("Log channel not configured or not found.")
         return
 
-    # Get user object from details and find ticket owner
+    # Get user object from details
     user = None
     user_mention = ""
     ticket_owner = None
     ticket_owner_mention = ""
 
-    if "created_by" in details:
-        user_mention = details["created_by"]
-        user_id = int(user_mention.strip("<@>"))
-        user = guild.get_member(user_id)
-        ticket_owner = user  # Creator is the owner
-        ticket_owner_mention = user_mention
-    elif "claimed_by" in details:
-        user_mention = details["claimed_by"]
-        user_id = int(user_mention.strip("<@>"))
-        user = guild.get_member(user_id)
-    elif "closed_by" in details:
-        user_mention = details["closed_by"]
-        user_id = int(user_mention.strip("<@>"))
-        user = guild.get_member(user_id)
-    elif "reopened_by" in details:
-        user_mention = details["reopened_by"]
-        user_id = int(user_mention.strip("<@>"))
-        user = guild.get_member(user_id)
-    elif "deleted_by" in details:
-        user_mention = details["deleted_by"]
-        user_id = int(user_mention.strip("<@>"))
-        user = guild.get_member(user_id)
-    elif "saved_by" in details:
-        user_mention = details["saved_by"]
-        user_id = int(user_mention.strip("<@>"))
-        user = guild.get_member(user_id)
+    # Extract user from different action types
+    for key in ["created_by", "claimed_by", "closed_by", "reopened_by", "deleted_by", "saved_by"]:
+        if key in details:
+            user_mention = details[key]
+            if "<@" in user_mention:
+                user_id = int(user_mention.strip("<@>"))
+                user = guild.get_member(user_id)
+                if key == "created_by":
+                    ticket_owner = user
+                    ticket_owner_mention = user_mention
+            break
 
-    # Try to find ticket owner from channel if not already found
+    # Try to find ticket owner from channel or details
     if not ticket_owner and "channel" in details:
         channel_mention = details["channel"]
         if "<#" in channel_mention:
             channel_id = int(channel_mention.strip("<#>"))
             channel_obj = guild.get_channel(channel_id)
             if channel_obj:
-                # Find ticket owner from channel permissions or closed ticket data
                 channel_name = channel_obj.name
-
+                
                 # Check closed tickets data first
                 if channel_name.startswith("closed-"):
                     closed_ticket_data = data.get("closed_tickets", {}).get(str(channel_id))
@@ -3517,7 +3512,7 @@ async def log_ticket_action(guild, action_type, details):
                                 ticket_owner_mention = member.mention
                                 break
 
-                # If not found, check current channel members
+                # Check current channel members
                 if not ticket_owner:
                     staff_roles = data.get("staff_roles", [])
                     for member in channel_obj.members:
@@ -3535,65 +3530,7 @@ async def log_ticket_action(guild, action_type, details):
             owner_id = int(ticket_owner_mention.strip("<@>"))
             ticket_owner = guild.get_member(owner_id)
 
-    # Color mapping for different actions
-    color_mapping = {
-        "ticket_opened": 0x57f287,  # Green
-        "ticket_claimed": 0xfee75c, # Yellow
-        "ticket_closed": 0xed4245,  # Red
-        "ticket_reopened": 0x57f287, # Green
-        "ticket_deleted": 0x99aab5,  # Gray
-        "transcript_saved": 0x5865f2  # Blurple
-    }
-
-    # Action mapping
-    action_mapping = {
-        "ticket_opened": "Opened",
-        "ticket_claimed": "Claimed",
-        "ticket_closed": "Closed",
-        "ticket_reopened": "Reopened",
-        "ticket_deleted": "Deleted",
-        "transcript_saved": "Transcript Saved"
-    }
-
-    # Icon mapping
-    icon_mapping = {
-        "ticket_opened": "🎫",
-        "ticket_claimed": "✋",
-        "ticket_closed": "🔒",
-        "ticket_reopened": "🔓",
-        "ticket_deleted": "🗑️",
-        "transcript_saved": "📄"
-    }
-
-    # Create enhanced embed with required description
-    embed = discord.Embed(
-        title=f"{icon_mapping.get(action_type, '🎫')} Ticket {action_mapping.get(action_type, 'Action')}",
-        color=color_mapping.get(action_type, 0x7289da),
-        timestamp=datetime.now()
-    )
-
-    # Set main description based on action type
-    if action_type == "ticket_opened":
-        embed.description = f"A new ticket has been created by {user.mention if user else 'Unknown User'}"
-    elif action_type == "ticket_claimed":
-        embed.description = f"Ticket has been claimed by {user.mention if user else 'Unknown User'}"
-    elif action_type == "ticket_closed":
-        embed.description = f"Ticket has been closed by {user.mention if user else 'Unknown User'}"
-    elif action_type == "ticket_reopened":
-        embed.description = f"Ticket has been reopened by {user.mention if user else 'Unknown User'}"
-    elif action_type == "ticket_deleted":
-        embed.description = f"Ticket has been deleted by {user.mention if user else 'Unknown User'}"
-    elif action_type == "transcript_saved":
-        embed.description = f"Transcript has been saved by {user.mention if user else 'Unknown User'}"
-
-    # Set user author with avatar
-    if user:
-        embed.set_author(
-            name=f"{user.display_name} ({user.name})",
-            icon_url=user.display_avatar.url
-        )
-
-    # Extract ticket info from channel mention
+    # Extract ticket information
     channel_name = "Unknown"
     channel_obj = None
     if "channel" in details:
@@ -3603,138 +3540,124 @@ async def log_ticket_action(guild, action_type, details):
             channel_obj = guild.get_channel(channel_id)
             if channel_obj:
                 channel_name = channel_obj.name
-        else:
-            channel_name = channel_mention
 
-    # Basic ticket information with channel as plain text with black background
-    basic_info = ""
-
-    # Format channel name with black background
-    if "channel" in details:
-        channel_mention = details["channel"]
-        if "<#" in channel_mention:
-            channel_id = int(channel_mention.strip("<#>"))
-            channel_obj = guild.get_channel(channel_id)
-            if channel_obj:
-                basic_info += f"**Channel:** # {channel_obj.name}\n"
-            else:
-                basic_info += f"**Channel:** # {channel_mention}\n"
-        else:
-            basic_info += f"**Channel:** # {channel_mention}\n"
-    else:
-        basic_info += f"**Channel:** Unknown\n"
-
-    # Format ticket name
+    # Get ticket number and type
+    ticket_number = "Unknown"
+    ticket_type = "Unknown"
     if "-" in channel_name:
         parts = channel_name.split("-")
         if len(parts) >= 2:
-            ticket_type = parts[0].title()
-            ticket_number = parts[1]
-            basic_info += f"**Ticket:** `{ticket_type}-{ticket_number}`\n"
-        else:
-            basic_info += f"**Ticket:** `{channel_name}`\n"
-    else:
-        basic_info += f"**Ticket:** `{channel_name}`\n"
+            if channel_name.startswith("closed-"):
+                ticket_type = parts[1] if len(parts) > 2 else parts[1]
+                ticket_number = parts[2] if len(parts) > 2 else "Unknown"
+            else:
+                ticket_type = parts[0]
+                ticket_number = parts[1]
 
-    # Date and time
-    basic_info += f"**Date:** {datetime.now().strftime('%d/%m/%Y at %H:%M:%S')}\n"
-
-    embed.add_field(name="📋 Basic Information", value=basic_info, inline=True)
-
-    # Panel and action performer information
-    panel_info = ""
-
-    # Add panel information with better detection
-    panel_found = False
+    # Find panel information
+    panel_name = "Unknown Panel"
+    panel_emoji = "🎟️"
     if "panel_name" in details:
-        panel_info += f"**Panel:** {details['panel_name']}\n"
-        panel_found = True
-    elif "ticket_type" in details:
-        ticket_type = details["ticket_type"]
-        # Try to find matching panel with improved search
+        panel_name = details["panel_name"]
+    elif "ticket_type" in details or ticket_type != "Unknown":
+        search_type = details.get("ticket_type", ticket_type)
         for panel_id, panel in data.get("tickets", {}).items():
             if "sub_panels" in panel:
                 for sub_panel_id, sub_panel in panel["sub_panels"].items():
                     sub_panel_name = sub_panel["name"].lower().strip()
-                    if sub_panel_name == ticket_type.lower().strip():
-                        panel_title = sub_panel.get("panel_title", sub_panel.get("ticket_title", sub_panel.get("title", "Default Panel")))
+                    if sub_panel_name == search_type.lower().strip():
+                        panel_name = sub_panel.get("panel_title", sub_panel.get("ticket_title", sub_panel.get("title", "Default Panel")))
                         panel_emoji = sub_panel.get("panel_emoji", sub_panel.get("button_emoji", "🎟️"))
-                        panel_info += f"**Panel:** {panel_emoji} {panel_title}\n"
-                        panel_found = True
                         break
                 else:
                     continue
                 break
 
-    if not panel_found:
-        # Extract from channel name if still not found
-        if "-" in channel_name:
-            ticket_type = channel_name.split("-")[0]
-            panel_info += f"**Panel:** 🎟️ {ticket_type.title()} Panel\n"
-        else:
-            panel_info += f"**Panel:** 🎟️ Unknown Panel\n"
-
-    # Add "By" information based on action type
-    if action_type == "ticket_opened":
-        # For opened tickets, "By" is the creator
-        if user:
-            panel_info += f"**By:** {user.mention}\n"
-        else:
-            panel_info += f"**By:** Unknown\n"
-    elif action_type in ["ticket_claimed", "ticket_closed", "ticket_reopened", "ticket_deleted", "transcript_saved"]:
-        # For these actions, "By" is the person who performed the action
-        if user:
-            panel_info += f"**By:** {user.mention}\n"
-        else:
-            panel_info += f"**By:** Unknown\n"
-
-    # Add ticket owner information only for opened tickets
-    if action_type == "ticket_opened":
-        if ticket_owner and ticket_owner != user:
-            panel_info += f"**Owner:** {ticket_owner_mention}\n"
-        elif ticket_owner:
-            # If ticket owner is the same as creator, don't duplicate
-            pass
-        elif "ticket_owner" in details and details["ticket_owner"] != user_mention:
-            panel_info += f"**Owner:** {details['ticket_owner']}\n"
-
-    if panel_info:
-        embed.add_field(name="🎫 Ticket Details", value=panel_info, inline=True)
-
-    # Add specific information based on action type
+    # Create compact embed for transcript actions
     if action_type == "transcript_saved":
-        if "message_count" in details:
-            stats_info = f"**Messages:** `{details['message_count']}`\n"
-            stats_info += f"**Saved at:** `{datetime.now().strftime('%H:%M:%S')}`\n"
-
-            # Add file information
-            if "transcript_file" in details:
-                stats_info += f"**File:** `{details['transcript_file']}`"
-
-            embed.add_field(name="📊 Statistics", value=stats_info, inline=False)
-
-    # Add footer with action performer
-    if user:
-        embed.set_footer(
-            text=f"Action performed by {user.display_name}",
-            icon_url=user.display_avatar.url
-        )
-    else:
-        embed.set_footer(text="Action performed by Unknown User")
-
-    # Send the log message
-    if action_type == "transcript_saved" and "transcript_file" in details:
-        # Send with transcript file attachment
+        embed = discord.Embed(color=0x2b2d31)
+        
+        # Get usernames from transcript data
+        usernames = []
         try:
-            with open(details["transcript_file"], 'rb') as f:
-                file = discord.File(f, filename=details["transcript_file"])
-                await log_channel.send(embed=embed, file=file)
+            with open('ticket_transcript.json', 'r', encoding='utf-8') as f:
+                transcripts = json.load(f)
+                transcript_data = transcripts.get(str(channel_obj.id if channel_obj else 0), {})
+                users_in_transcript = transcript_data.get("statistics", {}).get("users_in_transcript", {})
+                
+                # Extract unique usernames
+                for user_key, user_data in users_in_transcript.items():
+                    if not user_data.get("is_bot", False):
+                        # Extract display name from the key format "Display Name - username"
+                        display_name = user_key.split(" - ")[0] if " - " in user_key else user_key
+                        if display_name not in usernames:
+                            usernames.append(display_name)
+        except:
+            # Fallback to basic user detection
+            if user:
+                usernames.append(user.display_name)
+            if ticket_owner and ticket_owner != user:
+                usernames.append(ticket_owner.display_name)
 
-            # Clean up the file after sending
-            import os
-            os.remove(details["transcript_file"])
-        except Exception as e:
-            print(f"Error sending transcript file: {e}")
+        # Set author with user avatar
+        if user:
+            embed.set_author(
+                name=f"{user.display_name}#{user.discriminator if user.discriminator != '0' else user.name}",
+                icon_url=user.display_avatar.url
+            )
+
+        # Compact description with usernames
+        logged_info = f"**Logged Info**\nTicket: Ticket-{ticket_number.zfill(4)}\nAction: Transcript Saved"
+        
+        panel_info = f"**Panel**\n{panel_emoji}Claim Role"
+        
+        if usernames:
+            logged_info += f"\nUsers: {', '.join(usernames[:3])}{'...' if len(usernames) > 3 else ''}"
+
+        embed.add_field(name="", value=logged_info, inline=True)
+        embed.add_field(name="", value=panel_info, inline=True)
+
+        # Send with transcript file if available
+        if "transcript_file" in details:
+            try:
+                with open(details["transcript_file"], 'rb') as f:
+                    file = discord.File(f, filename=details["transcript_file"])
+                    await log_channel.send(embed=embed, file=file)
+                
+                import os
+                os.remove(details["transcript_file"])
+            except Exception as e:
+                print(f"Error sending transcript file: {e}")
+                await log_channel.send(embed=embed)
+        else:
             await log_channel.send(embed=embed)
     else:
+        # Create compact embed for other actions
+        embed = discord.Embed(color=0x2b2d31)
+        
+        # Set author with user avatar
+        if user:
+            embed.set_author(
+                name=f"{user.display_name}#{user.discriminator if user.discriminator != '0' else user.name}",
+                icon_url=user.display_avatar.url
+            )
+
+        # Action mapping
+        action_mapping = {
+            "ticket_opened": "Created",
+            "ticket_claimed": "Claimed", 
+            "ticket_closed": "Closed",
+            "ticket_reopened": "Reopened",
+            "ticket_deleted": "Deleted"
+        }
+
+        action_text = action_mapping.get(action_type, "Action")
+        
+        # Compact information format
+        logged_info = f"**Logged Info**\nTicket: Ticket-{ticket_number.zfill(4)}\nAction: {action_text}"
+        panel_info = f"**Panel**\n{panel_emoji}Claim Role"
+
+        embed.add_field(name="", value=logged_info, inline=True)
+        embed.add_field(name="", value=panel_info, inline=True)
+
         await log_channel.send(embed=embed)
