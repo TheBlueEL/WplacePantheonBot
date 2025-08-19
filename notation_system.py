@@ -159,7 +159,7 @@ class VotingView(discord.ui.View):
 
                         # Set footer
                         bot_name = get_bot_name(self.bot)
-                        updated_embed.set_footer(text={bot_name}, icon_url=self.bot.user.display_avatar.url)
+                        updated_embed.set_footer(text=f"{bot_name}", icon_url=self.bot.user.display_avatar.url)
 
                         # Update the original message
                         original_view = RandomArtView(self.artwork_data, self.bot)
@@ -231,7 +231,7 @@ class RandomArtView(discord.ui.View):
             
             bot_name = get_bot_name(self.bot)
             embed.set_thumbnail(url=self.bot.user.display_avatar.url)
-            embed.set_footer(text={bot_name}, icon_url=self.bot.user.display_avatar.url)
+            embed.set_footer(text=f"{bot_name}", icon_url=self.bot.user.display_avatar.url)
             
             await interaction.response.send_message(embed=embed, ephemeral=True)
             return
@@ -496,7 +496,7 @@ class NotationSystem(commands.Cog):
 
         # Set footer
         bot_name = get_bot_name(self.bot)
-        embed.set_footer(text=f"{bot_name} | Wplace Pantheon", icon_url=self.bot.user.display_avatar.url)
+        embed.set_footer(text=f"{bot_name}", icon_url=self.bot.user.display_avatar.url)
 
         # Update artwork shown data
         notation_manager.update_artwork_shown(artwork_data)
