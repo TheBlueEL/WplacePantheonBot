@@ -20,5 +20,8 @@
         "created_at": "2025-08-19T18:16:37.936171",
         "ticket_type": "Ticket Number 1",
         "transcript_saved": false
+    },
+    "1407429146375753778": {
+        "status": "open"
     }
 }
