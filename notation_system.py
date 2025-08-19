@@ -1,6 +1,7 @@
 
 import discord
 from discord.ext import commands
+from discord import app_commands
 import json
 import random
 from datetime import datetime
@@ -372,9 +373,12 @@ class NotationManager:
         
         return stars
 
-def setup_notation_commands(bot):
-    @bot.tree.command(name="random_art", description="Display a random artwork from the Pantheon for rating")
-    async def random_art(interaction: discord.Interaction):
+class NotationSystem(commands.Cog):
+    def __init__(self, bot):
+        self.bot = bot
+
+    @app_commands.command(name="random_art", description="Display a random artwork from the Pantheon for rating")
+    async def random_art(self, interaction: discord.Interaction):
         notation_manager = NotationManager()
         artwork_data = notation_manager.get_random_artwork()
         
@@ -428,3 +432,6 @@ def setup_notation_commands(bot):
         view = RandomArtView(artwork_data, bot)
         
         await interaction.response.send_message(embed=embed, view=view)
+
+async def setup(bot):
+    await bot.add_cog(NotationSystem(bot))
