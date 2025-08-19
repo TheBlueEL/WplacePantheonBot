@@ -3462,34 +3462,65 @@ async def log_ticket_action(guild, action_type, details):
         print("Log channel not configured or not found.")
         return
 
-    # Get user object from details
+    # Get user object from details - extract ID from mention properly
     user = None
     user_mention = ""
 
     if "created_by" in details:
         user_mention = details["created_by"]
-        user_id = int(user_mention.strip("<@>"))
-        user = guild.get_member(user_id)
+        # Extract user ID from mention format <@123456789>
+        if "<@" in user_mention and ">" in user_mention:
+            user_id_str = user_mention.replace("<@", "").replace(">", "").replace("!", "")
+            try:
+                user_id = int(user_id_str)
+                user = guild.get_member(user_id)
+            except ValueError:
+                pass
     elif "claimed_by" in details:
         user_mention = details["claimed_by"]
-        user_id = int(user_mention.strip("<@>"))
-        user = guild.get_member(user_id)
+        if "<@" in user_mention and ">" in user_mention:
+            user_id_str = user_mention.replace("<@", "").replace(">", "").replace("!", "")
+            try:
+                user_id = int(user_id_str)
+                user = guild.get_member(user_id)
+            except ValueError:
+                pass
     elif "closed_by" in details:
         user_mention = details["closed_by"]
-        user_id = int(user_mention.strip("<@>"))
-        user = guild.get_member(user_id)
+        if "<@" in user_mention and ">" in user_mention:
+            user_id_str = user_mention.replace("<@", "").replace(">", "").replace("!", "")
+            try:
+                user_id = int(user_id_str)
+                user = guild.get_member(user_id)
+            except ValueError:
+                pass
     elif "reopened_by" in details:
         user_mention = details["reopened_by"]
-        user_id = int(user_mention.strip("<@>"))
-        user = guild.get_member(user_id)
+        if "<@" in user_mention and ">" in user_mention:
+            user_id_str = user_mention.replace("<@", "").replace(">", "").replace("!", "")
+            try:
+                user_id = int(user_id_str)
+                user = guild.get_member(user_id)
+            except ValueError:
+                pass
     elif "deleted_by" in details:
         user_mention = details["deleted_by"]
-        user_id = int(user_mention.strip("<@>"))
-        user = guild.get_member(user_id)
+        if "<@" in user_mention and ">" in user_mention:
+            user_id_str = user_mention.replace("<@", "").replace(">", "").replace("!", "")
+            try:
+                user_id = int(user_id_str)
+                user = guild.get_member(user_id)
+            except ValueError:
+                pass
     elif "saved_by" in details:
         user_mention = details["saved_by"]
-        user_id = int(user_mention.strip("<@>"))
-        user = guild.get_member(user_id)
+        if "<@" in user_mention and ">" in user_mention:
+            user_id_str = user_mention.replace("<@", "").replace(">", "").replace("!", "")
+            try:
+                user_id = int(user_id_str)
+                user = guild.get_member(user_id)
+            except ValueError:
+                pass
 
     # Color mapping for different actions (left border color)
     color_mapping = {
@@ -3514,43 +3545,66 @@ async def log_ticket_action(guild, action_type, details):
     # Extract ticket info from channel mention
     channel_name = "Unknown"
     ticket_name = "Unknown"
+    ticket_type = "unknown"
     
     if "channel" in details:
         channel_mention = details["channel"]
         if "<#" in channel_mention:
-            channel_id = int(channel_mention.strip("<#>"))
-            channel_obj = guild.get_channel(channel_id)
-            if channel_obj:
-                channel_name = channel_obj.name
+            channel_id_str = channel_mention.replace("<#", "").replace(">", "")
+            try:
+                channel_id = int(channel_id_str)
+                channel_obj = guild.get_channel(channel_id)
+                if channel_obj:
+                    channel_name = channel_obj.name
+            except ValueError:
+                pass
         else:
             channel_name = channel_mention
 
-    # Extract ticket name from channel name
+    # Extract ticket info from channel name
     if "-" in channel_name:
         if channel_name.startswith("closed-"):
-            # For closed tickets: closed-support-0048 -> Ticket-0048
+            # For closed tickets: closed-support-0048 -> support, Ticket-0048
             parts = channel_name.replace("closed-", "").split("-")
             if len(parts) >= 2:
+                ticket_type = parts[0]
                 ticket_name = f"Ticket-{parts[1]}"
         else:
-            # For regular tickets: support-0048 -> Ticket-0048
+            # For regular tickets: support-0048 -> support, Ticket-0048
             parts = channel_name.split("-")
             if len(parts) >= 2:
+                ticket_type = parts[0]
                 ticket_name = f"Ticket-{parts[1]}"
 
-    # Find panel info
-    panel_name = "🎟️ Claim Role"
-    if "panel_name" in details:
+    # Find panel info - better search logic
+    panel_name = "🎟️ Default Panel"
+    
+    # Check if panel_name is already provided in details
+    if "panel_name" in details and details["panel_name"]:
         panel_name = f"🎟️ {details['panel_name']}"
     elif "ticket_type" in details:
         ticket_type = details["ticket_type"]
-        # Try to find matching panel
+        # Search for matching panel
         for panel_id, panel in data.get("tickets", {}).items():
             if "sub_panels" in panel:
                 for sub_panel_id, sub_panel in panel["sub_panels"].items():
                     sub_panel_name = sub_panel["name"].lower().strip()
                     if sub_panel_name == ticket_type.lower().strip():
-                        panel_title = sub_panel.get("panel_title", sub_panel.get("ticket_title", sub_panel.get("title", "Claim Role")))
+                        # Prioritize panel_title, then ticket_title, then title
+                        panel_title = sub_panel.get("panel_title") or sub_panel.get("ticket_title") or sub_panel.get("title", "Default Panel")
+                        panel_name = f"🎟️ {panel_title}"
+                        break
+                else:
+                    continue
+                break
+    else:
+        # Try to find panel from extracted ticket_type
+        for panel_id, panel in data.get("tickets", {}).items():
+            if "sub_panels" in panel:
+                for sub_panel_id, sub_panel in panel["sub_panels"].items():
+                    sub_panel_name = sub_panel["name"].lower().strip()
+                    if sub_panel_name == ticket_type.lower().strip():
+                        panel_title = sub_panel.get("panel_title") or sub_panel.get("ticket_title") or sub_panel.get("title", "Default Panel")
                         panel_name = f"🎟️ {panel_title}"
                         break
                 else:
@@ -3562,14 +3616,20 @@ async def log_ticket_action(guild, action_type, details):
         color=color_mapping.get(action_type, 0x7289da)
     )
 
-    # Set user as author with avatar (top of embed)
+    # Set user as author with avatar (top of embed) - this is crucial
     if user:
         embed.set_author(
             name=user.display_name,
             icon_url=user.display_avatar.url
         )
+    else:
+        # Fallback if user not found
+        embed.set_author(
+            name="Unknown User",
+            icon_url="https://cdn.discordapp.com/embed/avatars/0.png"
+        )
 
-    # Create the main content fields
+    # Create the main content fields exactly like the example
     logged_info = f"**Logged Info**\nTicket: {ticket_name}\nAction: {action_mapping.get(action_type, 'Action')}"
     
     panel_info = f"**Panel**\n{panel_name}"
