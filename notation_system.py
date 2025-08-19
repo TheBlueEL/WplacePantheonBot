@@ -390,9 +390,9 @@ class NotationSystem(commands.Cog):
                 timestamp=datetime.utcnow()
             )
             
-            bot_name = get_bot_name(bot)
-            embed.set_thumbnail(url=bot.user.display_avatar.url)
-            embed.set_footer(text=f"{bot_name} | Random Art", icon_url=bot.user.display_avatar.url)
+            bot_name = get_bot_name(self.bot)
+            embed.set_thumbnail(url=self.bot.user.display_avatar.url)
+            embed.set_footer(text=f"{bot_name} | Random Art", icon_url=self.bot.user.display_avatar.url)
             
             await interaction.response.send_message(embed=embed, ephemeral=True)
             return
@@ -408,7 +408,7 @@ class NotationSystem(commands.Cog):
         if artwork_data.image_url:
             embed.set_image(url=artwork_data.image_url)
         else:
-            embed.set_thumbnail(url=bot.user.display_avatar.url)
+            embed.set_thumbnail(url=self.bot.user.display_avatar.url)
 
         # Create description
         description = f"**Title:** {artwork_data.title}\n"
@@ -422,14 +422,14 @@ class NotationSystem(commands.Cog):
         embed.description = description
 
         # Set footer
-        bot_name = get_bot_name(bot)
-        embed.set_footer(text=f"{bot_name} | Wplace Pantheon", icon_url=bot.user.display_avatar.url)
+        bot_name = get_bot_name(self.bot)
+        embed.set_footer(text=f"{bot_name} | Wplace Pantheon", icon_url=self.bot.user.display_avatar.url)
 
         # Update artwork shown data
         notation_manager.update_artwork_shown(artwork_data)
 
         # Create view with vote button
-        view = RandomArtView(artwork_data, bot)
+        view = RandomArtView(artwork_data, self.bot)
         
         await interaction.response.send_message(embed=embed, view=view)
 
