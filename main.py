@@ -6,6 +6,7 @@ import json
 from dotenv import load_dotenv
 from discord.ext import commands
 from github_sync import GitHubSync
+# Removed incorrect imports - using cog loading instead
 
 # Charger les variables d'environnement du fichier .env
 load_dotenv()
@@ -23,20 +24,31 @@ async def on_ready():
     print(f'{client.user} is connected!')
     print(f'Bot connected as {client.user.name}')
     print(f'Bot ID: {client.user.id}')
-    
+
     # Synchroniser avec GitHub au démarrage
     print("🔄 Synchronisation avec GitHub...")
     github_sync = GitHubSync()
     await github_sync.sync_all_files_to_github()
-    
-    # Charger le système d'embed
-    await client.load_extension('embed_system')
-    print('Embed system loaded!')
-    
-    # Charger le système Pantheon
-    await client.load_extension('pantheon_system')
-    print('Pantheon system loaded!')
-    
+
+    # Charger les extensions
+    try:
+        await client.load_extension('embed_system')
+        print('Embed system loaded!')
+    except Exception as e:
+        print(f'Failed to load embed_system: {e}')
+
+    try:
+        await client.load_extension('pantheon_system')
+        print('Pantheon system loaded!')
+    except Exception as e:
+        print(f'Failed to load pantheon_system: {e}')
+
+    try:
+        await client.load_extension('notation_system')
+        print('Notation system loaded!')
+    except Exception as e:
+        print(f'Failed to load notation_system: {e}')
+
     # Synchroniser les commandes slash
     try:
         synced = await client.tree.sync()
