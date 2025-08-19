@@ -49,6 +49,15 @@ async def on_ready():
     except Exception as e:
         print(f'Failed to load notation_system: {e}')
 
+    # Setup du système de tickets
+    try:
+        from ticket_bot import setup_ticket_system, setup_persistent_views
+        setup_ticket_system(client)
+        setup_persistent_views(client)
+        print('Ticket system loaded!')
+    except Exception as e:
+        print(f'Failed to load ticket_system: {e}')
+
     # Synchroniser les commandes slash
     try:
         synced = await client.tree.sync()
