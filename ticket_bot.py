@@ -85,6 +85,51 @@ def load_ticket_data():
         with open('ticket_bot.json', 'r', encoding='utf-8') as f:
             data = json.load(f)
 
+            # Ensure all required top-level keys exist
+            if "staff_roles" not in data:
+                data["staff_roles"] = []
+            
+            if "settings" not in data:
+                data["settings"] = {
+                    "default_embed": {
+                        "title": "",
+                        "outside_description": "",
+                        "description": "Support will be with you shortly. To close this ticket.",
+                        "thumbnail": "",
+                        "image": "",
+                        "footer": f"{get_bot_name()} - Ticket Bot"
+                    },
+                    "button_enabled": True,
+                    "button_emoji": "🔒",
+                    "button_label": "Close Ticket",
+                    "ai_enabled": False,
+                    "log_settings": {
+                        "ticket_opened": True,
+                        "ticket_claimed": True,
+                        "ticket_closed": True,
+                        "ticket_deleted": True,
+                        "ticket_reopened": True,
+                        "transcript_saved": True
+                    }
+                }
+            
+            # Ensure log_settings exist in settings
+            if "log_settings" not in data["settings"]:
+                data["settings"]["log_settings"] = {
+                    "ticket_opened": True,
+                    "ticket_claimed": True,
+                    "ticket_closed": True,
+                    "ticket_deleted": True,
+                    "ticket_reopened": True,
+                    "transcript_saved": True
+                }
+            
+            if "ticket_counters" not in data:
+                data["ticket_counters"] = {}
+            
+            if "closed_tickets" not in data:
+                data["closed_tickets"] = {}
+
             # Migrate old data structure to new sub_panels structure
             if "tickets" in data:
                 for panel_id, panel in data["tickets"].items():
@@ -132,9 +177,18 @@ def load_ticket_data():
                 "button_enabled": True,
                 "button_emoji": "🔒",
                 "button_label": "Close Ticket",
-                "ai_enabled": False
+                "ai_enabled": False,
+                "log_settings": {
+                    "ticket_opened": True,
+                    "ticket_claimed": True,
+                    "ticket_closed": True,
+                    "ticket_deleted": True,
+                    "ticket_reopened": True,
+                    "transcript_saved": True
+                }
             },
-            "ticket_counters": {}
+            "ticket_counters": {},
+            "closed_tickets": {}
         }
 
 def save_ticket_data(data):
@@ -2570,7 +2624,7 @@ def setup_ticket_system(bot):
             await interaction.channel.edit(name=original_name)
 
             # Restore permissions
-            for member_id, perms in channel_data["permissions"].items():
+            for member_id, perms in channel_data.get("permissions", {}).items():
                 member = interaction.guild.get_member(int(member_id))
                 if member:
                     await interaction.channel.set_permissions(
@@ -2581,8 +2635,9 @@ def setup_ticket_system(bot):
                     )
 
             # Remove from closed tickets
-            del data["closed_tickets"][str(interaction.channel.id)]
-            save_ticket_data(data)
+            if str(interaction.channel.id) in data["closed_tickets"]:
+                del data["closed_tickets"][str(interaction.channel.id)]
+                save_ticket_data(data)
 
             # Log reopening
             await log_ticket_action(interaction.guild, "ticket_reopened", {
@@ -2590,10 +2645,24 @@ def setup_ticket_system(bot):
                 "reopened_by": interaction.user.mention
             })
 
-            await interaction.response.send_message("✅ Ticket reopened successfully!", ephemeral=False)
+            # Send reopening message with new close button
+            reopen_embed = discord.Embed(
+                title="🔓 Ticket Reopened",
+                description="This ticket has been reopened successfully!",
+                color=0x57f287
+            )
+            
+            # Create new close view
+            close_view = TicketCloseView()
+            await interaction.response.send_message(embed=reopen_embed, view=close_view)
 
             # Update ticket status
-            update_ticket_status(interaction.channel.id, {"status": "open"})
+            update_ticket_status(interaction.channel.id, {
+                "status": "open",
+                "original_name": original_name,
+                "reopened_by": interaction.user.id,
+                "reopened_at": datetime.now().isoformat()
+            })
 
         except Exception as e:
             await interaction.response.send_message(f"❌ Erreur lors de la réouverture du ticket: {str(e)}", ephemeral=True)
@@ -2830,10 +2899,20 @@ def setup_persistent_views(bot):
         # Add persistent views with custom_id
         data = load_ticket_data()
 
+        # Ensure data structure is complete
+        if not isinstance(data, dict):
+            print("❌ Invalid ticket data structure")
+            return
+
         # Add views for published panels
-        for panel_id in data.get("tickets", {}):
-            view = PublishedTicketView(panel_id)
-            bot.add_view(view)
+        tickets = data.get("tickets", {})
+        if isinstance(tickets, dict):
+            for panel_id in tickets:
+                try:
+                    view = PublishedTicketView(panel_id)
+                    bot.add_view(view)
+                except Exception as e:
+                    print(f"❌ Error adding view for panel {panel_id}: {e}")
 
         # Add ticket close views
         bot.add_view(TicketCloseView())
@@ -2842,6 +2921,40 @@ def setup_persistent_views(bot):
         print("✅ Ticket system persistent views loaded successfully")
     except Exception as e:
         print(f"❌ Error setting up ticket persistent views: {e}")
+        # Initialize with empty data if there's an error
+        try:
+            empty_data = {
+                "tickets": {},
+                "staff_roles": [],
+                "settings": {
+                    "default_embed": {
+                        "title": "",
+                        "outside_description": "",
+                        "description": "Support will be with you shortly. To close this ticket.",
+                        "thumbnail": "",
+                        "image": "",
+                        "footer": f"{get_bot_name()} - Ticket Bot"
+                    },
+                    "button_enabled": True,
+                    "button_emoji": "🔒",
+                    "button_label": "Close Ticket",
+                    "ai_enabled": False,
+                    "log_settings": {
+                        "ticket_opened": True,
+                        "ticket_claimed": True,
+                        "ticket_closed": True,
+                        "ticket_deleted": True,
+                        "ticket_reopened": True,
+                        "transcript_saved": True
+                    }
+                },
+                "ticket_counters": {},
+                "closed_tickets": {}
+            }
+            save_ticket_data(empty_data)
+            print("✅ Initialized empty ticket data structure")
+        except Exception as init_error:
+            print(f"❌ Failed to initialize ticket data: {init_error}")
 
 # New Views for Logs and Closed Tickets
 class LogsManagementView(discord.ui.View):
