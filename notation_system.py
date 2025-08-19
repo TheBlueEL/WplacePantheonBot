@@ -66,8 +66,8 @@ class VotingView(discord.ui.View):
                 stars_display += "<:StarOffLOGO:1407166957719126158>"
 
         embed = discord.Embed(
-            title="🎯 Confirm Your Rating",
-            description=f"Are you sure you want to give **{stars_display}** to the artwork \"{self.artwork_data.title}\" by {self.artwork_data.author_name}?",
+            title="<:WplacePantheonLOGO:1407152471226187776> Confirm Your Rating",
+            description=f"Are you sure you want to give this rate to the artwork \"{self.artwork_data.title}\" by {self.artwork_data.author_name}?\n\n **Actual Rate:** {stars_display}",
             color=discord.Color.orange(),
             timestamp=datetime.utcnow()
         )
@@ -118,7 +118,7 @@ class VotingView(discord.ui.View):
                     stars_display += "<:StarOffLOGO:1407166957719126158>"
 
             embed = discord.Embed(
-                title="✅ Vote Recorded Successfully!",
+                title="<:SucessLOGO:1407071637840592977> Voted Successfully!",
                 description=f"Your rating of **{stars_display}** has been successfully recorded!",
                 color=discord.Color.green(),
                 timestamp=datetime.utcnow()
@@ -159,7 +159,7 @@ class VotingView(discord.ui.View):
 
                         # Set footer
                         bot_name = get_bot_name(self.bot)
-                        updated_embed.set_footer(text=f"{bot_name} | Wplace Pantheon", icon_url=self.bot.user.display_avatar.url)
+                        updated_embed.set_footer(text={bot_name}, icon_url=self.bot.user.display_avatar.url)
 
                         # Update the original message
                         original_view = RandomArtView(self.artwork_data, self.bot)
@@ -170,7 +170,7 @@ class VotingView(discord.ui.View):
 
         else:
             embed = discord.Embed(
-                title="❌ Already Voted",
+                title="<:ErrorLOGO:1407071682031648850> Already Voted",
                 description="You have already voted for this artwork!",
                 color=discord.Color.red(),
                 timestamp=datetime.utcnow()
@@ -199,7 +199,7 @@ class VotingView(discord.ui.View):
             self.add_item(button)
 
         embed = discord.Embed(
-            title="⭐ Rate This Artwork",
+            title="<:StarOnLOGO:1407162360027942912> Rate This Artwork",
             description=f"How many stars would you like to give to the artwork \"{self.artwork_data.title}\" by {self.artwork_data.author_name}?",
             color=discord.Color.blue(),
             timestamp=datetime.utcnow()
@@ -223,7 +223,7 @@ class RandomArtView(discord.ui.View):
         notation_manager = NotationManager()
         if notation_manager.has_user_voted(self.artwork_data.artwork_id, interaction.user.id):
             embed = discord.Embed(
-                title="❌ Already Voted",
+                title="<:ErrorLOGO:1407071682031648850> Already Voted",
                 description="You have already voted for this artwork!",
                 color=discord.Color.red(),
                 timestamp=datetime.utcnow()
@@ -231,14 +231,14 @@ class RandomArtView(discord.ui.View):
             
             bot_name = get_bot_name(self.bot)
             embed.set_thumbnail(url=self.bot.user.display_avatar.url)
-            embed.set_footer(text=f"{bot_name} | Vote Error", icon_url=self.bot.user.display_avatar.url)
+            embed.set_footer(text={bot_name}, icon_url=self.bot.user.display_avatar.url)
             
             await interaction.response.send_message(embed=embed, ephemeral=True)
             return
 
         # Show voting interface
         embed = discord.Embed(
-            title="⭐ Rate This Artwork",
+            title="<:StarOnLOGO:1407162360027942912> Rate This Artwork",
             description=f"How many stars would you like to give to the artwork \"{self.artwork_data.title}\" by {self.artwork_data.author_name}?",
             color=discord.Color.blue(),
             timestamp=datetime.utcnow()
