@@ -1,4 +1,15 @@
-
 {
-  "artworks": []
+  "artworks": [
+    {
+      "id": "artwork_1755563184753_d9d08fa5",
+      "title": "Greeninja X Ash",
+      "description": "From Pokemon XYZ",
+      "location": "",
+      "image_url": "https://raw.githubusercontent.com/TheBlueEL/pictures/main/8bacb595-b68c-498a-addb-8ca845ce2a07.png",
+      "author_enabled": false,
+      "author_name": "TheBlueEL",
+      "author_icon": "https://cdn.discordapp.com/avatars/723144097015136296/1d4e46f4d9d44fd56cbf476be2342715.png?size=1024",
+      "created_by": "723144097015136296"
+    }
+  ]
 }
