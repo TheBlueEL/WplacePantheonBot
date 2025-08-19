@@ -1,131 +1,16 @@
 {
     "tickets": {
-        "1": {
-            "id": "1",
-            "title": "Yo everyone",
-            "description": "Create this ticket",
-            "thumbnail": "",
-            "footer": "",
-            "created_at": "2025-08-19T17:52:15.674675",
-            "sub_panels": {
-                "1": {
-                    "id": "1",
-                    "name": "Ticket Number 1",
-                    "title": "Default Ticket",
-                    "description": "Default ticket type",
-                    "permissions": {
-                        "owner": {
-                            "view_channel": true,
-                            "create_instant_invite": false,
-                            "send_messages": true,
-                            "send_messages_in_threads": true,
-                            "embed_links": true,
-                            "attach_files": true,
-                            "add_reactions": true,
-                            "use_external_emojis": true,
-                            "use_external_stickers": true,
-                            "read_message_history": true,
-                            "manage_channels": false,
-                            "manage_permissions": false,
-                            "create_public_threads": false,
-                            "create_private_threads": false,
-                            "use_application_commands": false,
-                            "manage_messages": false
-                        },
-                        "staff": {
-                            "view_channel": true,
-                            "create_instant_invite": true,
-                            "send_messages": true,
-                            "send_messages_in_threads": true,
-                            "embed_links": true,
-                            "attach_files": true,
-                            "add_reactions": true,
-                            "use_external_emojis": true,
-                            "use_external_stickers": true,
-                            "read_message_history": true,
-                            "manage_channels": true,
-                            "manage_permissions": true,
-                            "create_public_threads": true,
-                            "create_private_threads": true,
-                            "use_application_commands": true,
-                            "manage_messages": true
-                        },
-                        "authorized": {
-                            "view_channel": true,
-                            "create_instant_invite": false,
-                            "send_messages": true,
-                            "send_messages_in_threads": true,
-                            "embed_links": true,
-                            "attach_files": true,
-                            "add_reactions": true,
-                            "use_external_emojis": true,
-                            "use_external_stickers": true,
-                            "read_message_history": true,
-                            "manage_channels": false,
-                            "manage_permissions": false,
-                            "create_public_threads": false,
-                            "create_private_threads": false,
-                            "use_application_commands": false,
-                            "manage_messages": false
-                        }
-                    },
-                    "ai_enabled": false,
-                    "button_visible": true,
-                    "button_emoji": "🎫",
-                    "button_text": "",
-                    "ticket_title": "Default Ticket",
-                    "ticket_description": "Support will be with you shortly. To close this ticket.",
-                    "ticket_footer": "Ticket Bot - Ticket Bot",
-                    "close_button_text": "🔒",
-                    "panel_emoji": "🎟️",
-                    "panel_title": "Default Ticket",
-                    "panel_description": ""
-                }
-            },
-            "display_type": "buttons"
         }
     },
     "staff_roles": [],
     "settings": {
-        "default_embed": {
-            "title": "",
-            "outside_description": "",
-            "description": "Support will be with you shortly. To close this ticket.",
-            "thumbnail": "",
-            "image": "",
-            "footer": "Ticket Bot - Ticket Bot"
         },
-        "button_enabled": true,
-        "button_emoji": "🔒",
-        "button_label": "Close Ticket",
-        "ai_enabled": false,
-        "log_settings": {
-            "ticket_opened": true,
-            "ticket_claimed": true,
-            "ticket_closed": true,
-            "ticket_deleted": true,
-            "ticket_reopened": true,
-            "transcript_saved": true
         },
         "log_channel_id": 1405303214643085314
     },
     "ticket_counters": {
-        "Ticket Number 1": 5
     },
     "closed_tickets": {
-        "1407426909612281948": {
-            "original_name": "ticket-number-1-0003",
-            "channel_id": 1407426909612281948,
-            "closed_by": 723144097015136296,
-            "closed_at": "2025-08-19T18:12:18.042745",
-            "permissions": {}
-        },
-        "1407429146375753778": {
-            "original_name": "ticket-number-1-0005",
-            "channel_id": 1407429146375753778,
-            "closed_by": 723144097015136296,
-            "closed_at": "2025-08-19T18:23:56.846404",
-            "permissions": {}
         }
     }
 }
