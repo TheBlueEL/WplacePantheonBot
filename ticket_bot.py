@@ -88,7 +88,7 @@ def load_ticket_data():
             # Ensure all required top-level keys exist
             if "staff_roles" not in data:
                 data["staff_roles"] = []
-            
+
             if "settings" not in data:
                 data["settings"] = {
                     "default_embed": {
@@ -112,7 +112,7 @@ def load_ticket_data():
                         "transcript_saved": True
                     }
                 }
-            
+
             # Ensure log_settings exist in settings
             if "log_settings" not in data["settings"]:
                 data["settings"]["log_settings"] = {
@@ -123,10 +123,10 @@ def load_ticket_data():
                     "ticket_reopened": True,
                     "transcript_saved": True
                 }
-            
+
             if "ticket_counters" not in data:
                 data["ticket_counters"] = {}
-            
+
             if "closed_tickets" not in data:
                 data["closed_tickets"] = {}
 
@@ -1484,7 +1484,7 @@ class SubPanelTicketSelectView(discord.ui.View):
             # Log ticket opening
             await log_ticket_action(interaction.guild, "ticket_opened", {
                 "channel": ticket_channel.mention,
-                "created_by": interaction.user.mention,
+                "created_by": interaction.user,
                 "ticket_type": sub_panel["name"]
             })
 
@@ -1625,7 +1625,7 @@ class PublishedTicketView(discord.ui.View):
             # Log ticket opening
             await log_ticket_action(interaction.guild, "ticket_opened", {
                 "channel": ticket_channel.mention,
-                "created_by": interaction.user.mention,
+                "created_by": interaction.user,
                 "ticket_type": sub_panel["name"]
             })
 
@@ -1741,7 +1741,7 @@ class ConfirmCloseView(discord.ui.View):
             # Log ticket closing
             await log_ticket_action(interaction.guild, "ticket_closed", {
                 "channel": interaction.channel.mention,
-                "closed_by": interaction.user.mention
+                "closed_by": interaction.user
             })
 
             # Send closed actions view
@@ -2497,7 +2497,7 @@ def setup_ticket_system(bot):
             # Log ticket closing
             await log_ticket_action(interaction.guild, "ticket_closed", {
                 "channel": interaction.channel.mention,
-                "closed_by": interaction.user.mention
+                "closed_by": interaction.user
             })
 
             # Send closed actions view
@@ -2520,7 +2520,7 @@ def setup_ticket_system(bot):
     async def delete_command(interaction: discord.Interaction):
         # Check if the command is used in a ticket channel
         channel_name = interaction.channel.name
-        is_ticket = any(pattern in channel_name for pattern in ['-0', '-1', '-2', '-3', '-4', '-5', '-6', '-7', '-8', '-9'])
+        is_ticket = any(pattern in channel_name for pattern in ['-0', '-1', '-2', '-3', '-4', '-5', '-6', '-7', '-8', '-9']) or channel_name.startswith("closed-")
 
         if not is_ticket:
             await interaction.response.send_message("❌ Cette commande ne peut être utilisée que dans un channel de ticket.", ephemeral=True)
@@ -2530,7 +2530,7 @@ def setup_ticket_system(bot):
             # Log deletion
             await log_ticket_action(interaction.guild, "ticket_deleted", {
                 "channel": interaction.channel.mention,
-                "deleted_by": interaction.user.mention
+                "deleted_by": interaction.user
             })
 
             # Send deletion message
@@ -2588,7 +2588,7 @@ def setup_ticket_system(bot):
             # Log ticket claiming
             await log_ticket_action(interaction.guild, "ticket_claimed", {
                 "channel": interaction.channel.mention,
-                "claimed_by": interaction.user.mention
+                "claimed_by": interaction.user
             })
 
             embed = discord.Embed(
@@ -2642,7 +2642,7 @@ def setup_ticket_system(bot):
             # Log reopening
             await log_ticket_action(interaction.guild, "ticket_reopened", {
                 "channel": interaction.channel.mention,
-                "reopened_by": interaction.user.mention
+                "reopened_by": interaction.user
             })
 
             # Send reopening message with new close button
@@ -2651,10 +2651,10 @@ def setup_ticket_system(bot):
                 description="This ticket has been reopened successfully!",
                 color=0x57f287
             )
-            
+
             # Create new close view
             close_view = TicketCloseView()
-            await interaction.response.send_message(embed=reopen_embed, view=close_view)
+            await interaction.channel.send(embed=reopen_embed, view=close_view)
 
             # Update ticket status
             update_ticket_status(interaction.channel.id, {
@@ -2685,11 +2685,11 @@ def setup_ticket_system(bot):
 
             # Find ticket owner and panel info
             ticket_owner = None
-            panel_name = "Panel Inconnu"
+            panel_name = "Unknown Panel"
             panel_emoji = "🎟️"
             ticket_type = "unknown"
 
-            # Extract ticket type from channel name - handle both regular and closed tickets
+            # Extract ticket type from channel name
             if channel_name.startswith("closed-"):
                 # For closed tickets: closed-support-0001 -> support
                 parts = channel_name.replace("closed-", "").split('-')
@@ -2834,9 +2834,9 @@ def setup_ticket_system(bot):
                 f.write('\n'.join(transcript_content))
 
             # Log transcript saving
-            await log_ticket_action(interaction.guild, "transcript_saved", { 
+            await log_ticket_action(interaction.guild, "transcript_saved", {
                 "channel": interaction.channel.mention,
-                "saved_by": interaction.user.mention,
+                "saved_by": interaction.user,
                 "message_count": message_count,
                 "ticket_type": ticket_type,
                 "transcript_file": transcript_filename,
@@ -3107,7 +3107,7 @@ class TicketClosedActionsView(discord.ui.View):
             # Log reopening
             await log_ticket_action(interaction.guild, "ticket_reopened", {
                 "channel": interaction.channel.mention,
-                "reopened_by": interaction.user.mention
+                "reopened_by": interaction.user
             })
 
             # Send new message for reopening instead of editing
@@ -3136,7 +3136,7 @@ class TicketClosedActionsView(discord.ui.View):
             # Log deletion
             await log_ticket_action(interaction.guild, "ticket_deleted", {
                 "channel": interaction.channel.mention,
-                "deleted_by": interaction.user.mention
+                "deleted_by": interaction.user
             })
 
             # Remove from closed tickets data
@@ -3196,8 +3196,9 @@ class TicketClosedActionsView(discord.ui.View):
                     for sub_panel_id, sub_panel in panel["sub_panels"].items():
                         sub_panel_name = sub_panel["name"].lower().strip()
                         if sub_panel_name == ticket_type.lower().strip():
-                            panel_name = sub_panel.get("panel_title", sub_panel.get("ticket_title", sub_panel.get("title", "Default Panel")))
-                            panel_emoji = sub_panel.get("panel_emoji", sub_panel.get("button_emoji", "🎟️"))
+                            # Prioritize panel_title, then ticket_title, then title
+                            panel_title = sub_panel.get("panel_title") or sub_panel.get("ticket_title") or sub_panel.get("title", "Default Panel")
+                            panel_name = f"🎟️ {panel_title}"
                             break
                     else:
                         continue
@@ -3209,8 +3210,8 @@ class TicketClosedActionsView(discord.ui.View):
                         for sub_panel_id, sub_panel in panel["sub_panels"].items():
                             sub_panel_name = sub_panel["name"].lower().strip()
                             if ticket_type.lower().strip() in sub_panel_name or sub_panel_name in ticket_type.lower().strip():
-                                panel_name = sub_panel.get("panel_title", sub_panel.get("ticket_title", sub_panel.get("title", "Default Panel")))
-                                panel_emoji = sub_panel.get("panel_emoji", sub_panel.get("button_emoji", "🎟️"))
+                                panel_title = sub_panel.get("panel_title") or sub_panel.get("ticket_title") or sub_panel.get("title", "Default Panel")
+                                panel_name = f"🎟️ {panel_title}"
                                 break
                         else:
                             continue
@@ -3297,7 +3298,7 @@ class TicketClosedActionsView(discord.ui.View):
                     users_in_transcript[user_key] = {
                         "message_count": 0,
                         "is_bot": message.author.bot,
-                        "roles": [role.name for role in message.author.roles if role != interaction.guild.default_role] if hasattr(message.author, 'roles') else []
+                        "roles": [role.name for role in message.author.roles] if hasattr(message.author, 'roles') else []
                     }
                 users_in_transcript[user_key]["message_count"] += 1
 
@@ -3378,7 +3379,7 @@ class TicketClosedActionsView(discord.ui.View):
             # Log transcript saving with file attachment
             await log_ticket_action(interaction.guild, "transcript_saved", {
                 "channel": interaction.channel.mention,
-                "saved_by": interaction.user.mention,
+                "saved_by": interaction.user,
                 "message_count": message_count,
                 "ticket_type": ticket_type,
                 "transcript_file": transcript_filename,
@@ -3466,61 +3467,36 @@ async def log_ticket_action(guild, action_type, details):
     user = None
     user_mention = ""
 
-    if "created_by" in details:
-        user_mention = details["created_by"]
-        # Extract user ID from mention format <@123456789>
-        if "<@" in user_mention and ">" in user_mention:
-            user_id_str = user_mention.replace("<@", "").replace(">", "").replace("!", "")
-            try:
-                user_id = int(user_id_str)
-                user = guild.get_member(user_id)
-            except ValueError:
-                pass
-    elif "claimed_by" in details:
-        user_mention = details["claimed_by"]
-        if "<@" in user_mention and ">" in user_mention:
-            user_id_str = user_mention.replace("<@", "").replace(">", "").replace("!", "")
-            try:
-                user_id = int(user_id_str)
-                user = guild.get_member(user_id)
-            except ValueError:
-                pass
-    elif "closed_by" in details:
-        user_mention = details["closed_by"]
-        if "<@" in user_mention and ">" in user_mention:
-            user_id_str = user_mention.replace("<@", "").replace(">", "").replace("!", "")
-            try:
-                user_id = int(user_id_str)
-                user = guild.get_member(user_id)
-            except ValueError:
-                pass
-    elif "reopened_by" in details:
-        user_mention = details["reopened_by"]
-        if "<@" in user_mention and ">" in user_mention:
-            user_id_str = user_mention.replace("<@", "").replace(">", "").replace("!", "")
-            try:
-                user_id = int(user_id_str)
-                user = guild.get_member(user_id)
-            except ValueError:
-                pass
-    elif "deleted_by" in details:
-        user_mention = details["deleted_by"]
-        if "<@" in user_mention and ">" in user_mention:
-            user_id_str = user_mention.replace("<@", "").replace(">", "").replace("!", "")
-            try:
-                user_id = int(user_id_str)
-                user = guild.get_member(user_id)
-            except ValueError:
-                pass
-    elif "saved_by" in details:
-        user_mention = details["saved_by"]
-        if "<@" in user_mention and ">" in user_mention:
-            user_id_str = user_mention.replace("<@", "").replace(">", "").replace("!", "")
-            try:
-                user_id = int(user_id_str)
-                user = guild.get_member(user_id)
-            except ValueError:
-                pass
+    # Extract user object from various possible keys in 'details'
+    user_keys_to_check = ["created_by", "claimed_by", "closed_by", "reopened_by", "deleted_by", "saved_by"]
+    found_user = None
+
+    for key in user_keys_to_check:
+        if key in details:
+            user_data = details[key]
+            if isinstance(user_data, discord.User):
+                found_user = user_data
+                break
+            elif isinstance(user_data, discord.Member):
+                found_user = user_data
+                break
+            elif isinstance(user_data, int):
+                # If it's an ID, try to get the member
+                found_user = guild.get_member(user_data)
+                if found_user:
+                    break
+            elif isinstance(user_data, str) and "<@" in user_data and ">" in user_data:
+                # If it's a mention, extract ID and get member
+                user_id_str = user_data.replace("<@", "").replace(">", "").replace("!", "")
+                try:
+                    user_id = int(user_id_str)
+                    found_user = guild.get_member(user_id)
+                    if found_user:
+                        break
+                except ValueError:
+                    pass # Ignore if ID is not valid
+
+    user = found_user # Assign the found user to the 'user' variable
 
     # Color mapping for different actions (left border color)
     color_mapping = {
@@ -3535,7 +3511,7 @@ async def log_ticket_action(guild, action_type, details):
     # Action mapping
     action_mapping = {
         "ticket_opened": "Created",
-        "ticket_claimed": "Claimed", 
+        "ticket_claimed": "Claimed",
         "ticket_closed": "Closed",
         "ticket_reopened": "Reopened",
         "ticket_deleted": "Deleted",
@@ -3546,10 +3522,12 @@ async def log_ticket_action(guild, action_type, details):
     channel_name = "Unknown"
     ticket_name = "Unknown"
     ticket_type = "unknown"
-    
+
     if "channel" in details:
         channel_mention = details["channel"]
-        if "<#" in channel_mention:
+        if isinstance(channel_mention, discord.TextChannel): # If it's already a channel object
+            channel_name = channel_mention.name
+        elif isinstance(channel_mention, str) and "<#" in channel_mention:
             channel_id_str = channel_mention.replace("<#", "").replace(">", "")
             try:
                 channel_id = int(channel_id_str)
@@ -3566,19 +3544,19 @@ async def log_ticket_action(guild, action_type, details):
         if channel_name.startswith("closed-"):
             # For closed tickets: closed-support-0048 -> support, Ticket-0048
             parts = channel_name.replace("closed-", "").split("-")
-            if len(parts) >= 2:
+            if len(parts) >= 2: # Expecting at least type and number
                 ticket_type = parts[0]
                 ticket_name = f"Ticket-{parts[1]}"
         else:
             # For regular tickets: support-0048 -> support, Ticket-0048
             parts = channel_name.split("-")
-            if len(parts) >= 2:
+            if len(parts) >= 2: # Expecting at least type and number
                 ticket_type = parts[0]
                 ticket_name = f"Ticket-{parts[1]}"
 
     # Find panel info - better search logic
     panel_name = "🎟️ Default Panel"
-    
+
     # Check if panel_name is already provided in details
     if "panel_name" in details and details["panel_name"]:
         panel_name = f"🎟️ {details['panel_name']}"
@@ -3631,7 +3609,7 @@ async def log_ticket_action(guild, action_type, details):
 
     # Create the main content fields exactly like the example
     logged_info = f"**Logged Info**\nTicket: {ticket_name}\nAction: {action_mapping.get(action_type, 'Action')}"
-    
+
     panel_info = f"**Panel**\n{panel_name}"
 
     embed.add_field(name="", value=logged_info, inline=True)
