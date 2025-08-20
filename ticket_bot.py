@@ -1359,7 +1359,13 @@ class TicketTypeSelect(discord.ui.Select):
                 emoji=button_emoji
             ))
 
-        super().__init__(placeholder="Select ticket type...", options=options, min_values=1, max_values=1)
+        super().__init__(
+            placeholder="Select ticket type...", 
+            options=options, 
+            min_values=1, 
+            max_values=1,
+            custom_id=f"persistent_ticket_select_{panel_id}"
+        )
 
     async def callback(self, interaction: discord.Interaction):
         sub_panel_id = self.values[0]
@@ -1556,13 +1562,15 @@ class PublishedTicketView(discord.ui.View):
                     label=button_label,
                     style=discord.ButtonStyle.primary,
                     emoji=button_emoji,
-                    custom_id=f"ticket_{sub_panel_id}"
+                    custom_id=f"persistent_ticket_{panel_id}_{sub_panel_id}"
                 )
                 button.callback = self.create_button_callback(sub_panel_id)
                 self.add_item(button)
         else:
             # Create dropdown menu - always use dropdown when display_type is dropdown
-            self.add_item(TicketTypeSelect(panel_id, visible_sub_panels))
+            dropdown = TicketTypeSelect(panel_id, visible_sub_panels)
+            dropdown.custom_id = f"persistent_ticket_select_{panel_id}"
+            self.add_item(dropdown)
 
     def create_button_callback(self, sub_panel_id):
         async def button_callback(interaction):
