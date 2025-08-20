@@ -607,10 +607,12 @@ class MessageLinkModal(discord.ui.Modal):
             
             try:
                 message = await channel.fetch_message(message_id)
-                # Check if the message can be edited (must be sent by the bot)
-                if message.author != interaction.client.user:
-                    await interaction.response.send_message("❌ Cannot modify this message! The bot can only add buttons/reactions to messages it sent. Please provide a message link from a message sent by this bot.", ephemeral=True)
-                    return
+                # Pour les réactions, pas besoin que le message soit du bot
+                # Pour les boutons, on vérifie si c'est un message du bot
+                if hasattr(self.parent_view, 'button_color'):  # C'est un ButtonConfig
+                    if message.author != interaction.client.user:
+                        await interaction.response.send_message("❌ Cannot modify this message! The bot can only add buttons to messages it sent. Please provide a message link from a message sent by this bot.", ephemeral=True)
+                        return
             except discord.NotFound:
                 await interaction.response.send_message("❌ Message not found! Please verify the message link is correct.", ephemeral=True)
                 return
