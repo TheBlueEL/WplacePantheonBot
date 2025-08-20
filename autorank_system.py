@@ -1127,6 +1127,57 @@ async def restore_autorank_buttons(bot):
 class AutoRankSystem(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.new_member_monitor.start()
+
+    def cog_unload(self):
+        self.new_member_monitor.cancel()
+
+    @tasks.loop(seconds=5.0)
+    async def new_member_monitor(self):
+        """Surveille en permanence les nouveaux membres pour les AutoRanks new_members"""
+        try:
+            data = load_autorank_data()
+            autoranks = data.get("autoranks", {})
+            
+            # Vérifier s'il y a des autoranks new_members actifs
+            new_member_autoranks = [ar for ar in autoranks.values() if ar["type"] == "new_members"]
+            
+            if not new_member_autoranks:
+                return
+            
+            # Pour chaque serveur où le bot est présent
+            for guild in self.bot.guilds:
+                try:
+                    # Récupérer tous les membres du serveur
+                    async for member in guild.fetch_members(limit=None):
+                        if member.bot:
+                            continue
+                            
+                        # Vérifier chaque autorank new_members
+                        for autorank in new_member_autoranks:
+                            role_id = autorank["role_id"]
+                            role = guild.get_role(role_id)
+                            
+                            if not role:
+                                continue
+                                
+                            # Si le membre n'a pas le rôle, le lui donner
+                            if role not in member.roles:
+                                try:
+                                    await self.give_role_to_new_member(autorank, member)
+                                    print(f"✅ Rôle {role.name} donné à {member.display_name}")
+                                except Exception as e:
+                                    print(f"❌ Erreur attribution rôle à {member.display_name}: {e}")
+                                    
+                except Exception as e:
+                    print(f"❌ Erreur surveillance membres serveur {guild.name}: {e}")
+                    
+        except Exception as e:
+            print(f"❌ Erreur surveillance nouveaux membres: {e}")
+
+    @new_member_monitor.before_loop
+    async def before_new_member_monitor(self):
+        await self.bot.wait_until_ready()
 
     async def give_role_to_new_member(self, autorank, new_member):
         """Give role to a new member"""
@@ -1154,7 +1205,7 @@ class AutoRankSystem(commands.Cog):
 
     @commands.Cog.listener()
     async def on_member_join(self, member):
-        """Handle new member autoranks"""
+        """Handle new member autoranks - Attribution immédiate"""
         try:
             data = load_autorank_data()
             autoranks = data.get("autoranks", {})
@@ -1162,8 +1213,9 @@ class AutoRankSystem(commands.Cog):
             for autorank_id, autorank in autoranks.items():
                 if autorank["type"] == "new_members":
                     await self.give_role_to_new_member(autorank, member)
-        except Exception:
-            pass
+                    print(f"🎯 Nouveau membre {member.display_name} - Rôle attribué immédiatement")
+        except Exception as e:
+            print(f"❌ Erreur on_member_join: {e}")
 
     @commands.Cog.listener()
     async def on_reaction_add(self, reaction, user):
