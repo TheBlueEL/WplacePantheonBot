@@ -269,21 +269,21 @@ class TicketCreateModal(discord.ui.Modal, title='Create New Ticket Panel'):
 
     name_input = discord.ui.TextInput(
         label='Ticket Name',
-        placeholder='e.g., "support", "report", "general" (required)',
+        placeholder='This will appear in the server ticket manager...',
         required=True,
         max_length=50
     )
 
     title_input = discord.ui.TextInput(
         label='Panel Title',
-        placeholder='Panel title for the embed (required)',
+        placeholder='Panel title for the embed (Required)',
         required=True,
         max_length=256
     )
 
     description_input = discord.ui.TextInput(
         label='Panel Description',
-        placeholder='Panel description (required)',
+        placeholder='Panel description (Required)',
         required=True,
         style=discord.TextStyle.paragraph,
         max_length=4000
@@ -291,14 +291,14 @@ class TicketCreateModal(discord.ui.Modal, title='Create New Ticket Panel'):
 
     thumbnail_input = discord.ui.TextInput(
         label='Thumbnail URL',
-        placeholder='Thumbnail URL (optional)',
+        placeholder='Thumbnail URL (Optional)',
         required=False,
         max_length=2000
     )
 
     footer_input = discord.ui.TextInput(
         label='Footer Text',
-        placeholder='Footer text (optional)',
+        placeholder='Footer text (Optional)',
         required=False,
         max_length=2048
     )
@@ -1160,7 +1160,6 @@ class PublishSelectionView(discord.ui.View):
             main_embed = create_ticket_panel_embed(data)
 
             await interaction.response.edit_message(
-                content=f"<:SucessLOGO:1407071637840592977> Panel published successfully in {channel.mention}!",
                 embed=main_embed,
                 view=view
             )
@@ -1267,13 +1266,13 @@ def create_publish_selection_embed(selected_panel, selected_channel):
     # Channel selection status
     if selected_channel:
         embed.add_field(
-            name="📍 Selected Channel",
+            name="<:SettingLOGO:1407071854593839239> Selected Channel",
             value=f"**{selected_channel.mention}**\n`#{selected_channel.name}`",
             inline=False
         )
     else:
         embed.add_field(
-            name="📍 Channel",
+            name="<:SettingLOGO:1407071854593839239> Channel",
             value="<:ErrorLOGO:1407071682031648850> No channel selected",
             inline=True
         )
