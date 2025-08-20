@@ -727,40 +727,71 @@ class SubPanelSelect(discord.ui.Select):
 
         # Reload data to get the most current information
         data = load_ticket_data()
-        sub_panels = data["tickets"][panel_id]["sub_panels"]
-
-        options = []
-        for sub_panel_id, sub_panel in sub_panels.items():
-            ai_status = "🤖" if sub_panel.get("ai_enabled", False) else ""
-            description = f"Name: {sub_panel['name']} {ai_status}"
-            # Use the most current title information, prioritizing ticket_title, then panel_title, then title
-            current_title = sub_panel.get("ticket_title") or sub_panel.get("panel_title") or sub_panel.get("title", "Ticket")
-            options.append(discord.SelectOption(
-                label=current_title,
-                value=sub_panel_id,
-                description=description
-            ))
+        
+        # Check if panel still exists
+        if panel_id not in data.get("tickets", {}):
+            options = [discord.SelectOption(
+                label="Panel not found",
+                value="none",
+                description="This panel no longer exists"
+            )]
+        else:
+            sub_panels = data["tickets"][panel_id]["sub_panels"]
+            options = []
+            for sub_panel_id, sub_panel in sub_panels.items():
+                ai_status = "🤖" if sub_panel.get("ai_enabled", False) else ""
+                description = f"Name: {sub_panel['name']} {ai_status}"
+                # Use the most current title information, prioritizing ticket_title, then panel_title, then title
+                current_title = sub_panel.get("ticket_title") or sub_panel.get("panel_title") or sub_panel.get("title", "Ticket")
+                options.append(discord.SelectOption(
+                    label=current_title,
+                    value=sub_panel_id,
+                    description=description
+                ))
 
         super().__init__(placeholder=f"Select a sub-panel to {action_type}", options=options)
 
     async def callback(self, interaction: discord.Interaction):
-        sub_panel_id = self.values[0]
-        # Reload data again to ensure we have the latest information
-        data = load_ticket_data()
+        try:
+            sub_panel_id = self.values[0]
+            
+            # Handle case where panel doesn't exist
+            if sub_panel_id == "none":
+                await interaction.response.send_message("<:ErrorLOGO:1407071682031648850> This panel no longer exists. Please refresh the interface.", ephemeral=True)
+                return
+            
+            # Reload data again to ensure we have the latest information
+            data = load_ticket_data()
 
-        if self.action_type == "edit":
-            view = SubPanelEditView(self.panel_id, sub_panel_id)
-            embed = create_sub_panel_edit_embed(data, self.panel_id, self.sub_panel_id)
-            await interaction.response.edit_message(embed=embed, view=view)
-        elif self.action_type == "delete":
-            # Delete sub-panel
-            del data["tickets"][self.panel_id]["sub_panels"][sub_panel_id]
-            save_ticket_data(data)
+            # Verify panel and sub-panel still exist
+            if self.panel_id not in data.get("tickets", {}):
+                await interaction.response.send_message("<:ErrorLOGO:1407071682031648850> This panel no longer exists. Please refresh the interface.", ephemeral=True)
+                return
+                
+            if sub_panel_id not in data["tickets"][self.panel_id].get("sub_panels", {}):
+                await interaction.response.send_message("<:ErrorLOGO:1407071682031648850> This sub-panel no longer exists. Please refresh the interface.", ephemeral=True)
+                return
 
-            # Return to panel management
-            view = PanelManagementView(self.panel_id)
-            embed = create_panel_management_embed(data, self.panel_id)
-            await interaction.response.edit_message(embed=embed, view=view)
+            if self.action_type == "edit":
+                view = SubPanelEditView(self.panel_id, sub_panel_id)
+                embed = create_sub_panel_edit_embed(data, self.panel_id, sub_panel_id)
+                await interaction.response.edit_message(embed=embed, view=view)
+            elif self.action_type == "delete":
+                # Delete sub-panel
+                del data["tickets"][self.panel_id]["sub_panels"][sub_panel_id]
+                save_ticket_data(data)
+
+                # Return to panel management
+                view = PanelManagementView(self.panel_id)
+                embed = create_panel_management_embed(data, self.panel_id)
+                await interaction.response.edit_message(embed=embed, view=view)
+                
+        except Exception as e:
+            print(f"Error in SubPanelSelect callback: {e}")
+            if not interaction.response.is_done():
+                await interaction.response.send_message("<:ErrorLOGO:1407071682031648850> An error occurred. Please try again or refresh the interface.", ephemeral=True)
+            else:
+                await interaction.followup.send("<:ErrorLOGO:1407071682031648850> An error occurred. Please try again or refresh the interface.", ephemeral=True)
 
 class SubPanelEditView(discord.ui.View):
     def __init__(self, panel_id, sub_panel_id):
@@ -3244,7 +3275,7 @@ def setup_ticket_system(bot):
 
             # Send closed actions view
             closed_embed = discord.Embed(
-                title="<:CloseLOGO:1407072519420248256> Ticket Closed",
+                title="<:TicketLOGO:1407730639343714397> Ticket Closed",
                 description="This ticket has been closed. What would you like to do?",
                 color=0x57f287
             )
@@ -3696,7 +3727,7 @@ def setup_ticket_system(bot):
 
             # Send closed actions view
             closed_embed = discord.Embed(
-                title="<:CloseLOGO:1407072519420248256> Ticket Closed",
+                title="<:TicketLOGO:1407730639343714397> Ticket Closed",
                 description="This ticket has been closed. What would you like to do?",
                 color=0x57f287
             )
