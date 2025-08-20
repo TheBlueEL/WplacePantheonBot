@@ -2536,7 +2536,7 @@ class LogsManagementView(discord.ui.View):
         )
         await interaction.response.edit_message(embed=embed, view=view)
 
-    @discord.ui.button(label='<:TicketLOGO:1407730639343714397> Ticket Opened', style=discord.ButtonStyle.success, row=1)
+    @discord.ui.button(emoji='<:TicketLOGO:1407730639343714397>',label='Ticket Opened', style=discord.ButtonStyle.success, row=1)
     async def toggle_opened_logs(self, interaction: discord.Interaction, button: discord.ui.Button):
         data = load_ticket_data()
         if "log_settings" not in data["settings"]:
@@ -2550,7 +2550,7 @@ class LogsManagementView(discord.ui.View):
         embed = create_logs_management_embed(data, interaction.guild)
         await interaction.response.edit_message(embed=embed, view=view)
 
-    @discord.ui.button(label='<:UnviewLOGO:1407072750220345475> Ticket Claimed', style=discord.ButtonStyle.success, row=1)
+    @discord.ui.button(emoji='<:UnviewLOGO:1407072750220345475>',label='Ticket Claimed', style=discord.ButtonStyle.success, row=1)
     async def toggle_claimed_logs(self, interaction: discord.Interaction, button: discord.ui.Button):
         data = load_ticket_data()
         if "log_settings" not in data["settings"]:
@@ -2564,7 +2564,7 @@ class LogsManagementView(discord.ui.View):
         embed = create_logs_management_embed(data, interaction.guild)
         await interaction.response.edit_message(embed=embed, view=view)
 
-    @discord.ui.button(label='<:CloseLOGO:1407072519420248256> Ticket Closed', style=discord.ButtonStyle.success, row=1)
+    @discord.ui.button(emoji='<:CloseLOGO:1407072519420248256>',label='Ticket Closed', style=discord.ButtonStyle.success, row=1)
     async def toggle_closed_logs(self, interaction: discord.Interaction, button: discord.ui.Button):
         data = load_ticket_data()
         if "log_settings" not in data["settings"]:
@@ -2578,7 +2578,7 @@ class LogsManagementView(discord.ui.View):
         embed = create_logs_management_embed(data, interaction.guild)
         await interaction.response.edit_message(embed=embed, view=view)
 
-    @discord.ui.button(label='<:DeleteLOGO:1407071421363916841> Ticket Deleted', style=discord.ButtonStyle.success, row=2)
+    @discord.ui.button(emoji='<:DeleteLOGO:1407071421363916841>',label='Ticket Deleted', style=discord.ButtonStyle.success, row=2)
     async def toggle_deleted_logs(self, interaction: discord.Interaction, button: discord.ui.Button):
         data = load_ticket_data()
         if "log_settings" not in data["settings"]:
@@ -2592,7 +2592,7 @@ class LogsManagementView(discord.ui.View):
         embed = create_logs_management_embed(data, interaction.guild)
         await interaction.response.edit_message(embed=embed, view=view)
 
-    @discord.ui.button(label='<:TXTFileLOGO:1407735600752361622> Transcript', style=discord.ButtonStyle.success, row=2)
+    @discord.ui.button(emoji='<:TXTFileLOGO:1407735600752361622> ',label='Transcript', style=discord.ButtonStyle.success, row=2)
     async def toggle_transcript_logs(self, interaction: discord.Interaction, button: discord.ui.Button):
         data = load_ticket_data()
         if "log_settings" not in data["settings"]:
