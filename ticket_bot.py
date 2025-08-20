@@ -1005,7 +1005,7 @@ class TicketSelect(discord.ui.Select):
         elif self.action_type == "publish":
             view = ChannelSelectView(panel_id)
             embed = discord.Embed(
-                title="📤 Publish Ticket Panel",
+                title="<:SendLOGO:1407071529015181443> Publish Ticket Panel",
                 description="Select the channel where you want to publish this ticket panel:",
                 color=0x2b2d31
             )
@@ -1245,7 +1245,7 @@ class PublishChannelSelect(discord.ui.ChannelSelect):
 def create_publish_selection_embed(selected_panel, selected_channel):
     """Create embed for publish selection interface"""
     embed = discord.Embed(
-        title="📤 Ticket Panel Publication",
+        title="<:SendLOGO:1407071529015181443> Ticket Panel Publication",
         description="Select the panel and channel for publication:",
         color=0x2b2d31
     )
@@ -1777,7 +1777,7 @@ class TicketPanelView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
 
-    @discord.ui.button(label='Create', style=discord.ButtonStyle.success, emoji='➕', row=0)
+    @discord.ui.button(label='Create', style=discord.ButtonStyle.success, emoji='<:CreateLOGO:1407071205026168853>', row=0)
     async def create_ticket(self, interaction: discord.Interaction, button: discord.ui.Button):
         modal = TicketCreateModal()
         await interaction.response.send_modal(modal)
@@ -1821,7 +1821,7 @@ class TicketPanelView(discord.ui.View):
         )
         await interaction.response.edit_message(embed=embed, view=view)
 
-    @discord.ui.button(label='Publish', style=discord.ButtonStyle.secondary, emoji='📤', row=1)
+    @discord.ui.button(label='Publish', style=discord.ButtonStyle.secondary, emoji='<:SendLOGO:1407071529015181443>', row=1)
     async def publish_ticket(self, interaction: discord.Interaction, button: discord.ui.Button):
         data = load_ticket_data()
         tickets = data.get("tickets", {})
@@ -1833,7 +1833,7 @@ class TicketPanelView(discord.ui.View):
         embed = create_publish_selection_embed(None, None)
         await interaction.response.edit_message(embed=embed, view=view)
 
-    @discord.ui.button(label='Logs', style=discord.ButtonStyle.secondary, emoji='📋', row=1)
+    @discord.ui.button(label='Logs', style=discord.ButtonStyle.secondary, emoji='<:SettingLOGO:1407071854593839239>', row=1)
     async def logs_menu(self, interaction: discord.Interaction, button: discord.ui.Button):
         view = LogsManagementView()
         embed = create_logs_management_embed(load_ticket_data(), interaction.guild)
@@ -2120,7 +2120,7 @@ def create_panel_management_embed(data, panel_id):
     display_type = ticket.get("display_type", "buttons")
 
     embed = discord.Embed(
-        title=f"📋 Managing Panel: {ticket['title']}",
+        title=f"<:SettingLOGO:1407071854593839239> Managing Panel: {ticket['title']}",
         description=f"**Panel ID:** `{panel_id}`\n**Sub-Panels Count:** `{len(sub_panels)}`\n**Display Type:** `{display_type.title()}`",
         color=0x2b2d31
     )
