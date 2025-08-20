@@ -539,10 +539,23 @@ class AutoRankDeleteSelect(discord.ui.Select):
         options = []
         for autorank_id, autorank in autoranks.items():
             autorank_type = autorank['type'].replace('_', ' ').title()
+            created_at = autorank.get('created_at', 'Unknown')
+            
+            # Format date to "Made the DD/MM/YYYY At HH:MM"
+            if created_at != 'Unknown':
+                try:
+                    from datetime import datetime
+                    dt = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
+                    formatted_date = f"Made the {dt.strftime('%d/%m/%Y At %H:%M')}"
+                except:
+                    formatted_date = f"Made At: {created_at[:16]}"
+            else:
+                formatted_date = "Made At: Unknown"
+            
             options.append(discord.SelectOption(
-                label=f"Role ID: {autorank['role_id']} ({autorank_type})",
+                label=f"Role ID {autorank['role_id']} ({autorank_type})",
                 value=autorank_id,
-                description=f"Created: {autorank.get('created_at', 'Unknown')[:10]}"
+                description=formatted_date
             ))
             
         super().__init__(placeholder="Select autorank to delete...", options=options)
@@ -573,12 +586,48 @@ class MessageLinkModal(discord.ui.Modal):
         link = self.message_link.value
         pattern = r'https://discord\.com/channels/\d+/\d+/\d+'
         
-        if re.match(pattern, link):
+        if not re.match(pattern, link):
+            await interaction.response.send_message("❌ Invalid message link format! Please use: https://discord.com/channels/guild_id/channel_id/message_id", ephemeral=True)
+            return
+        
+        # Validate if message is accessible and editable
+        try:
+            parts = link.split('/')
+            guild_id = int(parts[-3])
+            channel_id = int(parts[-2])
+            message_id = int(parts[-1])
+            
+            # Check if it's the correct guild
+            if guild_id != interaction.guild.id:
+                await interaction.response.send_message("❌ The message link must be from this server!", ephemeral=True)
+                return
+            
+            # Try to access the channel and message
+            channel = interaction.guild.get_channel(channel_id)
+            if not channel:
+                await interaction.response.send_message("❌ Cannot access the specified channel! Make sure the bot has permissions.", ephemeral=True)
+                return
+            
+            try:
+                message = await channel.fetch_message(message_id)
+                # Check if the message can be edited (must be sent by the bot)
+                if message.author != interaction.client.user:
+                    await interaction.response.send_message("❌ Cannot modify this message! The bot can only add buttons/reactions to messages it sent. Please provide a message link from a message sent by this bot.", ephemeral=True)
+                    return
+            except discord.NotFound:
+                await interaction.response.send_message("❌ Message not found! Please verify the message link is correct.", ephemeral=True)
+                return
+            except discord.Forbidden:
+                await interaction.response.send_message("❌ Cannot access this message! Make sure the bot has the necessary permissions in that channel.", ephemeral=True)
+                return
+            
+            # If all validations pass
             self.parent_view.message_link = link
             self.parent_view.update_view()
             embed = self.parent_view.get_embed()
             await interaction.response.edit_message(embed=embed, view=self.parent_view)
-        else:
+            
+        except (ValueError, IndexError):
             await interaction.response.send_message("❌ Invalid message link format! Please use: https://discord.com/channels/guild_id/channel_id/message_id", ephemeral=True)
 
 class ButtonTextModal(discord.ui.Modal):
@@ -692,12 +741,25 @@ class AutoRankEditSelect(discord.ui.Select):
         for autorank_id, autorank in autoranks.items():
             autorank_type = autorank['type'].replace('_', ' ').title()
             created_at = autorank.get('created_at', 'Unknown')
-            timestamp = created_at[:19] if len(created_at) > 19 else created_at
+            
+            # Format date to "Made the DD/MM/YYYY At HH:MM"
+            if created_at != 'Unknown':
+                try:
+                    from datetime import datetime
+                    dt = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
+                    formatted_date = f"Made the {dt.strftime('%d/%m/%Y At %H:%M')}"
+                except:
+                    formatted_date = f"Made At: {created_at[:16]}"
+            else:
+                formatted_date = "Made At: Unknown"
+            
+            # Get role name instead of mention
+            role_name = f"Role ID {autorank['role_id']}"  # Fallback
             
             options.append(discord.SelectOption(
-                label=f"<@&{autorank['role_id']}> ({autorank_type})",
+                label=f"{role_name} ({autorank_type})",
                 value=autorank_id,
-                description=f"Made At: {timestamp}"
+                description=formatted_date
             ))
             
         super().__init__(placeholder="Select autorank to edit...", options=options)
