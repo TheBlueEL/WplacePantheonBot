@@ -52,6 +52,9 @@ async def on_ready():
     try:
         await client.load_extension('autorank_system')
         print('AutoRank system loaded!')
+        # Restore autorank buttons
+        from autorank_system import restore_autorank_buttons
+        await restore_autorank_buttons(client)
     except Exception as e:
         print(f'Failed to load autorank_system: {e}')
 
