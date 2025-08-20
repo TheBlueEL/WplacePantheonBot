@@ -13,32 +13,28 @@ def normalize_emoji(emoji_str):
     if not emoji_str:
         return "⭐"
     
-    # Si c'est déjà un emoji normal (Unicode direct), le retourner tel quel
-    if len(emoji_str) <= 2 and not emoji_str.startswith('\\'):
+    # Gérer directement les emojis Unicode comme ⭐, 🎯, etc.
+    if emoji_str in ["⭐", "🎯", "✅", "❌", "🔥", "💎", "🎪", "🎊"]:
         return emoji_str
     
     # Pour les emojis custom Discord <:nom:id>, les retourner tels quels
     if emoji_str.startswith('<:') or emoji_str.startswith('<a:'):
         return emoji_str
     
-    # Gérer spécifiquement le format \u2b50 (⭐)
-    if emoji_str == "\\u2b50" or emoji_str == "\u2b50":
+    # Si c'est un code Unicode, le convertir directement
+    if emoji_str == "\u2b50" or emoji_str == "\\u2b50":
         return "⭐"
+    elif emoji_str == "\u2728" or emoji_str == "\\u2728":
+        return "✨"
+    elif emoji_str == "\ud83c\udfaf" or emoji_str == "\\ud83c\\udfaf":
+        return "🎯"
+    elif emoji_str == "\u2705" or emoji_str == "\\u2705":
+        return "✅"
+    elif emoji_str == "\u274c" or emoji_str == "\\u274c":
+        return "❌"
     
-    # Essayer de décoder les formats JSON Unicode génériques
-    try:
-        import json
-        # Si l'emoji contient des caractères Unicode échappés
-        if '\\u' in emoji_str:
-            # Créer une chaîne JSON valide et la décoder
-            json_str = f'"{emoji_str}"'
-            decoded = json.loads(json_str)
-            return decoded
-        else:
-            return emoji_str
-    except:
-        # Si le décodage échoue, retourner l'emoji par défaut
-        return "⭐"
+    # Si c'est déjà un emoji normal, le retourner tel quel
+    return emoji_str if len(emoji_str) <= 2 else "⭐"
 
 # File management functions
 def load_autorank_data():
@@ -293,13 +289,16 @@ class ReactionConfigView(discord.ui.View):
         channel_id = int(parts[-2])
         message_id = int(parts[-1])
         
+        # Normaliser l'emoji avant de le sauvegarder
+        normalized_emoji = normalize_emoji(self.reaction_emoji)
+        
         data["autoranks"][autorank_id] = {
             "type": "reaction",
             "role_id": self.selected_role.id,
             "guild_id": guild_id,
             "channel_id": channel_id,
             "message_id": message_id,
-            "reaction_emoji": self.reaction_emoji,
+            "reaction_emoji": normalized_emoji,
             "created_at": datetime.now().isoformat()
         }
         
@@ -1401,14 +1400,13 @@ class AutoRankSystem(commands.Cog):
                     autorank.get("channel_id") == reaction.message.channel.id):
                     
                     # Normaliser les emojis pour la comparaison
-                    reaction_emoji = normalize_emoji(autorank.get("reaction_emoji", "⭐"))
+                    config_emoji = normalize_emoji(autorank.get("reaction_emoji", "⭐"))
                     user_emoji = str(reaction.emoji)
                     
-                    print(f"🔍 Comparaison emojis: Config='{reaction_emoji}' vs User='{user_emoji}'")
-                    print(f"🔍 Emoji normalisé: '{reaction_emoji}'")
+                    print(f"🔍 Comparaison emojis: Config='{config_emoji}' vs User='{user_emoji}'")
                     
                     # Comparaison directe des emojis
-                    if reaction_emoji == user_emoji:
+                    if config_emoji == user_emoji:
                         print(f"✅ Emojis correspondent ! Attribution du rôle...")
                         try:
                             guild = reaction.message.guild
