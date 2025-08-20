@@ -919,7 +919,7 @@ class PermissionButtonView(discord.ui.View):
                 perm_key = perm_keys[i]
                 enabled = permissions[perm_key]
                 style = discord.ButtonStyle.success if enabled else discord.ButtonStyle.danger
-                emoji = "<:SucessLOGO:1407071637840592977>" if enabled else "<:ErrorLOGO:1407071682031648850>"
+                emoji = "<:OnLOGO:1407072463883472978>" if enabled else "<:OffLOGO:1407072621836894380>"
             else:
                 style = discord.ButtonStyle.secondary
                 emoji = "➖"
@@ -2501,7 +2501,7 @@ def setup_persistent_views(bot):
 
         # Ensure data structure is complete
         if not isinstance(data, dict):
-            print("<:ErrorLOGO:1407071682031648850> Invalid ticket data structure")
+            print("Invalid ticket data structure")
             return
 
         # Add views for published panels
@@ -2512,15 +2512,15 @@ def setup_persistent_views(bot):
                     view = PublishedTicketView(panel_id)
                     bot.add_view(view)
                 except Exception as e:
-                    print(f"<:ErrorLOGO:1407071682031648850> Error adding view for panel {panel_id}: {e}")
+                    print(f"Error adding view for panel {panel_id}: {e}")
 
         # Add ticket close views
         bot.add_view(TicketCloseView())
         bot.add_view(TicketClosedActionsView())
 
-        print("<:SucessLOGO:1407071637840592977> Ticket system persistent views loaded successfully")
+        print("Ticket system persistent views loaded successfully")
     except Exception as e:
-        print(f"<:ErrorLOGO:1407071682031648850> Error setting up ticket persistent views: {e}")
+        print(f"Error setting up ticket persistent views: {e}")
         # Initialize with empty data if there's an error
         try:
             empty_data = {
