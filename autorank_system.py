@@ -1305,38 +1305,62 @@ class AutoRankSystem(commands.Cog):
     @commands.Cog.listener()
     async def on_reaction_add(self, reaction, user):
         """Handle reaction autoranks"""
+        print(f"🎯 Réaction détectée: {reaction.emoji} par {user.display_name} sur message {reaction.message.id}")
+        
         if user.bot:
+            print(f"❌ Ignoré: {user.display_name} est un bot")
             return
             
         data = load_autorank_data()
         autoranks = data.get("autoranks", {})
         
+        print(f"📊 {len(autoranks)} autoranks trouvés dans le fichier")
+        
         for autorank_id, autorank in autoranks.items():
-            if (autorank["type"] == "reaction" and 
-                autorank.get("message_id") == reaction.message.id and
-                autorank.get("channel_id") == reaction.message.channel.id):
+            print(f"🔍 Vérification autorank {autorank_id}: type={autorank['type']}")
+            
+            if autorank["type"] == "reaction":
+                print(f"🎯 AutoRank Reaction trouvé:")
+                print(f"   - Message ID config: {autorank.get('message_id')}")
+                print(f"   - Message ID actuel: {reaction.message.id}")
+                print(f"   - Channel ID config: {autorank.get('channel_id')}")
+                print(f"   - Channel ID actuel: {reaction.message.channel.id}")
                 
-                # Vérification plus robuste de l'emoji
-                reaction_emoji = autorank.get("reaction_emoji", "⭐")
-                user_emoji = str(reaction.emoji)
-                
-                print(f"🔍 Comparaison emojis: Config='{reaction_emoji}' vs User='{user_emoji}'")
-                
-                if reaction_emoji == user_emoji:
-                    try:
-                        role = reaction.message.guild.get_role(autorank["role_id"])
-                        if role:
-                            if role not in user.roles:
-                                await user.add_roles(role, reason="AutoRank: Reaction")
-                                print(f"✅ Rôle {role.name} donné à {user.display_name} via réaction {reaction.emoji}")
+                if (autorank.get("message_id") == reaction.message.id and
+                    autorank.get("channel_id") == reaction.message.channel.id):
+                    
+                    # Vérification plus robuste de l'emoji
+                    reaction_emoji = autorank.get("reaction_emoji", "⭐")
+                    user_emoji = str(reaction.emoji)
+                    
+                    print(f"🔍 Comparaison emojis: Config='{reaction_emoji}' vs User='{user_emoji}'")
+                    print(f"🔍 Types: Config={type(reaction_emoji)} vs User={type(user_emoji)}")
+                    print(f"🔍 Longueurs: Config={len(reaction_emoji)} vs User={len(user_emoji)}")
+                    
+                    # Comparaison plus flexible des emojis
+                    emojis_match = (reaction_emoji == user_emoji or 
+                                   reaction_emoji.strip() == user_emoji.strip() or
+                                   reaction_emoji in user_emoji or 
+                                   user_emoji in reaction_emoji)
+                    
+                    if emojis_match:
+                        print(f"✅ Emojis correspondent ! Attribution du rôle...")
+                        try:
+                            role = reaction.message.guild.get_role(autorank["role_id"])
+                            if role:
+                                if role not in user.roles:
+                                    await user.add_roles(role, reason="AutoRank: Reaction")
+                                    print(f"✅ Rôle {role.name} donné à {user.display_name} via réaction {reaction.emoji}")
+                                else:
+                                    print(f"ℹ️ {user.display_name} a déjà le rôle {role.name}")
                             else:
-                                print(f"ℹ️ {user.display_name} a déjà le rôle {role.name}")
-                        else:
-                            print(f"❌ Rôle {autorank['role_id']} introuvable")
-                    except Exception as e:
-                        print(f"❌ Erreur attribution rôle via réaction: {e}")
+                                print(f"❌ Rôle {autorank['role_id']} introuvable sur le serveur")
+                        except Exception as e:
+                            print(f"❌ Erreur attribution rôle via réaction: {e}")
+                    else:
+                        print(f"❌ Emojis ne correspondent pas")
                 else:
-                    print(f"❌ Emoji ne correspond pas: '{reaction_emoji}' != '{user_emoji}'")
+                    print(f"❌ Message ou channel ne correspond pas")
 
     @discord.app_commands.command(name="autorank", description="Manage server auto-ranking system")
     async def autorank(self, interaction: discord.Interaction):
