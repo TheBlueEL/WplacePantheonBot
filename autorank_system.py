@@ -9,34 +9,28 @@ import codecs
 
 def normalize_emoji(emoji_str):
     """Normalize emoji from different Unicode formats"""
+    # Si pas d'emoji défini, retourner l'emoji par défaut
     if not emoji_str:
         return "⭐"
     
-    # Si c'est déjà un emoji normal, le retourner tel quel
-    if len(emoji_str) == 1 or (len(emoji_str) == 2 and ord(emoji_str[0]) > 127):
+    # Si c'est déjà un emoji normal (Unicode direct), le retourner tel quel
+    if len(emoji_str) <= 2 and not emoji_str.startswith('\\'):
         return emoji_str
     
-    # Gérer le format \u2b50
-    if emoji_str.startswith('\\u') and len(emoji_str) == 6:
-        try:
-            return codecs.decode(emoji_str, 'unicode_escape')
-        except:
-            pass
-    
-    # Gérer le format JSON échappé "\u2b50"
-    if emoji_str.startswith('\u') and len(emoji_str) == 2:
+    # Pour les emojis custom Discord <:nom:id>, les retourner tels quels
+    if emoji_str.startswith('<:') or emoji_str.startswith('<a:'):
         return emoji_str
     
-    # Essayer de décoder depuis JSON
+    # Essayer de décoder les formats JSON Unicode comme "\u2b50"
     try:
         import json
-        decoded = json.loads(f'"{emoji_str}"')
+        # Créer une chaîne JSON valide et la décoder
+        json_str = f'"{emoji_str}"'
+        decoded = json.loads(json_str)
         return decoded
     except:
-        pass
-    
-    # Retourner l'emoji par défaut si aucune conversion ne fonctionne
-    return emoji_str
+        # Si le décodage échoue, retourner l'emoji par défaut
+        return "⭐"
 
 # File management functions
 def load_autorank_data():
