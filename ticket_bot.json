@@ -109,7 +109,7 @@
         }
     },
     "ticket_counters": {
-        "Ticket Name": 0
+        "Ticket Name": 1
     },
     "closed_tickets": {}
 }
