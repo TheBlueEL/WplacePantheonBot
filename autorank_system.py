@@ -538,30 +538,41 @@ class AutoRankDeleteSelect(discord.ui.Select):
         autoranks = data.get("autoranks", {})
         
         options = []
-        for autorank_id, autorank in autoranks.items():
-            autorank_type = autorank['type'].replace('_', ' ').title()
-            created_at = autorank.get('created_at', 'Unknown')
-            
-            # Format date to "Made the DD/MM/YYYY At HH:MM"
-            if created_at != 'Unknown':
-                try:
-                    from datetime import datetime
-                    dt = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
-                    formatted_date = f"Made the {dt.strftime('%d/%m/%Y At %H:%M')}"
-                except:
-                    formatted_date = f"Made At: {created_at[:16]}"
-            else:
-                formatted_date = "Made At: Unknown"
-            
+        if not autoranks:
             options.append(discord.SelectOption(
-                label=f"Role ID {autorank['role_id']} ({autorank_type})",
-                value=autorank_id,
-                description=formatted_date
+                label="No autoranks found",
+                value="none",
+                description="No autoranks available in autorank_data.json"
             ))
+        else:
+            for autorank_id, autorank in autoranks.items():
+                autorank_type = autorank['type'].replace('_', ' ').title()
+                created_at = autorank.get('created_at', 'Unknown')
+                
+                # Format date to "Made the DD/MM/YYYY At HH:MM"
+                if created_at != 'Unknown':
+                    try:
+                        from datetime import datetime
+                        dt = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
+                        formatted_date = f"Made the {dt.strftime('%d/%m/%Y At %H:%M')}"
+                    except:
+                        formatted_date = f"Made At: {created_at[:16]}"
+                else:
+                    formatted_date = "Made At: Unknown"
+                
+                options.append(discord.SelectOption(
+                    label=f"Role ID {autorank['role_id']} ({autorank_type})",
+                    value=autorank_id,
+                    description=formatted_date
+                ))
             
         super().__init__(placeholder="Select autorank to delete...", options=options)
 
     async def callback(self, interaction: discord.Interaction):
+        if self.values[0] == "none":
+            await interaction.response.send_message("❌ No autoranks to delete!", ephemeral=True)
+            return
+            
         data = load_autorank_data()
         del data["autoranks"][self.values[0]]
         save_autorank_data(data)
@@ -739,33 +750,44 @@ class AutoRankEditSelect(discord.ui.Select):
         autoranks = data.get("autoranks", {})
         
         options = []
-        for autorank_id, autorank in autoranks.items():
-            autorank_type = autorank['type'].replace('_', ' ').title()
-            created_at = autorank.get('created_at', 'Unknown')
-            
-            # Format date to "Made the DD/MM/YYYY At HH:MM"
-            if created_at != 'Unknown':
-                try:
-                    from datetime import datetime
-                    dt = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
-                    formatted_date = f"Made the {dt.strftime('%d/%m/%Y At %H:%M')}"
-                except:
-                    formatted_date = f"Made At: {created_at[:16]}"
-            else:
-                formatted_date = "Made At: Unknown"
-            
-            # Get role name instead of mention
-            role_name = f"Role ID {autorank['role_id']}"  # Fallback
-            
+        if not autoranks:
             options.append(discord.SelectOption(
-                label=f"{role_name} ({autorank_type})",
-                value=autorank_id,
-                description=formatted_date
+                label="No autoranks found",
+                value="none",
+                description="No autoranks available in autorank_data.json"
             ))
+        else:
+            for autorank_id, autorank in autoranks.items():
+                autorank_type = autorank['type'].replace('_', ' ').title()
+                created_at = autorank.get('created_at', 'Unknown')
+                
+                # Format date to "Made the DD/MM/YYYY At HH:MM"
+                if created_at != 'Unknown':
+                    try:
+                        from datetime import datetime
+                        dt = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
+                        formatted_date = f"Made the {dt.strftime('%d/%m/%Y At %H:%M')}"
+                    except:
+                        formatted_date = f"Made At: {created_at[:16]}"
+                else:
+                    formatted_date = "Made At: Unknown"
+                
+                # Get role name instead of mention
+                role_name = f"Role ID {autorank['role_id']}"  # Fallback
+                
+                options.append(discord.SelectOption(
+                    label=f"{role_name} ({autorank_type})",
+                    value=autorank_id,
+                    description=formatted_date
+                ))
             
         super().__init__(placeholder="Select autorank to edit...", options=options)
 
     async def callback(self, interaction: discord.Interaction):
+        if self.values[0] == "none":
+            await interaction.response.send_message("❌ No autoranks to edit!", ephemeral=True)
+            return
+            
         autorank_id = self.values[0]
         data = load_autorank_data()
         autorank = data["autoranks"][autorank_id]
