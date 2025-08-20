@@ -1204,15 +1204,18 @@ class AutoRankSystem(commands.Cog):
     def cog_unload(self):
         self.autorank_monitor.cancel()
 
-    @tasks.loop(seconds=1.0)
+    @tasks.loop(seconds=30.0)
     async def autorank_monitor(self):
-        """Monitor and maintain autorank conditions every second"""
+        """Monitor and maintain autorank conditions every 30 seconds"""
         try:
             data = load_autorank_data()
             autoranks = data.get("autoranks", {})
             
+            print(f"🔄 AutoRank Monitor: Checking {len(autoranks)} autorank(s)")
+            
             for autorank_id, autorank in autoranks.items():
                 if autorank["type"] == "new_members" and autorank.get("all_members", False):
+                    print(f"🎯 Processing new_members autorank {autorank_id}")
                     await self.check_new_members_autorank(autorank)
                     
         except Exception as e:
@@ -1227,6 +1230,7 @@ class AutoRankSystem(commands.Cog):
         """Check and maintain new members autorank conditions"""
         try:
             role_id = autorank["role_id"]
+            print(f"🔍 Checking autorank for role ID: {role_id}")
             
             # Find the guild that contains this role
             target_guild = None
@@ -1237,23 +1241,46 @@ class AutoRankSystem(commands.Cog):
                 if role:
                     target_guild = guild
                     target_role = role
+                    print(f"✅ Found role '{role.name}' in guild '{guild.name}'")
                     break
             
             if not target_guild or not target_role:
+                print(f"❌ Role {role_id} not found in any guild")
+                return
+            
+            # Check bot permissions
+            bot_member = target_guild.get_member(self.bot.user.id)
+            if not bot_member.guild_permissions.manage_roles:
+                print(f"❌ Bot doesn't have 'Manage Roles' permission in {target_guild.name}")
+                return
+            
+            # Check if bot's role is higher than target role
+            if target_role >= bot_member.top_role:
+                print(f"❌ Bot's role is not higher than target role '{target_role.name}' in hierarchy")
                 return
                     
             # Check all members in the specific guild
+            members_without_role = []
             for member in target_guild.members:
                 if member.bot:
                     continue  # Skip bots
                     
                 # If member doesn't have the role but should (new member autorank with all_members enabled)
                 if target_role not in member.roles:
-                    try:
-                        await member.add_roles(target_role, reason="AutoRank: New Members (All Members enabled)")
-                        print(f"✅ Added role {target_role.name} to {member.display_name} (AutoRank maintenance)")
-                    except Exception as e:
-                        print(f"❌ Failed to add role {target_role.name} to {member.display_name}: {e}")
+                    members_without_role.append(member)
+            
+            print(f"📊 Found {len(members_without_role)} members without role '{target_role.name}'")
+            
+            for member in members_without_role:
+                try:
+                    await member.add_roles(target_role, reason="AutoRank: New Members (All Members enabled)")
+                    print(f"✅ Added role {target_role.name} to {member.display_name}")
+                except discord.Forbidden:
+                    print(f"❌ Forbidden: Cannot add role {target_role.name} to {member.display_name} (permission issue)")
+                except discord.HTTPException as e:
+                    print(f"❌ HTTP Error adding role {target_role.name} to {member.display_name}: {e}")
+                except Exception as e:
+                    print(f"❌ Failed to add role {target_role.name} to {member.display_name}: {e}")
                             
         except Exception as e:
             print(f"🔄 Error checking new members autorank: {e}")
