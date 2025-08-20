@@ -3,9 +3,9 @@
         "1": {
             "id": "1",
             "title": "Panel Title",
-            "description": "Panel Description",
-            "thumbnail": "",
-            "footer": "Footer Text",
+            "description": "Need help or have a question? Open a ticket and our team will assist you promptly!\n\nTicket Options:\n✦ Report User(s) / Griefer – For users who disrupt or destroy drawings on [**Wplace**](https://wplace.live)\n✦ Claim Prize(s) – To claim rewards or winnings\n✦ General Question – Any other inquiries or support",
+            "thumbnail": "github.com/TheBlueEL/pictures/blob/main/Discord_Ticket.png?raw=true",
+            "footer": "Pantheon Bot - Ticket Support",
             "created_at": "2025-08-20T14:50:27.149740",
             "sub_panels": {
                 "1": {
@@ -82,7 +82,7 @@
                     "panel_description": ""
                 }
             },
-            "display_type": "buttons"
+            "display_type": "dropdown"
         }
     },
     "staff_roles": [],
@@ -109,7 +109,7 @@
         }
     },
     "ticket_counters": {
-        "Ticket Name": 1
+        "Ticket Name": 2
     },
     "closed_tickets": {}
 }
