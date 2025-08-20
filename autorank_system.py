@@ -5,6 +5,38 @@ import json
 import re
 from datetime import datetime
 import asyncio
+import codecs
+
+def normalize_emoji(emoji_str):
+    """Normalize emoji from different Unicode formats"""
+    if not emoji_str:
+        return "⭐"
+    
+    # Si c'est déjà un emoji normal, le retourner tel quel
+    if len(emoji_str) == 1 or (len(emoji_str) == 2 and ord(emoji_str[0]) > 127):
+        return emoji_str
+    
+    # Gérer le format \u2b50
+    if emoji_str.startswith('\\u') and len(emoji_str) == 6:
+        try:
+            return codecs.decode(emoji_str, 'unicode_escape')
+        except:
+            pass
+    
+    # Gérer le format JSON échappé "\u2b50"
+    if emoji_str.startswith('\u') and len(emoji_str) == 2:
+        return emoji_str
+    
+    # Essayer de décoder depuis JSON
+    try:
+        import json
+        decoded = json.loads(f'"{emoji_str}"')
+        return decoded
+    except:
+        pass
+    
+    # Retourner l'emoji par défaut si aucune conversion ne fonctionne
+    return emoji_str
 
 # File management functions
 def load_autorank_data():
@@ -1366,19 +1398,12 @@ class AutoRankSystem(commands.Cog):
                 if (autorank.get("message_id") == reaction.message.id and
                     autorank.get("channel_id") == reaction.message.channel.id):
                     
-                    # Gérer l'emoji Unicode échappé et normal
-                    reaction_emoji = autorank.get("reaction_emoji", "⭐")
+                    # Normaliser les emojis pour la comparaison
+                    reaction_emoji = normalize_emoji(autorank.get("reaction_emoji", "⭐"))
                     user_emoji = str(reaction.emoji)
                     
-                    # Decoder l'emoji Unicode si nécessaire
-                    if reaction_emoji.startswith("\\u"):
-                        try:
-                            reaction_emoji = reaction_emoji.encode().decode('unicode_escape')
-                        except:
-                            pass
-                    
                     print(f"🔍 Comparaison emojis: Config='{reaction_emoji}' vs User='{user_emoji}'")
-                    print(f"🔍 Emoji décodé: '{reaction_emoji}'")
+                    print(f"🔍 Emoji normalisé: '{reaction_emoji}'")
                     
                     # Comparaison directe des emojis
                     if reaction_emoji == user_emoji:
