@@ -1206,24 +1206,32 @@ class AutoRankSystem(commands.Cog):
         try:
             role_id = autorank["role_id"]
             
-            # Check all guilds the bot is in
+            # Find the guild that contains this role
+            target_guild = None
+            target_role = None
+            
             for guild in self.bot.guilds:
                 role = guild.get_role(role_id)
-                if not role:
-                    continue
+                if role:
+                    target_guild = guild
+                    target_role = role
+                    break
+            
+            if not target_guild or not target_role:
+                return
                     
-                # Check all members in the guild
-                for member in guild.members:
-                    if member.bot:
-                        continue  # Skip bots
-                        
-                    # If member doesn't have the role but should (new member autorank with all_members enabled)
-                    if role not in member.roles:
-                        try:
-                            await member.add_roles(role, reason="AutoRank: New Members (All Members enabled)")
-                            print(f"✅ Added role {role.name} to {member.display_name} (AutoRank maintenance)")
-                        except Exception as e:
-                            print(f"❌ Failed to add role {role.name} to {member.display_name}: {e}")
+            # Check all members in the specific guild
+            for member in target_guild.members:
+                if member.bot:
+                    continue  # Skip bots
+                    
+                # If member doesn't have the role but should (new member autorank with all_members enabled)
+                if target_role not in member.roles:
+                    try:
+                        await member.add_roles(target_role, reason="AutoRank: New Members (All Members enabled)")
+                        print(f"✅ Added role {target_role.name} to {member.display_name} (AutoRank maintenance)")
+                    except Exception as e:
+                        print(f"❌ Failed to add role {target_role.name} to {member.display_name}: {e}")
                             
         except Exception as e:
             print(f"🔄 Error checking new members autorank: {e}")
