@@ -1314,14 +1314,29 @@ class AutoRankSystem(commands.Cog):
         for autorank_id, autorank in autoranks.items():
             if (autorank["type"] == "reaction" and 
                 autorank.get("message_id") == reaction.message.id and
-                str(reaction.emoji) == autorank.get("reaction_emoji", "⭐")):
-                try:
-                    role = reaction.message.guild.get_role(autorank["role_id"])
-                    if role and role not in user.roles:
-                        await user.add_roles(role)
-                        print(f"✅ Rôle {role.name} donné à {user.display_name} via réaction {reaction.emoji}")
-                except Exception as e:
-                    print(f"❌ Erreur attribution rôle via réaction: {e}")
+                autorank.get("channel_id") == reaction.message.channel.id):
+                
+                # Vérification plus robuste de l'emoji
+                reaction_emoji = autorank.get("reaction_emoji", "⭐")
+                user_emoji = str(reaction.emoji)
+                
+                print(f"🔍 Comparaison emojis: Config='{reaction_emoji}' vs User='{user_emoji}'")
+                
+                if reaction_emoji == user_emoji:
+                    try:
+                        role = reaction.message.guild.get_role(autorank["role_id"])
+                        if role:
+                            if role not in user.roles:
+                                await user.add_roles(role, reason="AutoRank: Reaction")
+                                print(f"✅ Rôle {role.name} donné à {user.display_name} via réaction {reaction.emoji}")
+                            else:
+                                print(f"ℹ️ {user.display_name} a déjà le rôle {role.name}")
+                        else:
+                            print(f"❌ Rôle {autorank['role_id']} introuvable")
+                    except Exception as e:
+                        print(f"❌ Erreur attribution rôle via réaction: {e}")
+                else:
+                    print(f"❌ Emoji ne correspond pas: '{reaction_emoji}' != '{user_emoji}'")
 
     @discord.app_commands.command(name="autorank", description="Manage server auto-ranking system")
     async def autorank(self, interaction: discord.Interaction):
