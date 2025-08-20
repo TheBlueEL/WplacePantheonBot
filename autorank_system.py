@@ -1459,8 +1459,36 @@ class AutoRankSystem(commands.Cog):
         await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
 
 async def setup(bot):
+    # Update existing autorank data to normalize emojis
+    update_existing_emoji_data()
+    
     await bot.add_cog(AutoRankSystem(bot))
     # Add persistent view to bot
     bot.add_view(PersistentAutoRankButtonView())
     # Restore existing autorank buttons
     await restore_autorank_buttons(bot)
+
+def update_existing_emoji_data():
+    """Update existing autorank data to convert Unicode codes to direct emojis"""
+    try:
+        data = load_autorank_data()
+        updated = False
+        
+        for autorank_id, autorank in data.get("autoranks", {}).items():
+            if autorank.get("type") == "reaction":
+                old_emoji = autorank.get("reaction_emoji", "⭐")
+                new_emoji = normalize_emoji(old_emoji)
+                
+                if old_emoji != new_emoji:
+                    autorank["reaction_emoji"] = new_emoji
+                    updated = True
+                    print(f"✅ Emoji mis à jour pour autorank {autorank_id}: '{old_emoji}' → '{new_emoji}'")
+        
+        if updated:
+            save_autorank_data(data)
+            print("🔄 Configuration des emojis mise à jour automatiquement")
+        else:
+            print("ℹ️ Aucune mise à jour d'emoji nécessaire")
+            
+    except Exception as e:
+        print(f"❌ Erreur mise à jour emojis: {e}")
