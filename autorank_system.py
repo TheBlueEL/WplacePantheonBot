@@ -1,9 +1,10 @@
 
 import discord
-from discord.ext import commands
+from discord.ext import commands, tasks
 import json
 import re
 from datetime import datetime
+import asyncio
 
 # File management functions
 def load_autorank_data():
@@ -1176,6 +1177,56 @@ async def restore_autorank_buttons(bot):
 class AutoRankSystem(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self.autorank_monitor.start()  # Start the monitoring task
+
+    def cog_unload(self):
+        self.autorank_monitor.cancel()
+
+    @tasks.loop(seconds=1.0)
+    async def autorank_monitor(self):
+        """Monitor and maintain autorank conditions every second"""
+        try:
+            data = load_autorank_data()
+            autoranks = data.get("autoranks", {})
+            
+            for autorank_id, autorank in autoranks.items():
+                if autorank["type"] == "new_members" and autorank.get("all_members", False):
+                    await self.check_new_members_autorank(autorank)
+                    
+        except Exception as e:
+            print(f"🔄 Error in autorank monitor: {e}")
+
+    @autorank_monitor.before_loop
+    async def before_autorank_monitor(self):
+        """Wait until bot is ready before starting the monitor"""
+        await self.bot.wait_until_ready()
+
+    async def check_new_members_autorank(self, autorank):
+        """Check and maintain new members autorank conditions"""
+        try:
+            role_id = autorank["role_id"]
+            
+            # Check all guilds the bot is in
+            for guild in self.bot.guilds:
+                role = guild.get_role(role_id)
+                if not role:
+                    continue
+                    
+                # Check all members in the guild
+                for member in guild.members:
+                    if member.bot:
+                        continue  # Skip bots
+                        
+                    # If member doesn't have the role but should (new member autorank with all_members enabled)
+                    if role not in member.roles:
+                        try:
+                            await member.add_roles(role, reason="AutoRank: New Members (All Members enabled)")
+                            print(f"✅ Added role {role.name} to {member.display_name} (AutoRank maintenance)")
+                        except Exception as e:
+                            print(f"❌ Failed to add role {role.name} to {member.display_name}: {e}")
+                            
+        except Exception as e:
+            print(f"🔄 Error checking new members autorank: {e}")
 
     @commands.Cog.listener()
     async def on_member_join(self, member):
