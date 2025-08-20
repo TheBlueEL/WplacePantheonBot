@@ -210,6 +210,7 @@ class ReactionConfigView(discord.ui.View):
         self.user = user
         self.selected_role = None
         self.message_link = None
+        self.reaction_emoji = "⭐"
         self.update_view()
 
     def update_view(self):
@@ -217,16 +218,29 @@ class ReactionConfigView(discord.ui.View):
         self.add_item(RoleSelect(self))
         
         if self.selected_role:
-            message_button = discord.ui.Button(label="Message Link", style=discord.ButtonStyle.primary, emoji="🔗")
+            # Première ligne - Message Link et Reaction Emoji
+            message_button = discord.ui.Button(label="Message Link", style=discord.ButtonStyle.primary, emoji="🔗", row=1)
             message_button.callback = self.set_message_link
             self.add_item(message_button)
             
+            reaction_emoji_button = discord.ui.Button(label="Reaction Emoji", style=discord.ButtonStyle.secondary, emoji="⭐", row=1)
+            reaction_emoji_button.callback = self.set_reaction_emoji
+            self.add_item(reaction_emoji_button)
+            
             if self.message_link:
-                confirm_button = discord.ui.Button(label="Confirm", style=discord.ButtonStyle.success, emoji="✅")
+                # Deuxième ligne - Confirm et Back
+                confirm_button = discord.ui.Button(label="Confirm", style=discord.ButtonStyle.success, emoji="✅", row=2)
                 confirm_button.callback = self.confirm_reaction
                 self.add_item(confirm_button)
         
-        self.add_item(BackToCreateButton(self.user))
+        # Back toujours à droite
+        back_button = BackToCreateButton(self.user)
+        back_button.row = 2
+        self.add_item(back_button)
+
+    async def set_reaction_emoji(self, interaction: discord.Interaction):
+        modal = ReactionEmojiModal(self)
+        await interaction.response.send_modal(modal)
 
     async def set_message_link(self, interaction: discord.Interaction):
         modal = MessageLinkModal(self)
@@ -251,14 +265,26 @@ class ReactionConfigView(discord.ui.View):
             "guild_id": guild_id,
             "channel_id": channel_id,
             "message_id": message_id,
+            "reaction_emoji": self.reaction_emoji,
             "created_at": datetime.now().isoformat()
         }
         
         save_autorank_data(data)
         
+        # Ajouter la réaction au message
+        await self.add_reaction_to_message(interaction, data["autoranks"][autorank_id])
+        
         view = AutoRankMainView(self.user)
         embed = view.get_main_embed()
         await interaction.response.edit_message(embed=embed, view=view)
+
+    async def add_reaction_to_message(self, interaction, autorank_data):
+        try:
+            channel = interaction.guild.get_channel(autorank_data["channel_id"])
+            message = await channel.fetch_message(autorank_data["message_id"])
+            await message.add_reaction(autorank_data["reaction_emoji"])
+        except:
+            pass
 
     def get_embed(self):
         embed = discord.Embed(
@@ -273,6 +299,12 @@ class ReactionConfigView(discord.ui.View):
                 value=self.selected_role.mention,
                 inline=False
             )
+            
+        embed.add_field(
+            name="Reaction Emoji",
+            value=self.reaction_emoji,
+            inline=False
+        )
             
         if self.message_link:
             embed.add_field(
@@ -632,6 +664,26 @@ class ButtonEmojiModal(discord.ui.Modal):
         embed = self.parent_view.get_embed()
         await interaction.response.edit_message(embed=embed, view=self.parent_view)
 
+class ReactionEmojiModal(discord.ui.Modal):
+    def __init__(self, parent_view):
+        super().__init__(title="Reaction Emoji")
+        self.parent_view = parent_view
+
+    reaction_emoji = discord.ui.TextInput(
+        label="Reaction Emoji",
+        placeholder="Enter emoji (Unicode or <:name:id>)",
+        required=False,
+        max_length=100,
+        default="⭐"
+    )
+
+    async def on_submit(self, interaction: discord.Interaction):
+        emoji = self.reaction_emoji.value or "⭐"
+        self.parent_view.reaction_emoji = emoji
+        self.parent_view.update_view()
+        embed = self.parent_view.get_embed()
+        await interaction.response.edit_message(embed=embed, view=self.parent_view)
+
 # Navigation Buttons
 class BackToMainButton(discord.ui.Button):
     def __init__(self, user):
@@ -831,6 +883,7 @@ class EditReactionConfigView(discord.ui.View):
         autorank = data["autoranks"][autorank_id]
         self.selected_role = None
         self.message_link = f"https://discord.com/channels/{autorank['guild_id']}/{autorank['channel_id']}/{autorank['message_id']}"
+        self.reaction_emoji = autorank.get("reaction_emoji", "⭐")
         self.update_view()
 
     def update_view(self):
@@ -838,19 +891,31 @@ class EditReactionConfigView(discord.ui.View):
         self.add_item(RoleSelect(self))
         
         if self.selected_role:
-            message_button = discord.ui.Button(label="Message Link", style=discord.ButtonStyle.primary, emoji="🔗")
+            # Première ligne - Message Link et Reaction Emoji
+            message_button = discord.ui.Button(label="Message Link", style=discord.ButtonStyle.primary, emoji="🔗", row=1)
             message_button.callback = self.set_message_link
             self.add_item(message_button)
             
-            confirm_button = discord.ui.Button(label="Update", style=discord.ButtonStyle.success, emoji="✅")
+            reaction_emoji_button = discord.ui.Button(label="Reaction Emoji", style=discord.ButtonStyle.secondary, emoji="⭐", row=1)
+            reaction_emoji_button.callback = self.set_reaction_emoji
+            self.add_item(reaction_emoji_button)
+            
+            # Deuxième ligne - Update, Delete et Back
+            confirm_button = discord.ui.Button(label="Update", style=discord.ButtonStyle.success, emoji="✅", row=2)
             confirm_button.callback = self.update_autorank
             self.add_item(confirm_button)
         
-        delete_button = discord.ui.Button(label="Delete", style=discord.ButtonStyle.danger, emoji="🗑️")
+        delete_button = discord.ui.Button(label="Delete", style=discord.ButtonStyle.danger, emoji="🗑️", row=2)
         delete_button.callback = self.delete_autorank
         self.add_item(delete_button)
         
-        self.add_item(BackToEditButton(self.user))
+        back_button = BackToEditButton(self.user)
+        back_button.row = 2
+        self.add_item(back_button)
+
+    async def set_reaction_emoji(self, interaction: discord.Interaction):
+        modal = ReactionEmojiModal(self)
+        await interaction.response.send_modal(modal)
 
     async def set_message_link(self, interaction: discord.Interaction):
         modal = MessageLinkModal(self)
@@ -867,13 +932,25 @@ class EditReactionConfigView(discord.ui.View):
             "role_id": self.selected_role.id,
             "guild_id": guild_id,
             "channel_id": channel_id,
-            "message_id": message_id
+            "message_id": message_id,
+            "reaction_emoji": self.reaction_emoji
         })
         save_autorank_data(data)
+        
+        # Ajouter la nouvelle réaction au message
+        await self.add_reaction_to_message(interaction, data["autoranks"][self.autorank_id])
         
         view = AutoRankMainView(self.user)
         embed = view.get_main_embed()
         await interaction.response.edit_message(embed=embed, view=view)
+
+    async def add_reaction_to_message(self, interaction, autorank_data):
+        try:
+            channel = interaction.guild.get_channel(autorank_data["channel_id"])
+            message = await channel.fetch_message(autorank_data["message_id"])
+            await message.add_reaction(autorank_data["reaction_emoji"])
+        except:
+            pass
 
     async def delete_autorank(self, interaction: discord.Interaction):
         data = load_autorank_data()
@@ -901,6 +978,12 @@ class EditReactionConfigView(discord.ui.View):
                 value=self.selected_role.mention,
                 inline=False
             )
+            
+        embed.add_field(
+            name="Reaction Emoji",
+            value=self.reaction_emoji,
+            inline=False
+        )
             
         embed.add_field(
             name="Message Link",
@@ -1228,13 +1311,15 @@ class AutoRankSystem(commands.Cog):
         
         for autorank_id, autorank in autoranks.items():
             if (autorank["type"] == "reaction" and 
-                autorank.get("message_id") == reaction.message.id):
+                autorank.get("message_id") == reaction.message.id and
+                str(reaction.emoji) == autorank.get("reaction_emoji", "⭐")):
                 try:
                     role = reaction.message.guild.get_role(autorank["role_id"])
                     if role and role not in user.roles:
                         await user.add_roles(role)
-                except:
-                    pass
+                        print(f"✅ Rôle {role.name} donné à {user.display_name} via réaction {reaction.emoji}")
+                except Exception as e:
+                    print(f"❌ Erreur attribution rôle via réaction: {e}")
 
     @discord.app_commands.command(name="autorank", description="Manage server auto-ranking system")
     async def autorank(self, interaction: discord.Interaction):
