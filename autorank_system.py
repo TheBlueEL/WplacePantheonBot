@@ -1384,15 +1384,41 @@ class AutoRankSystem(commands.Cog):
                     if reaction_emoji == user_emoji:
                         print(f"✅ Emojis correspondent ! Attribution du rôle...")
                         try:
-                            role = reaction.message.guild.get_role(autorank["role_id"])
-                            if role:
-                                if role not in user.roles:
-                                    await user.add_roles(role, reason="AutoRank: Reaction")
-                                    print(f"✅ Rôle {role.name} donné à {user.display_name} via réaction {reaction.emoji}")
-                                else:
-                                    print(f"ℹ️ {user.display_name} a déjà le rôle {role.name}")
-                            else:
+                            guild = reaction.message.guild
+                            role = guild.get_role(autorank["role_id"])
+                            
+                            if not role:
                                 print(f"❌ Rôle {autorank['role_id']} introuvable sur le serveur")
+                                continue
+                            
+                            # Vérifier les permissions du bot
+                            bot_member = guild.get_member(self.bot.user.id)
+                            if not bot_member:
+                                print(f"❌ Bot non trouvé sur le serveur")
+                                continue
+                                
+                            if not bot_member.guild_permissions.manage_roles:
+                                print(f"❌ Bot n'a pas la permission manage_roles")
+                                continue
+                            
+                            # Vérifier si le rôle du bot est plus haut que le rôle cible
+                            if role >= bot_member.top_role:
+                                print(f"❌ Rôle {role.name} est plus haut que le rôle du bot")
+                                continue
+                            
+                            # Vérifier si l'utilisateur a déjà le rôle
+                            if role in user.roles:
+                                print(f"ℹ️ {user.display_name} a déjà le rôle {role.name}")
+                                continue
+                            
+                            # Attribuer le rôle
+                            await user.add_roles(role, reason="AutoRank: Reaction")
+                            print(f"✅ Rôle {role.name} donné à {user.display_name} via réaction {reaction.emoji}")
+                            
+                        except discord.Forbidden:
+                            print(f"❌ Permissions insuffisantes pour attribuer le rôle {role.name}")
+                        except discord.HTTPException as e:
+                            print(f"❌ Erreur HTTP lors de l'attribution du rôle: {e}")
                         except Exception as e:
                             print(f"❌ Erreur attribution rôle via réaction: {e}")
                     else:
