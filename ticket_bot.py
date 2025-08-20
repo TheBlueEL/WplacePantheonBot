@@ -1267,7 +1267,7 @@ def create_publish_selection_embed(selected_panel, selected_channel):
     if selected_channel:
         embed.add_field(
             name="<:SettingLOGO:1407071854593839239> Selected Channel",
-            value=f"**{selected_channel.mention}**\n`#{selected_channel.name}`",
+            value=f"**{selected_channel.mention}**",
             inline=False
         )
     else:
