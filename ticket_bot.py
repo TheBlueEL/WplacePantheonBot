@@ -100,7 +100,7 @@ def load_ticket_data():
                         "footer": f"{get_bot_name()} - Ticket Bot"
                     },
                     "button_enabled": True,
-                    "button_emoji": "🔒",
+                    "button_emoji": "<:CloseLOGO:1407072519420248256>",
                     "button_label": "Close Ticket",
                     "ai_enabled": False,
                     "log_settings": {
@@ -144,7 +144,7 @@ def load_ticket_data():
                                 "permissions": panel.get("permissions", copy.deepcopy(DEFAULT_PERMISSIONS)),
                                 "ai_enabled": panel.get("ai_enabled", False),
                                 "button_visible": True,
-                                "button_emoji": "🎫",
+                                "button_emoji": "<:TicketLOGO:1407730639343714397>",
                                 "button_text": "",
                                 "ticket_description": "Support will be with you shortly. To close this ticket.",
                                 "ticket_footer": f"{get_bot_name()} - Ticket Bot"
@@ -175,7 +175,7 @@ def load_ticket_data():
                     "footer": f"{get_bot_name()} - Ticket Bot"
                 },
                 "button_enabled": True,
-                "button_emoji": "🔒",
+                "button_emoji": "<:CloseLOGO:1407072519420248256>",
                 "button_label": "Close Ticket",
                 "ai_enabled": False,
                 "log_settings": {
@@ -337,13 +337,13 @@ class TicketCreateModal(discord.ui.Modal, title='Create New Ticket Panel'):
                     "permissions": copy.deepcopy(DEFAULT_PERMISSIONS),
                     "ai_enabled": False,
                     "button_visible": True,
-                    "button_emoji": "🎫",
+                    "button_emoji": "<:TicketLOGO:1407730639343714397>",
                     "button_text": "",
                     "ticket_title": "Default Ticket",
                     "ticket_description": "Support will be with you shortly. To close this ticket.",
                     "ticket_footer": f"{get_bot_name()} - Ticket Bot",
-                    "close_button_text": "🔒",
-                    "panel_emoji": "🎟️",
+                    "close_button_text": "<:CloseLOGO:1407072519420248256>",
+                    "panel_emoji": "<:TicketLOGO:1407730639343714397>",
                     "panel_title": "Default Ticket",
                     "panel_description": ""
                 }
@@ -475,7 +475,7 @@ class SubPanelButtonEditModal(discord.ui.Modal, title='Edit Sub-Panel Button'):
 
     emoji_input = discord.ui.TextInput(
         label='Button Emoji',
-        placeholder='🎫 (emoji for the button)',
+        placeholder='<:TicketLOGO:1407730639343714397> (emoji for the button)',
         required=True,
         max_length=10
     )
@@ -534,7 +534,7 @@ class SubPanelCreateModal(discord.ui.Modal, title='Create Sub-Panel'):
 
     close_button_input = discord.ui.TextInput(
         label='Close Bouton',
-        placeholder='Close button text/emoji (default: 🔒)',
+        placeholder='Universal Emoji or Other...',
         required=False,
         max_length=100
     )
@@ -567,13 +567,13 @@ class SubPanelCreateModal(discord.ui.Modal, title='Create Sub-Panel'):
             "permissions": copy.deepcopy(DEFAULT_PERMISSIONS),
             "ai_enabled": False,
             "button_visible": True,
-            "button_emoji": "🎫",
+            "button_emoji": "<:TicketLOGO:1407730639343714397>",
             "button_text": "",
             "ticket_title": self.ticket_title_input.value,
             "ticket_description": self.description_input.value or "Support will be with you shortly. To close this ticket.",
             "ticket_footer": self.footer_input.value or f"{get_bot_name()} - Ticket Bot",
-            "close_button_text": self.close_button_input.value or "🔒",
-            "panel_emoji": "🎟️",
+            "close_button_text": self.close_button_input.value or "<:CloseLOGO:1407072519420248256>",
+            "panel_emoji": "<:TicketLOGO:1407730639343714397>",
             "panel_title": self.ticket_title_input.value,
             "panel_description": ""
         }
@@ -593,13 +593,13 @@ class PanelInterfaceEditModal(discord.ui.Modal):
         self.sub_panel_id = sub_panel_id
         data = load_ticket_data()
         sub_panel = data["tickets"][self.panel_id]["sub_panels"][self.sub_panel_id]
-        self.panel_emoji_input.default = sub_panel.get("panel_emoji", "🎟️")
+        self.panel_emoji_input.default = sub_panel.get("panel_emoji", "<:TicketLOGO:1407730639343714397>")
         self.panel_title_input.default = sub_panel.get("panel_title", sub_panel.get("title", ""))
         self.panel_description_input.default = sub_panel.get("panel_description", "")
 
     panel_emoji_input = discord.ui.TextInput(
         label='Panel Emoji',
-        placeholder='Emoji for panel (default: 🎟️)',
+        placeholder='Emoji for panel (default: <:TicketLOGO:1407730639343714397>)',
         required=False,
         max_length=50
     )
@@ -625,7 +625,7 @@ class PanelInterfaceEditModal(discord.ui.Modal):
         data = load_ticket_data()
         sub_panel = data["tickets"][self.panel_id]["sub_panels"][self.sub_panel_id]
 
-        data["tickets"][self.panel_id]["sub_panels"][self.sub_panel_id]["panel_emoji"] = self.panel_emoji_input.value or "🎟️"
+        data["tickets"][self.panel_id]["sub_panels"][self.sub_panel_id]["panel_emoji"] = self.panel_emoji_input.value or "<:TicketLOGO:1407730639343714397>"
 
         # Allow independent Panel Title editing (doesn't affect ticket_title)
         new_panel_title = self.panel_title_input.value or sub_panel.get("title", "")
@@ -634,7 +634,7 @@ class PanelInterfaceEditModal(discord.ui.Modal):
         data["tickets"][self.panel_id]["sub_panels"][self.sub_panel_id]["panel_description"] = self.panel_description_input.value or ""
 
         # Update button emoji to match panel emoji
-        data["tickets"][self.panel_id]["sub_panels"][self.sub_panel_id]["button_emoji"] = self.panel_emoji_input.value or "🎟️"
+        data["tickets"][self.panel_id]["sub_panels"][self.sub_panel_id]["button_emoji"] = self.panel_emoji_input.value or "<:TicketLOGO:1407730639343714397>"
 
         save_ticket_data(data)
 
@@ -653,14 +653,14 @@ class PanelManagementView(discord.ui.View):
         modal = SubPanelCreateModal(self.panel_id)
         await interaction.response.send_modal(modal)
 
-    @discord.ui.button(label='Edit Sub-Panel', style=discord.ButtonStyle.primary, emoji='✏️', row=0)
+    @discord.ui.button(label='Edit Sub-Panel', style=discord.ButtonStyle.primary, emoji='<:EditLOGO:1407071307022995508>', row=0)
     async def edit_sub_panel(self, interaction: discord.Interaction, button: discord.ui.Button):
         # Reload data to get latest changes
         data = load_ticket_data()
         sub_panels = data["tickets"][self.panel_id]["sub_panels"]
 
         if not sub_panels:
-            await interaction.response.send_message("❌ No sub-panels to edit.", ephemeral=True)
+            await interaction.response.send_message("<:ErrorLOGO:1407071682031648850> No sub-panels to edit.", ephemeral=True)
             return
 
         view = discord.ui.View(timeout=None)
@@ -668,19 +668,19 @@ class PanelManagementView(discord.ui.View):
         view.add_item(BackButton("panel_management", self.panel_id))
 
         embed = discord.Embed(
-            title="✏️ Edit Sub-Panel",
+            title="<:EditLOGO:1407071307022995508> Edit Sub-Panel",
             description="Select the sub-panel you want to edit:",
             color=0x2b2d31
         )
         await interaction.response.edit_message(embed=embed, view=view)
 
-    @discord.ui.button(label='Delete Sub-Panel', style=discord.ButtonStyle.danger, emoji='🗑️', row=0)
+    @discord.ui.button(label='Delete Sub-Panel', style=discord.ButtonStyle.danger, emoji='<:DeleteLOGO:1407071421363916841>', row=0)
     async def delete_sub_panel(self, interaction: discord.Interaction, button: discord.ui.Button):
         data = load_ticket_data()
         sub_panels = data["tickets"][self.panel_id]["sub_panels"]
 
         if len(sub_panels) <= 1:
-            await interaction.response.send_message("❌ Cannot delete the last sub-panel.", ephemeral=True)
+            await interaction.response.send_message("<:ErrorLOGO:1407071682031648850> Cannot delete the last sub-panel.", ephemeral=True)
             return
 
         view = discord.ui.View(timeout=None)
@@ -688,20 +688,20 @@ class PanelManagementView(discord.ui.View):
         view.add_item(BackButton("panel_management", self.panel_id))
 
         embed = discord.Embed(
-            title="🗑️ Delete Sub-Panel",
-            description="⚠️ **Warning:** This action is irreversible!\n\nSelect the sub-panel to delete:",
+            title="<:DeleteLOGO:1407071421363916841> Delete Sub-Panel",
+            description="<:WarningLOGO:1407072569487659198> **Warning:** This action is irreversible!\n\nSelect the sub-panel to delete:",
             color=0xed4245
         )
         await interaction.response.edit_message(embed=embed, view=view)
 
-    @discord.ui.button(label='Edit Panel', style=discord.ButtonStyle.primary, emoji='📝', row=1)
+    @discord.ui.button(label='Edit Panel', style=discord.ButtonStyle.primary, emoji='<:EditLOGO:1407071307022995508>', row=1)
     async def edit_panel(self, interaction: discord.Interaction, button: discord.ui.Button):
         data = load_ticket_data()
         current_panel = data["tickets"][self.panel_id]
         modal = PanelEditModal(self.panel_id, current_panel)
         await interaction.response.send_modal(modal)
 
-    @discord.ui.button(label='Display Type', style=discord.ButtonStyle.secondary, emoji='🔄', row=1)
+    @discord.ui.button(label='Display Type', style=discord.ButtonStyle.secondary, emoji='<:UpdateLOGO:1407072818214080695>', row=1)
     async def toggle_display_type(self, interaction: discord.Interaction, button: discord.ui.Button):
         data = load_ticket_data()
         current_type = data["tickets"][self.panel_id].get("display_type", "buttons")
@@ -713,7 +713,7 @@ class PanelManagementView(discord.ui.View):
         embed = create_panel_management_embed(data, self.panel_id)
         await interaction.response.edit_message(embed=embed, view=view)
 
-    @discord.ui.button(label='Back', style=discord.ButtonStyle.secondary, emoji='🔙', row=2)
+    @discord.ui.button(label='Back', style=discord.ButtonStyle.secondary, emoji='<:BackLOGO:1407071474233114766>', row=2)
     async def back_to_main(self, interaction: discord.Interaction, button: discord.ui.Button):
         view = TicketPanelView()
         data = load_ticket_data()
@@ -768,11 +768,11 @@ class SubPanelEditView(discord.ui.View):
         self.panel_id = panel_id
         self.sub_panel_id = sub_panel_id
 
-    @discord.ui.button(label='Permissions', style=discord.ButtonStyle.primary, emoji='🔐', row=0)
+    @discord.ui.button(label='Permissions', style=discord.ButtonStyle.primary, emoji='<:ParticipantsLOGO:1407733929389199460>', row=0)
     async def manage_permissions(self, interaction: discord.Interaction, button: discord.ui.Button):
         view = PermissionSelectView(self.panel_id, self.sub_panel_id)
         embed = discord.Embed(
-            title="🔐 Permission Management",
+            title="<:ParticipantsLOGO:1407733929389199460> Permission Management",
             description="Select the permission type you want to modify:",
             color=0x2b2d31
         )
@@ -789,17 +789,17 @@ class SubPanelEditView(discord.ui.View):
         embed = create_sub_panel_edit_embed(data, self.panel_id, self.sub_panel_id)
         await interaction.response.edit_message(embed=embed, view=view)
 
-    @discord.ui.button(label='Edit Panel Interface', style=discord.ButtonStyle.primary, emoji='🎨', row=1)
+    @discord.ui.button(label='Edit Panel Interface', style=discord.ButtonStyle.primary, emoji='<:EditLOGO:1407071307022995508>', row=1)
     async def edit_panel_interface(self, interaction: discord.Interaction, button: discord.ui.Button):
         modal = PanelInterfaceEditModal(self.panel_id, self.sub_panel_id)
         await interaction.response.send_modal(modal)
 
-    @discord.ui.button(label='Edit Description', style=discord.ButtonStyle.primary, emoji='📝', row=1)
+    @discord.ui.button(label='Edit Description', style=discord.ButtonStyle.primary, emoji='<:DescriptionLOGO:1407733417172533299>', row=1)
     async def edit_description(self, interaction: discord.Interaction, button: discord.ui.Button):
         modal = SubPanelDescriptionEditModal(self.panel_id, self.sub_panel_id)
         await interaction.response.send_modal(modal)
 
-    @discord.ui.button(label='Back', style=discord.ButtonStyle.secondary, emoji='🔙', row=2)
+    @discord.ui.button(label='Back', style=discord.ButtonStyle.secondary, emoji='<:BackLOGO:1407071474233114766>', row=2)
     async def back_to_panel_management(self, interaction: discord.Interaction, button: discord.ui.Button):
         view = PanelManagementView(self.panel_id)
         data = load_ticket_data()
@@ -816,7 +816,7 @@ class SubPanelDescriptionEditModal(discord.ui.Modal, title='Edit Sub-Panel Descr
         self.ticket_title_input.default = sub_panel.get("ticket_title", "Ticket")
         self.description_input.default = sub_panel.get("ticket_description", "Support will be with you shortly. To close this ticket.")
         self.footer_input.default = sub_panel.get("ticket_footer", f"{get_bot_name()} - Ticket Bot")
-        self.close_button_input.default = sub_panel.get("close_button_text", "🔒")
+        self.close_button_input.default = sub_panel.get("close_button_text", "<:CloseLOGO:1407072519420248256>")
 
     ticket_title_input = discord.ui.TextInput(
         label='Ticket Title',
@@ -862,7 +862,7 @@ class SubPanelDescriptionEditModal(discord.ui.Modal, title='Edit Sub-Panel Descr
         # Update other fields
         data["tickets"][self.panel_id]["sub_panels"][self.sub_panel_id]["ticket_description"] = self.description_input.value or "Support will be with you shortly. To close this ticket."
         data["tickets"][self.panel_id]["sub_panels"][self.sub_panel_id]["ticket_footer"] = self.footer_input.value or f"{get_bot_name()} - Ticket Bot"
-        data["tickets"][self.panel_id]["sub_panels"][self.sub_panel_id]["close_button_text"] = self.close_button_input.value or "🔒"
+        data["tickets"][self.panel_id]["sub_panels"][self.sub_panel_id]["close_button_text"] = self.close_button_input.value or "<:CloseLOGO:1407072519420248256>"
 
         save_ticket_data(data)
 
@@ -888,7 +888,7 @@ class PermissionButtonView(discord.ui.View):
                 perm_key = perm_keys[i]
                 enabled = permissions[perm_key]
                 style = discord.ButtonStyle.success if enabled else discord.ButtonStyle.danger
-                emoji = "✅" if enabled else "❌"
+                emoji = "<:SucessLOGO:1407071637840592977>" if enabled else "<:ErrorLOGO:1407071682031648850>"
             else:
                 style = discord.ButtonStyle.secondary
                 emoji = "➖"
@@ -907,7 +907,7 @@ class PermissionButtonView(discord.ui.View):
         back_button = discord.ui.Button(
             label="Back",
             style=discord.ButtonStyle.secondary,
-            emoji="🔙",
+            emoji="<:BackLOGO:1407071474233114766>",
             row=4
         )
         back_button.callback = self.back_callback
@@ -929,14 +929,14 @@ class PermissionButtonView(discord.ui.View):
                 embed = create_permission_button_embed(self.panel_id, self.sub_panel_id, self.permission_type)
                 await interaction.response.edit_message(embed=embed, view=new_view)
             else:
-                await interaction.response.send_message("❌ Permission slot not available", ephemeral=True)
+                await interaction.response.send_message("<:ErrorLOGO:1407071682031648850> Permission slot not available", ephemeral=True)
 
         return button_callback
 
     async def back_callback(self, interaction):
         view = PermissionSelectView(self.panel_id, self.sub_panel_id)
         embed = discord.Embed(
-            title="🔐 Permission Management",
+            title="<:ParticipantsLOGO:1407733929389199460> Permission Management",
             description="Select the permission type you want to modify:",
             color=0x2b2d31
         )
@@ -982,7 +982,7 @@ class TicketSelect(discord.ui.Select):
 
     async def callback(self, interaction: discord.Interaction):
         if self.values[0] == "none":
-            await interaction.response.send_message("❌ No ticket panels available.", ephemeral=True)
+            await interaction.response.send_message("<:ErrorLOGO:1407071682031648850> No ticket panels available.", ephemeral=True)
             return
 
         panel_id = self.values[0]
@@ -997,8 +997,8 @@ class TicketSelect(discord.ui.Select):
             panel_name = data["tickets"][panel_id]["title"]
             view = PanelDeleteConfirmView(panel_id, panel_name)
             embed = discord.Embed(
-                title="⚠️ Confirm Deletion",
-                description=f"Are you sure you want to delete the panel **{panel_name}**?\n\n⚠️ **This action is irreversible!**",
+                title="<:WarningLOGO:1407072569487659198> Confirm Deletion",
+                description=f"Are you sure you want to delete the panel **{panel_name}**?\n\n<:WarningLOGO:1407072569487659198> **This action is irreversible!**",
                 color=0xed4245
             )
             await interaction.response.edit_message(embed=embed, view=view)
@@ -1036,7 +1036,7 @@ class PanelSelect(discord.ui.Select):
 
     async def callback(self, interaction: discord.Interaction):
         if self.values[0] == "none":
-            await interaction.response.send_message("❌ No other panels available.", ephemeral=True)
+            await interaction.response.send_message("<:ErrorLOGO:1407071682031648850> No other panels available.", ephemeral=True)
             return
 
         new_panel_id = self.values[0]
@@ -1112,7 +1112,7 @@ class PublishSelectionView(discord.ui.View):
             confirm_button = discord.ui.Button(
                 label="Confirm Publication",
                 style=discord.ButtonStyle.success,
-                emoji="✅",
+                emoji="<:SucessLOGO:1407071637840592977>",
                 custom_id="confirm_publish"
             )
             confirm_button.callback = self.confirm_publish
@@ -1133,7 +1133,7 @@ class PublishSelectionView(discord.ui.View):
                 channel = interaction.guild.get_channel(selected_channel.id)
 
             if not channel:
-                await interaction.response.send_message("❌ Error: Channel not found.", ephemeral=True)
+                await interaction.response.send_message("<:ErrorLOGO:1407071682031648850> Error: Channel not found.", ephemeral=True)
                 return
 
             # Create ticket embed for publication (in English)
@@ -1160,13 +1160,13 @@ class PublishSelectionView(discord.ui.View):
             main_embed = create_ticket_panel_embed(data)
 
             await interaction.response.edit_message(
-                content=f"✅ Panel published successfully in {channel.mention}!",
+                content=f"<:SucessLOGO:1407071637840592977> Panel published successfully in {channel.mention}!",
                 embed=main_embed,
                 view=view
             )
 
         except Exception as e:
-            await interaction.response.send_message(f"❌ Error during publication: {str(e)}", ephemeral=True)
+            await interaction.response.send_message(f"<:ErrorLOGO:1407071682031648850> Error during publication: {str(e)}", ephemeral=True)
 
 class PublishPanelSelect(discord.ui.Select):
     def __init__(self):
@@ -1199,7 +1199,7 @@ class PublishPanelSelect(discord.ui.Select):
 
     async def callback(self, interaction: discord.Interaction):
         if self.values[0] == "none":
-            await interaction.response.send_message("❌ No ticket panels available.", ephemeral=True)
+            await interaction.response.send_message("<:ErrorLOGO:1407071682031648850> No ticket panels available.", ephemeral=True)
             return
 
         panel_id = self.values[0]
@@ -1253,14 +1253,14 @@ def create_publish_selection_embed(selected_panel, selected_channel):
     # Panel selection status
     if selected_panel:
         embed.add_field(
-            name="🎫 Selected Panel",
+            name="<:TicketLOGO:1407730639343714397> Selected Panel",
             value=f"**{selected_panel['title']}**\n{selected_panel['description'][:100]}{'...' if len(selected_panel['description']) > 100 else ''}",
             inline=False
         )
     else:
         embed.add_field(
-            name="🎫 Panel",
-            value="❌ No panel selected",
+            name="<:TicketLOGO:1407730639343714397> Panel",
+            value="<:ErrorLOGO:1407071682031648850> No panel selected",
             inline=True
         )
 
@@ -1274,14 +1274,14 @@ def create_publish_selection_embed(selected_panel, selected_channel):
     else:
         embed.add_field(
             name="📍 Channel",
-            value="❌ No channel selected",
+            value="<:ErrorLOGO:1407071682031648850> No channel selected",
             inline=True
         )
 
     # Confirmation status
     if selected_panel and selected_channel:
         embed.add_field(
-            name="✅ Ready for Publication",
+            name="<:SucessLOGO:1407071637840592977> Ready for Publication",
             value="Click **Confirm Publication** to publish the panel.",
             inline=False
         )
@@ -1314,7 +1314,7 @@ class TicketTypeSelect(discord.ui.Select):
         options = []
         for sub_panel_id, sub_panel in sub_panels.items():
             ai_indicator = "🤖" if sub_panel.get("ai_enabled", False) else ""
-            button_emoji = sub_panel.get("panel_emoji", sub_panel.get("button_emoji", "🎫"))
+            button_emoji = sub_panel.get("panel_emoji", sub_panel.get("button_emoji", "<:TicketLOGO:1407730639343714397>"))
             panel_title = sub_panel.get("panel_title", sub_panel.get("title", "Default Ticket"))
             panel_description = sub_panel.get("panel_description", sub_panel["description"])
 
@@ -1374,8 +1374,8 @@ class SubPanelTicketSelectView(discord.ui.View):
             if not sub_panel.get("button_visible", True):
                 continue
 
-            ai_indicator = "🤖" if sub_panel.get("ai_enabled", False) else ""
-            button_emoji = sub_panel.get("panel_emoji", sub_panel.get("button_emoji", "🎫"))
+            ai_indicator = "<:BotLOGO:1407071803150569472>" if sub_panel.get("ai_enabled", False) else ""
+            button_emoji = sub_panel.get("panel_emoji", sub_panel.get("button_emoji", "<:TicketLOGO:1407730639343714397>"))
             button_text = sub_panel.get("button_text", "")
             panel_title = sub_panel.get("panel_title", sub_panel.get("title", "Default Ticket"))
 
@@ -1457,7 +1457,7 @@ class SubPanelTicketSelectView(discord.ui.View):
                 ticket_description = "Support will be with you shortly. To close this ticket."
 
             embed = discord.Embed(
-                title=f"🎫 {ticket_title}",
+                title=f"<:TicketLOGO:1407730639343714397> {ticket_title}",
                 description=ticket_description if ticket_description else "Support will be with you shortly. To close this ticket.",
                 color=0x5865f2
             )
@@ -1469,7 +1469,7 @@ class SubPanelTicketSelectView(discord.ui.View):
             embed.set_footer(text=footer_text)
 
             # Create close button view with custom close button text
-            close_button_text = sub_panel.get("close_button_text", "🔒")
+            close_button_text = sub_panel.get("close_button_text", "<:CloseLOGO:1407072519420248256>")
             close_view = TicketCloseView(close_button_text, ticket_channel.id)
 
             # Send ticket message
@@ -1489,12 +1489,12 @@ class SubPanelTicketSelectView(discord.ui.View):
             })
 
             await interaction.response.send_message(
-                f"✅ Ticket created! {ticket_channel.mention}",
+                f"<:SucessLOGO:1407071637840592977> Ticket created! {ticket_channel.mention}",
                 ephemeral=True
             )
 
         except Exception as e:
-            await interaction.response.send_message(f"❌ Error creating ticket: {str(e)}", ephemeral=True)
+            await interaction.response.send_message(f"<:ErrorLOGO:1407071682031648850> Error creating ticket: {str(e)}", ephemeral=True)
 
 # Published Ticket View (for the actual ticket panel message)
 class PublishedTicketView(discord.ui.View):
@@ -1512,8 +1512,8 @@ class PublishedTicketView(discord.ui.View):
         if display_type == "buttons":
             # Create buttons for each visible sub-panel
             for sub_panel_id, sub_panel in visible_sub_panels.items():
-                ai_indicator = "🤖" if sub_panel.get("ai_enabled", False) else ""
-                button_emoji = sub_panel.get("panel_emoji", sub_panel.get("button_emoji", "🎫"))
+                ai_indicator = "<:BotLOGO:1407071803150569472>" if sub_panel.get("ai_enabled", False) else ""
+                button_emoji = sub_panel.get("panel_emoji", sub_panel.get("button_emoji", "<:TicketLOGO:1407730639343714397>"))
                 button_text = sub_panel.get("button_text", "")
                 panel_title = sub_panel.get("panel_title", sub_panel.get("title", "Default Ticket"))
 
@@ -1598,7 +1598,7 @@ class PublishedTicketView(discord.ui.View):
                 ticket_description = "Support will be with you shortly. To close this ticket."
 
             embed = discord.Embed(
-                title=f"🎫 {ticket_title}",
+                title=f"<:TicketLOGO:1407730639343714397> {ticket_title}",
                 description=ticket_description if ticket_description else "Support will be with you shortly. To close this ticket.",
                 color=0x5865f2
             )
@@ -1610,7 +1610,7 @@ class PublishedTicketView(discord.ui.View):
             embed.set_footer(text=footer_text)
 
             # Create close button view with custom close button text
-            close_button_text = sub_panel.get("close_button_text", "🔒")
+            close_button_text = sub_panel.get("close_button_text", "<:CloseLOGO:1407072519420248256>")
             close_view = TicketCloseView(close_button_text, ticket_channel.id)
 
             # Send ticket message
@@ -1630,15 +1630,15 @@ class PublishedTicketView(discord.ui.View):
             })
 
             await interaction.response.send_message(
-                f"✅ Ticket created! {ticket_channel.mention}",
+                f"<:SucessLOGO:1407071637840592977> Ticket created! {ticket_channel.mention}",
                 ephemeral=True
             )
 
         except Exception as e:
-            await interaction.response.send_message(f"❌ Error creating ticket: {str(e)}", ephemeral=True)
+            await interaction.response.send_message(f"<:ErrorLOGO:1407071682031648850> Error creating ticket: {str(e)}", ephemeral=True)
 
 class TicketCloseView(discord.ui.View):
-    def __init__(self, close_button_text="🔒", channel_id=None):
+    def __init__(self, close_button_text="<:CloseLOGO:1407072519420248256>", channel_id=None):
         super().__init__(timeout=None)
         self.channel_id = channel_id
 
@@ -1648,14 +1648,14 @@ class TicketCloseView(discord.ui.View):
 
         if button_enabled:
             # Use custom close button text if provided, otherwise use default settings
-            if close_button_text and close_button_text != "🔒":
+            if close_button_text and close_button_text != "<:CloseLOGO:1407072519420248256>":
                 close_button = discord.ui.Button(
                     label=close_button_text,
                     style=discord.ButtonStyle.danger,
                     custom_id='persistent_close_ticket_btn'
                 )
             else:
-                button_emoji = data["settings"].get("button_emoji", "🔒")
+                button_emoji = data["settings"].get("button_emoji", "<:CloseLOGO:1407072519420248256>")
                 button_label = data["settings"].get("button_label", "Close Ticket")
                 close_button = discord.ui.Button(
                     label=button_label,
@@ -1669,7 +1669,7 @@ class TicketCloseView(discord.ui.View):
 
     async def close_ticket(self, interaction: discord.Interaction):
         embed = discord.Embed(
-            title="🔒 Close Ticket",
+            title="<:CloseLOGO:1407072519420248256> Close Ticket",
             description="Are you sure you want to close this ticket?",
             color=0xed4245
         )
@@ -1681,7 +1681,7 @@ class ConfirmCloseView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=60)
 
-    @discord.ui.button(label='Yes, Close', style=discord.ButtonStyle.danger, emoji='✅')
+    @discord.ui.button(label='Yes, Close', style=discord.ButtonStyle.danger, emoji='<:SucessLOGO:1407071637840592977>')
     async def confirm_close(self, interaction: discord.Interaction, button: discord.ui.Button):
         try:
             # Save ticket data before closing
@@ -1713,7 +1713,7 @@ class ConfirmCloseView(discord.ui.View):
 
             # Send closing message
             closing_embed = discord.Embed(
-                title="🔒 Closing Ticket...",
+                title="<a:LoadingLOGO:1407732919476424814> Closing Ticket...",
                 description="Closing the ticket in 3 seconds...",
                 color=discord.Color.red()
             )
@@ -1751,7 +1751,7 @@ class ConfirmCloseView(discord.ui.View):
 
             # Send closed actions view
             closed_embed = discord.Embed(
-                title="🔒 Ticket Closed",
+                title="<:CloseLOGO:1407072519420248256> Ticket Closed",
                 description="This ticket has been closed. What would you like to do?",
                 color=0x57f287
             )
@@ -1764,11 +1764,11 @@ class ConfirmCloseView(discord.ui.View):
 
         except Exception as e:
             if not interaction.response.is_done():
-                await interaction.response.send_message(f"❌ Error closing ticket: {str(e)}", ephemeral=True)
+                await interaction.response.send_message(f"<:ErrorLOGO:1407071682031648850> Error closing ticket: {str(e)}", ephemeral=True)
             else:
-                await interaction.followup.send(f"❌ Error closing ticket: {str(e)}", ephemeral=True)
+                await interaction.followup.send(f"<:ErrorLOGO:1407071682031648850> Error closing ticket: {str(e)}", ephemeral=True)
 
-    @discord.ui.button(label='Cancel', style=discord.ButtonStyle.secondary, emoji='❌')
+    @discord.ui.button(label='Cancel', style=discord.ButtonStyle.secondary, emoji='<:ErrorLOGO:1407071682031648850>')
     async def cancel_close(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.edit_message(content="Ticket close cancelled.", embed=None, view=None)
 
@@ -1782,13 +1782,13 @@ class TicketPanelView(discord.ui.View):
         modal = TicketCreateModal()
         await interaction.response.send_modal(modal)
 
-    @discord.ui.button(label='Edit', style=discord.ButtonStyle.primary, emoji='✏️', row=0)
+    @discord.ui.button(label='Edit', style=discord.ButtonStyle.primary, emoji='<:EditLOGO:1407071307022995508>', row=0)
     async def edit_ticket(self, interaction: discord.Interaction, button: discord.ui.Button):
         data = load_ticket_data()
 
         tickets = data.get("tickets", {})
         if not tickets:
-            await interaction.response.send_message("❌ No ticket panels to edit.", ephemeral=True)
+            await interaction.response.send_message("<:ErrorLOGO:1407071682031648850> No ticket panels to edit.", ephemeral=True)
             return
 
         view = discord.ui.View(timeout=None)
@@ -1796,18 +1796,18 @@ class TicketPanelView(discord.ui.View):
         view.add_item(BackButton("main"))
 
         embed = discord.Embed(
-            title="✏️ Edit Ticket Panel",
+            title="<:EditLOGO:1407071307022995508> Edit Ticket Panel",
             description="Select the ticket panel you want to edit:",
             color=0x2b2d31
         )
         await interaction.response.edit_message(embed=embed, view=view)
 
-    @discord.ui.button(label='Delete', style=discord.ButtonStyle.danger, emoji='🗑️', row=0)
+    @discord.ui.button(label='Delete', style=discord.ButtonStyle.danger, emoji='<:DeleteLOGO:1407071421363916841>', row=0)
     async def delete_ticket(self, interaction: discord.Interaction, button: discord.ui.Button):
         data = load_ticket_data()
         tickets = data.get("tickets", {})
         if not tickets:
-            await interaction.response.send_message("❌ No ticket panels to delete.", ephemeral=True)
+            await interaction.response.send_message("<:ErrorLOGO:1407071682031648850> No ticket panels to delete.", ephemeral=True)
             return
 
         view = discord.ui.View(timeout=None)
@@ -1815,8 +1815,8 @@ class TicketPanelView(discord.ui.View):
         view.add_item(BackButton("main"))
 
         embed = discord.Embed(
-            title="🗑️ Delete Ticket Panel",
-            description="⚠️ **Warning:** This action is irreversible!\n\nSelect the panel to delete:",
+            title="<:DeleteLOGO:1407071421363916841> Delete Ticket Panel",
+            description="<:WarningLOGO:1407072569487659198> **Warning:** This action is irreversible!\n\nSelect the panel to delete:",
             color=0xed4245
         )
         await interaction.response.edit_message(embed=embed, view=view)
@@ -1826,7 +1826,7 @@ class TicketPanelView(discord.ui.View):
         data = load_ticket_data()
         tickets = data.get("tickets", {})
         if not tickets:
-            await interaction.response.send_message("❌ No ticket panels to publish.", ephemeral=True)
+            await interaction.response.send_message("<:ErrorLOGO:1407071682031648850> No ticket panels to publish.", ephemeral=True)
             return
 
         view = PublishSelectionView()
@@ -1849,14 +1849,14 @@ class TicketEditView(discord.ui.View):
         if len(data["tickets"]) > 1:
             self.add_item(PanelSelect(panel_id, data["tickets"]))
 
-    @discord.ui.button(label='Manage', style=discord.ButtonStyle.primary, emoji='✏️', row=1)
+    @discord.ui.button(label='Manage', style=discord.ButtonStyle.primary, emoji='<:EditLOGO:1407071307022995508>', row=1)
     async def manage_panel(self, interaction: discord.Interaction, button: discord.ui.Button):
         view = PanelManagementView(self.panel_id)
         data = load_ticket_data()
         embed = create_panel_management_embed(data, self.panel_id)
         await interaction.response.edit_message(embed=embed, view=view)
 
-    @discord.ui.button(label='Delete Panel', style=discord.ButtonStyle.danger, emoji='🗑️', row=1)
+    @discord.ui.button(label='Delete Panel', style=discord.ButtonStyle.danger, emoji='<:DeleteLOGO:1407071421363916841>', row=1)
     async def delete_panel(self, interaction: discord.Interaction, button: discord.ui.Button):
         data = load_ticket_data()
         if self.panel_id in data["tickets"]:
@@ -1868,7 +1868,7 @@ class TicketEditView(discord.ui.View):
         embed = create_ticket_panel_embed(data)
         await interaction.response.edit_message(embed=embed, view=view)
 
-    @discord.ui.button(label='Back', style=discord.ButtonStyle.secondary, emoji='🔙', row=1)
+    @discord.ui.button(label='Back', style=discord.ButtonStyle.secondary, emoji='<:BackLOGO:1407071474233114766>', row=1)
     async def back_to_main(self, interaction: discord.Interaction, button: discord.ui.Button):
         view = TicketPanelView()
         data = load_ticket_data()
@@ -1880,37 +1880,37 @@ class TicketEditDetailView(discord.ui.View):
         super().__init__(timeout=None)
         self.panel_id = panel_id
 
-    @discord.ui.button(label='Permissions', style=discord.ButtonStyle.primary, emoji='🔐', row=0)
+    @discord.ui.button(label='Permissions', style=discord.ButtonStyle.primary, emoji='<:ParticipantsLOGO:1407733929389199460>', row=0)
     async def manage_permissions(self, interaction: discord.Interaction, button: discord.ui.Button):
         view = PermissionSelectView(self.panel_id)
         embed = discord.Embed(
-            title="🔐 Permission Management",
+            title="<:ParticipantsLOGO:1407733929389199460> Permission Management",
             description="Select the permission type you want to modify:",
             color=0x2b2d31
         )
         await interaction.response.edit_message(embed=embed, view=view)
 
-    @discord.ui.button(label='Embed Content', style=discord.ButtonStyle.primary, emoji='📝', row=0)
+    @discord.ui.button(label='Embed Content', style=discord.ButtonStyle.primary, emoji='<:DescriptionLOGO:1407733417172533299>', row=0)
     async def edit_embed_content(self, interaction: discord.Interaction, button: discord.ui.Button):
         view = EmbedContentEditView()
         embed = create_embed_content_edit_embed(load_ticket_data())
         await interaction.response.edit_message(embed=embed, view=view)
 
-    @discord.ui.button(label='Staff Roles', style=discord.ButtonStyle.primary, emoji='👥', row=1)
+    @discord.ui.button(label='Staff Roles', style=discord.ButtonStyle.primary, emoji='<:ParticipantsLOGO:1407733929389199460>', row=1)
     async def manage_staff_roles(self, interaction: discord.Interaction, button: discord.ui.Button):
         view = StaffRoleManageView()
         data = load_ticket_data()
         embed = create_staff_role_embed(data, interaction.guild)
         await interaction.response.edit_message(embed=embed, view=view)
 
-    @discord.ui.button(label='Ticket Name', style=discord.ButtonStyle.secondary, emoji='🏷️', row=1)
+    @discord.ui.button(label='Ticket Name', style=discord.ButtonStyle.secondary, emoji='<:TicketLOGO:1407730639343714397>', row=1)
     async def edit_ticket_name(self, interaction: discord.Interaction, button: discord.ui.Button):
         data = load_ticket_data()
         current_name = data["tickets"][self.panel_id]["name"]
         modal = TicketNameEditModal(self.panel_id, current_name)
         await interaction.response.send_modal(modal)
 
-    @discord.ui.button(label='Back', style=discord.ButtonStyle.secondary, emoji='🔙', row=1)
+    @discord.ui.button(label='Back', style=discord.ButtonStyle.secondary, emoji='<:BackLOGO:1407071474233114766>', row=1)
     async def back_to_overview(self, interaction: discord.Interaction, button: discord.ui.Button):
         view = TicketEditView(self.panel_id)
         data = load_ticket_data()
@@ -1929,7 +1929,7 @@ class PermissionEditView(discord.ui.View):
         self.panel_id = panel_id
         self.permission_type = permission_type
 
-    @discord.ui.button(label='Reset', style=discord.ButtonStyle.secondary, emoji='🔁')
+    @discord.ui.button(label='Reset', style=discord.ButtonStyle.secondary, emoji='<:UpdateLOGO:1407072818214080695>')
     async def reset_permissions(self, interaction: discord.Interaction, button: discord.ui.Button):
         data = load_ticket_data()
         data["tickets"][self.panel_id]["sub_panels"][self.sub_panel_id]["permissions"][self.permission_type] = copy.deepcopy(DEFAULT_PERMISSIONS[self.permission_type])
@@ -1938,7 +1938,7 @@ class PermissionEditView(discord.ui.View):
         embed = create_permission_edit_embed(self.panel_id, self.permission_type)
         await interaction.response.edit_message(embed=embed, view=self)
 
-    @discord.ui.button(label='Modify', style=discord.ButtonStyle.primary, emoji='✏️')
+    @discord.ui.button(label='Modify', style=discord.ButtonStyle.primary, emoji='<:EditLOGO:1407071307022995508>')
     async def modify_permissions(self, interaction: discord.Interaction, button: discord.ui.Button):
         data = load_ticket_data()
         permissions = data["tickets"][self.panel_id]["sub_panels"][self.sub_panel_id]["permissions"][self.permission_type]
@@ -1946,11 +1946,11 @@ class PermissionEditView(discord.ui.View):
         modal = PermissionEditModal(self.panel_id, self.permission_type, permissions)
         await interaction.response.send_modal(modal)
 
-    @discord.ui.button(label='Back', style=discord.ButtonStyle.secondary, emoji='🔙')
+    @discord.ui.button(label='Back', style=discord.ButtonStyle.secondary, emoji='<:BackLOGO:1407071474233114766>')
     async def back_to_permissions(self, interaction: discord.Interaction, button: discord.ui.Button):
         view = PermissionSelectView(self.panel_id, self.sub_panel_id)
         embed = discord.Embed(
-            title="🔐 Permission Management",
+            title="<:ParticipantsLOGO:1407733929389199460> Permission Management",
             description="Select the permission type you want to modify:",
             color=0x2b2d31
         )
@@ -1960,13 +1960,13 @@ class EmbedContentEditView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
 
-    @discord.ui.button(label='Edit Message', style=discord.ButtonStyle.primary, emoji='✏️', row=0)
+    @discord.ui.button(label='Edit Message', style=discord.ButtonStyle.primary, emoji='<:EditLOGO:1407071307022995508>', row=0)
     async def edit_message(self, interaction: discord.Interaction, button: discord.ui.Button):
         data = load_ticket_data()
         modal = TicketEmbedEditModal(data["settings"]["default_embed"])
         await interaction.response.send_modal(modal)
 
-    @discord.ui.button(label='Back', style=discord.ButtonStyle.secondary, emoji='🔙', row=0)
+    @discord.ui.button(label='Back', style=discord.ButtonStyle.secondary, emoji='<:BackLOGO:1407071474233114766>', row=0)
     async def back_to_main(self, interaction: discord.Interaction, button: discord.ui.Button):
         view = TicketPanelView()
         data = load_ticket_data()
@@ -2004,7 +2004,7 @@ class StaffRoleManageView(discord.ui.View):
         )
         await interaction.response.edit_message(embed=embed, view=view)
 
-    @discord.ui.button(label='Back', style=discord.ButtonStyle.secondary, emoji='🔙')
+    @discord.ui.button(label='Back', style=discord.ButtonStyle.secondary, emoji='<:BackLOGO:1407071474233114766>')
     async def back_to_edit(self, interaction: discord.Interaction, button: discord.ui.Button):
         view = TicketPanelView()
         data = load_ticket_data()
@@ -2017,7 +2017,7 @@ class PanelDeleteConfirmView(discord.ui.View):
         self.panel_id = panel_id
         self.panel_name = panel_name
 
-    @discord.ui.button(label='Yes, Delete', style=discord.ButtonStyle.danger, emoji='✅')
+    @discord.ui.button(label='Yes, Delete', style=discord.ButtonStyle.danger, emoji='<:SucessLOGO:1407071637840592977>')
     async def confirm_delete(self, interaction: discord.Interaction, button: discord.ui.Button):
         data = load_ticket_data()
         if self.panel_id in data["tickets"]:
@@ -2029,7 +2029,7 @@ class PanelDeleteConfirmView(discord.ui.View):
         embed = create_ticket_panel_embed(data)
         await interaction.response.edit_message(embed=embed, view=view)
 
-    @discord.ui.button(label='Cancel', style=discord.ButtonStyle.secondary, emoji='❌')
+    @discord.ui.button(label='Cancel', style=discord.ButtonStyle.secondary, emoji='<:ErrorLOGO:1407071682031648850>')
     async def cancel_delete(self, interaction: discord.Interaction, button: discord.ui.Button):
         # Return to main panel
         view = TicketPanelView()
@@ -2045,7 +2045,7 @@ class ChannelSelectView(discord.ui.View):
 
 class BackButton(discord.ui.Button):
     def __init__(self, return_to, panel_id=None, sub_panel_id=None):
-        super().__init__(label='Back', style=discord.ButtonStyle.secondary, emoji='🔙')
+        super().__init__(label='Back', style=discord.ButtonStyle.secondary, emoji='<:BackLOGO:1407071474233114766>')
         self.return_to = return_to
         self.panel_id = panel_id
         self.sub_panel_id = sub_panel_id
@@ -2081,7 +2081,7 @@ class BackButton(discord.ui.Button):
 def create_ticket_panel_embed(data):
     """Create main panel embed"""
     embed = discord.Embed(
-        title="🎫 Ticket Management Panel",
+        title="<:TicketLOGO:1407730639343714397> Ticket Management Panel",
         color=0x2b2d31
     )
 
@@ -2131,7 +2131,7 @@ def create_panel_management_embed(data, panel_id):
         counter = data.get("ticket_counters", {}).get(sub_panel["name"], 0)
         ai_status = "🤖" if sub_panel.get("ai_enabled", False) else ""
         visibility_status = "Visible" if sub_panel.get("button_visible", True) else "Hidden"
-        button_emoji = sub_panel.get("button_emoji", "🎫")
+        button_emoji = sub_panel.get("button_emoji", "<:TicketLOGO:1407730639343714397>")
         button_text = sub_panel.get("button_text", "")
         button_display = f"{button_emoji} {button_text}".strip()
         sub_panel_list.append(f"**{sub_panel['title']}** {ai_status}\nName: `{sub_panel['name']}` | Counter: `{counter}` | Status: `{visibility_status}`\nButton: `{button_display}`")
@@ -2156,13 +2156,13 @@ def create_sub_panel_edit_embed(data, panel_id, sub_panel_id):
         color=0x2b2d31
     )
 
-    ai_status = "🟢 Enabled" if sub_panel.get("ai_enabled", False) else "🔴 Disabled"
+    ai_status = "<:OnLOGO:1407072463883472978> Enabled" if sub_panel.get("ai_enabled", False) else "<:OffLOGO:1407072621836894380> Disabled"
     embed.add_field(name="AI System", value=ai_status, inline=True)
 
-    visibility_status = "🟢 Visible" if sub_panel.get("button_visible", True) else "🔴 Hidden"
+    visibility_status = "<:OnLOGO:1407072463883472978> Visible" if sub_panel.get("button_visible", True) else "<:OffLOGO:1407072621836894380> Hidden"
     embed.add_field(name="Button Visibility", value=visibility_status, inline=True)
 
-    close_button_text = sub_panel.get("close_button_text", "🔒")
+    close_button_text = sub_panel.get("close_button_text", "<:CloseLOGO:1407072519420248256>")
     embed.add_field(name="Close Button", value=f"`{close_button_text}`", inline=True)
 
     embed.add_field(
@@ -2186,14 +2186,14 @@ def create_permission_button_embed(panel_id, sub_panel_id, permission_type):
     }
 
     embed = discord.Embed(
-        title=f"🔐 Permissions: {type_names[permission_type]}",
+        title=f"<:ParticipantsLOGO:1407733929389199460> Permissions: {type_names[permission_type]}",
         description="Click the numbered buttons to toggle permissions:",
         color=0x2b2d31
     )
 
     perm_list = []
     for i, (perm_name, enabled) in enumerate(permissions.items(), 1):
-        status = "✅" if enabled else "❌"
+        status = "<:SucessLOGO:1407071637840592977>" if enabled else "<:ErrorLOGO:1407071682031648850>"
         perm_display = perm_name.replace("_", " ").title()
         perm_list.append(f"`{i}.` {status} {perm_display}")
 
@@ -2217,7 +2217,7 @@ def create_ticket_edit_detail_embed(data, panel_id):
         color=0x2b2d31
     )
 
-    ai_status = "🟢 Enabled" if data["settings"]["ai_enabled"] else "🔴 Disabled"
+    ai_status = "<:OnLOGO:1407072463883472978> Enabled" if data["settings"]["ai_enabled"] else "<:OffLOGO:1407072621836894380> Disabled"
     embed.add_field(name="AI System", value=ai_status, inline=True)
 
     staff_count = len(data["staff_roles"])
@@ -2234,7 +2234,7 @@ def create_ticket_edit_overview_embed(data, panel_id):
     ticket = data["tickets"][panel_id]
 
     embed = discord.Embed(
-        title=f"✏️ Editing Panel: {ticket['title']}",
+        title=f"<:EditLOGO:1407071307022995508> Editing Panel: {ticket['title']}",
         description=f"**Panel ID:** `{panel_id}`\n**Created:** {ticket.get('created_at', 'Unknown')}",
         color=0x2b2d31
     )
@@ -2246,7 +2246,7 @@ def create_ticket_edit_overview_embed(data, panel_id):
     )
 
     if ticket.get("thumbnail"):
-        embed.add_field(name="Thumbnail", value="✅ Configured", inline=True)
+        embed.add_field(name="Thumbnail", value="<:SucessLOGO:1407071637840592977> Configured", inline=True)
 
     if ticket.get("footer"):
         embed.add_field(name="Footer", value=f"`{ticket['footer']}`", inline=True)
@@ -2266,13 +2266,13 @@ def create_permission_edit_embed(panel_id, permission_type):
     }
 
     embed = discord.Embed(
-        title=f"🔐 Permissions: {type_names[permission_type]}",
+        title=f"<:ParticipantsLOGO:1407733929389199460> Permissions: {type_names[permission_type]}",
         color=0x2b2d31
     )
 
     perm_list = []
     for i, (perm_name, enabled) in enumerate(permissions.items(), 1):
-        status = "✅" if enabled else "❌"
+        status = "<:SucessLOGO:1407071637840592977>" if enabled else "<:ErrorLOGO:1407071682031648850>"
         perm_display = perm_name.replace("_", " ").title()
         perm_list.append(f"`{i}.` {status} {perm_display}")
 
@@ -2306,7 +2306,7 @@ def create_embed_content_edit_embed(data):
     settings = data["settings"]["default_embed"]
 
     embed = discord.Embed(
-        title="📝 Default Embed Content",
+        title="<:DescriptionLOGO:1407733417172533299> Default Embed Content",
         description="Edit the default content for created tickets:",
         color=0x2b2d31
     )
@@ -2320,7 +2320,7 @@ def create_embed_content_edit_embed(data):
     embed.add_field(name="Embed Description", value=f"`{settings['description'][:100]}{'...' if len(settings['description']) > 100 else ''}`", inline=False)
 
     if settings.get("thumbnail"):
-        embed.add_field(name="Thumbnail", value="✅ Configured", inline=True)
+        embed.add_field(name="Thumbnail", value="<:SucessLOGO:1407071637840592977> Configured", inline=True)
 
     if settings.get("footer"):
         embed.add_field(name="Footer", value=f"`{settings['footer']}`", inline=False)
@@ -2412,7 +2412,7 @@ async def handle_ai_message(message):
             # Send AI response with a small delay to seem more natural
             import asyncio
             await asyncio.sleep(2)
-            await message.channel.send(f"🤖 **Assistant IA Jailbreak:** {ai_response}")
+            await message.channel.send(f"<:BotLOGO:1407071803150569472> **Assistant AI:** {ai_response}")
             return True
     except Exception as e:
         print(f"Error generating AI response in ticket channel: {e}")
@@ -2463,7 +2463,7 @@ def setup_persistent_views(bot):
 
         # Ensure data structure is complete
         if not isinstance(data, dict):
-            print("❌ Invalid ticket data structure")
+            print("<:ErrorLOGO:1407071682031648850> Invalid ticket data structure")
             return
 
         # Add views for published panels
@@ -2474,15 +2474,15 @@ def setup_persistent_views(bot):
                     view = PublishedTicketView(panel_id)
                     bot.add_view(view)
                 except Exception as e:
-                    print(f"❌ Error adding view for panel {panel_id}: {e}")
+                    print(f"<:ErrorLOGO:1407071682031648850> Error adding view for panel {panel_id}: {e}")
 
         # Add ticket close views
         bot.add_view(TicketCloseView())
         bot.add_view(TicketClosedActionsView())
 
-        print("✅ Ticket system persistent views loaded successfully")
+        print("<:SucessLOGO:1407071637840592977> Ticket system persistent views loaded successfully")
     except Exception as e:
-        print(f"❌ Error setting up ticket persistent views: {e}")
+        print(f"<:ErrorLOGO:1407071682031648850> Error setting up ticket persistent views: {e}")
         # Initialize with empty data if there's an error
         try:
             empty_data = {
@@ -2498,7 +2498,7 @@ def setup_persistent_views(bot):
                         "footer": f"{get_bot_name()} - Ticket Bot"
                     },
                     "button_enabled": True,
-                    "button_emoji": "🔒",
+                    "button_emoji": "<:CloseLOGO:1407072519420248256>",
                     "button_label": "Close Ticket",
                     "ai_enabled": False,
                     "log_settings": {
@@ -2514,29 +2514,29 @@ def setup_persistent_views(bot):
                 "closed_tickets": {}
             }
             save_ticket_data(empty_data)
-            print("✅ Initialized empty ticket data structure")
+            print("<:SucessLOGO:1407071637840592977> Initialized empty ticket data structure")
         except Exception as init_error:
-            print(f"❌ Failed to initialize ticket data: {init_error}")
+            print(f"<:ErrorLOGO:1407071682031648850> Failed to initialize ticket data: {init_error}")
 
 # New Views for Logs and Closed Tickets
 class LogsManagementView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
 
-    @discord.ui.button(label='Set Log Channel', style=discord.ButtonStyle.primary, emoji='📍', row=0)
+    @discord.ui.button(label='Set Log Channel', style=discord.ButtonStyle.primary, emoji='<:SettingLOGO:1407071854593839239>', row=0)
     async def set_log_channel(self, interaction: discord.Interaction, button: discord.ui.Button):
         view = discord.ui.View(timeout=None)
         view.add_item(LogChannelSelect())
         view.add_item(BackButton("logs"))
 
         embed = discord.Embed(
-            title="📍 Set Log Channel",
+            title="<:SettingLOGO:1407071854593839239> Set Log Channel",
             description="Select the channel where ticket logs will be sent:",
             color=0x2b2d31
         )
         await interaction.response.edit_message(embed=embed, view=view)
 
-    @discord.ui.button(label='🎫 Ticket Opened', style=discord.ButtonStyle.success, row=1)
+    @discord.ui.button(label='<:TicketLOGO:1407730639343714397> Ticket Opened', style=discord.ButtonStyle.success, row=1)
     async def toggle_opened_logs(self, interaction: discord.Interaction, button: discord.ui.Button):
         data = load_ticket_data()
         if "log_settings" not in data["settings"]:
@@ -2550,7 +2550,7 @@ class LogsManagementView(discord.ui.View):
         embed = create_logs_management_embed(data, interaction.guild)
         await interaction.response.edit_message(embed=embed, view=view)
 
-    @discord.ui.button(label='✋ Ticket Claimed', style=discord.ButtonStyle.success, row=1)
+    @discord.ui.button(label='<:UnviewLOGO:1407072750220345475> Ticket Claimed', style=discord.ButtonStyle.success, row=1)
     async def toggle_claimed_logs(self, interaction: discord.Interaction, button: discord.ui.Button):
         data = load_ticket_data()
         if "log_settings" not in data["settings"]:
@@ -2564,7 +2564,7 @@ class LogsManagementView(discord.ui.View):
         embed = create_logs_management_embed(data, interaction.guild)
         await interaction.response.edit_message(embed=embed, view=view)
 
-    @discord.ui.button(label='🔒 Ticket Closed', style=discord.ButtonStyle.success, row=1)
+    @discord.ui.button(label='<:CloseLOGO:1407072519420248256> Ticket Closed', style=discord.ButtonStyle.success, row=1)
     async def toggle_closed_logs(self, interaction: discord.Interaction, button: discord.ui.Button):
         data = load_ticket_data()
         if "log_settings" not in data["settings"]:
@@ -2578,7 +2578,7 @@ class LogsManagementView(discord.ui.View):
         embed = create_logs_management_embed(data, interaction.guild)
         await interaction.response.edit_message(embed=embed, view=view)
 
-    @discord.ui.button(label='🗑️ Ticket Deleted', style=discord.ButtonStyle.success, row=2)
+    @discord.ui.button(label='<:DeleteLOGO:1407071421363916841> Ticket Deleted', style=discord.ButtonStyle.success, row=2)
     async def toggle_deleted_logs(self, interaction: discord.Interaction, button: discord.ui.Button):
         data = load_ticket_data()
         if "log_settings" not in data["settings"]:
@@ -2592,7 +2592,7 @@ class LogsManagementView(discord.ui.View):
         embed = create_logs_management_embed(data, interaction.guild)
         await interaction.response.edit_message(embed=embed, view=view)
 
-    @discord.ui.button(label='📄 Transcript', style=discord.ButtonStyle.success, row=2)
+    @discord.ui.button(label='<:TXTFileLOGO:1407735600752361622> Transcript', style=discord.ButtonStyle.success, row=2)
     async def toggle_transcript_logs(self, interaction: discord.Interaction, button: discord.ui.Button):
         data = load_ticket_data()
         if "log_settings" not in data["settings"]:
@@ -2606,7 +2606,7 @@ class LogsManagementView(discord.ui.View):
         embed = create_logs_management_embed(data, interaction.guild)
         await interaction.response.edit_message(embed=embed, view=view)
 
-    @discord.ui.button(label='Back', style=discord.ButtonStyle.secondary, emoji='🔙', row=2)
+    @discord.ui.button(label='Back', style=discord.ButtonStyle.secondary, emoji='<:BackLOGO:1407071474233114766>', row=2)
     async def back_to_main(self, interaction: discord.Interaction, button: discord.ui.Button):
         view = TicketPanelView()
         data = load_ticket_data()
@@ -2635,7 +2635,7 @@ class TicketClosedActionsView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
 
-    @discord.ui.button(label='Reopen', style=discord.ButtonStyle.success, emoji='🔓', custom_id='persistent_reopen_ticket')
+    @discord.ui.button(label='Reopen', style=discord.ButtonStyle.success, emoji='<:ViewLOGO:1407071916824461435>', custom_id='persistent_reopen_ticket')
     async def reopen_ticket(self, interaction: discord.Interaction, button: discord.ui.Button):
         try:
             await interaction.response.defer(ephemeral=True)
@@ -2644,7 +2644,7 @@ class TicketClosedActionsView(discord.ui.View):
             channel_data = data.get("closed_tickets", {}).get(str(interaction.channel.id))
 
             if not channel_data:
-                await interaction.followup.send("❌ Ticket data not found.", ephemeral=True)
+                await interaction.followup.send("<:ErrorLOGO:1407071682031648850> Ticket data not found.", ephemeral=True)
                 return
 
             # Restore original name (with delay to avoid rate limiting)
@@ -2679,7 +2679,7 @@ class TicketClosedActionsView(discord.ui.View):
 
             # Send new message for reopening instead of editing
             reopen_embed = discord.Embed(
-                title="🔓 Ticket Reopened",
+                title="<:ViewLOGO:1407071916824461435> Ticket Reopened",
                 description="This ticket has been reopened successfully!",
                 color=0x57f287
             )
@@ -2687,15 +2687,15 @@ class TicketClosedActionsView(discord.ui.View):
             close_view = TicketCloseView()
             await interaction.channel.send(embed=reopen_embed, view=close_view)
 
-            await interaction.followup.send("✅ Ticket reopened successfully!", ephemeral=True)
+            await interaction.followup.send("<:SucessLOGO:1407071637840592977> Ticket reopened successfully!", ephemeral=True)
 
             # Update ticket status
             update_ticket_status(interaction.channel.id, {"status": "open"})
 
         except Exception as e:
-            await interaction.followup.send(f"❌ Error reopening ticket: {str(e)}", ephemeral=True)
+            await interaction.followup.send(f"<:ErrorLOGO:1407071682031648850> Error reopening ticket: {str(e)}", ephemeral=True)
 
-    @discord.ui.button(label='Delete', style=discord.ButtonStyle.danger, emoji='🗑️', custom_id='persistent_delete_ticket')
+    @discord.ui.button(label='Delete', style=discord.ButtonStyle.danger, emoji='<:DeleteLOGO:1407071421363916841>', custom_id='persistent_delete_ticket')
     async def delete_ticket(self, interaction: discord.Interaction, button: discord.ui.Button):
         try:
             await interaction.response.defer(ephemeral=True)
@@ -2714,7 +2714,7 @@ class TicketClosedActionsView(discord.ui.View):
 
             # Send deletion message as a new message
             deletion_embed = discord.Embed(
-                title="🗑️ Deleting Ticket...",
+                title="<:DeleteLOGO:1407071421363916841> Deleting Ticket...",
                 description="Deleting the ticket in 3 seconds...",
                 color=discord.Color.red()
             )
@@ -2728,9 +2728,9 @@ class TicketClosedActionsView(discord.ui.View):
             remove_ticket_status(interaction.channel.id)
 
         except Exception as e:
-            await interaction.followup.send(f"❌ Error deleting ticket: {str(e)}", ephemeral=True)
+            await interaction.followup.send(f"<:ErrorLOGO:1407071682031648850> Error deleting ticket: {str(e)}", ephemeral=True)
 
-    @discord.ui.button(label='Transcript', style=discord.ButtonStyle.primary, emoji='📄', custom_id='persistent_save_transcript')
+    @discord.ui.button(label='Transcript', style=discord.ButtonStyle.primary, emoji='<:TXTFileLOGO:1407735600752361622>', custom_id='persistent_save_transcript')
     async def save_transcript(self, interaction: discord.Interaction, button: discord.ui.Button):
         try:
             await interaction.response.defer(ephemeral=True)
@@ -2741,7 +2741,7 @@ class TicketClosedActionsView(discord.ui.View):
             # Find ticket owner and panel info
             ticket_owner = None
             panel_name = "Unknown Panel"
-            panel_emoji = "🎟️"
+            panel_emoji = "<:TicketLOGO:1407730639343714397>"
             ticket_type = "unknown"
 
             # Extract ticket type from channel name
@@ -2765,7 +2765,7 @@ class TicketClosedActionsView(discord.ui.View):
                         if sub_panel_name == ticket_type.lower().strip():
                             # Prioritize panel_title, then ticket_title, then title
                             panel_title = sub_panel.get("panel_title") or sub_panel.get("ticket_title") or sub_panel.get("title", "Default Panel")
-                            panel_name = f"🎟️ {panel_title}"
+                            panel_name = f"<:TicketLOGO:1407730639343714397> {panel_title}"
                             break
                     else:
                         continue
@@ -2778,7 +2778,7 @@ class TicketClosedActionsView(discord.ui.View):
                             sub_panel_name = sub_panel["name"].lower().strip()
                             if ticket_type.lower().strip() in sub_panel_name or sub_panel_name in ticket_type.lower().strip():
                                 panel_title = sub_panel.get("panel_title") or sub_panel.get("ticket_title") or sub_panel.get("title", "Default Panel")
-                                panel_name = f"🎟️ {panel_title}"
+                                panel_name = f"<:TicketLOGO:1407730639343714397> {panel_title}"
                                 break
                         else:
                             continue
@@ -2955,13 +2955,13 @@ class TicketClosedActionsView(discord.ui.View):
             })
 
             # Send ephemeral success message without modifying the main embed
-            await interaction.followup.send("✅ Transcript saved successfully and sent to logs!", ephemeral=True)
+            await interaction.followup.send("<:SucessLOGO:1407071637840592977> Transcript saved successfully and sent to logs!", ephemeral=True)
 
             # Update ticket status
             update_ticket_status(interaction.channel.id, {"transcript_saved": True})
 
         except Exception as e:
-            await interaction.followup.send(f"❌ Error saving transcript: {str(e)}", ephemeral=True)
+            await interaction.followup.send(f"<:ErrorLOGO:1407071682031648850> Error saving transcript: {str(e)}", ephemeral=True)
 
 # Logging system
 async def log_ticket_action(guild, action_type, details):
@@ -3072,11 +3072,11 @@ async def log_ticket_action(guild, action_type, details):
                 ticket_name = f"Ticket-{parts[1]}"
 
     # Find panel info - better search logic
-    panel_name = "🎟️ Default Panel"
+    panel_name = "<:TicketLOGO:1407730639343714397> Default Panel"
 
     # Check if panel_name is already provided in details
     if "panel_name" in details and details["panel_name"]:
-        panel_name = f"🎟️ {details['panel_name']}"
+        panel_name = f"<:TicketLOGO:1407730639343714397> {details['panel_name']}"
     elif "ticket_type" in details:
         ticket_type = details["ticket_type"]
         # Search for matching panel
@@ -3087,7 +3087,7 @@ async def log_ticket_action(guild, action_type, details):
                     if sub_panel_name == ticket_type.lower().strip():
                         # Prioritize panel_title, then ticket_title, then title
                         panel_title = sub_panel.get("panel_title") or sub_panel.get("ticket_title") or sub_panel.get("title", "Default Panel")
-                        panel_name = f"🎟️ {panel_title}"
+                        panel_name = f"<:TicketLOGO:1407730639343714397> {panel_title}"
                         break
                 else:
                     continue
@@ -3100,7 +3100,7 @@ async def log_ticket_action(guild, action_type, details):
                     sub_panel_name = sub_panel["name"].lower().strip()
                     if sub_panel_name == ticket_type.lower().strip():
                         panel_title = sub_panel.get("panel_title") or sub_panel.get("ticket_title") or sub_panel.get("title", "Default Panel")
-                        panel_name = f"🎟️ {panel_title}"
+                        panel_name = f"<:TicketLOGO:1407730639343714397> {panel_title}"
                         break
                 else:
                     continue
@@ -3174,7 +3174,7 @@ def setup_ticket_system(bot):
         is_ticket = any(pattern in channel_name for pattern in ['-0', '-1', '-2', '-3', '-4', '-5', '-6', '-7', '-8', '-9'])
 
         if not is_ticket:
-            await interaction.response.send_message("❌ Cette commande ne peut être utilisée que dans un channel de ticket.", ephemeral=True)
+            await interaction.response.send_message("<:ErrorLOGO:1407071682031648850> Cette commande ne peut être utilisée que dans un channel de ticket.", ephemeral=True)
             return
 
         try:
@@ -3207,7 +3207,7 @@ def setup_ticket_system(bot):
 
             # Send closing message
             closing_embed = discord.Embed(
-                title="🔒 Closing Ticket...",
+                title="<a:LoadingLOGO:1407732919476424814> Closing Ticket...",
                 description="Closing the ticket in 3 seconds...",
                 color=discord.Color.red()
             )
@@ -3245,7 +3245,7 @@ def setup_ticket_system(bot):
 
             # Send closed actions view
             closed_embed = discord.Embed(
-                title="🔒 Ticket Closed",
+                title="<:CloseLOGO:1407072519420248256> Ticket Closed",
                 description="This ticket has been closed. What would you like to do?",
                 color=0x57f287
             )
@@ -3257,7 +3257,7 @@ def setup_ticket_system(bot):
             update_ticket_status(interaction.channel.id, {"status": "closed"})
 
         except Exception as e:
-            await interaction.followup.send(f"❌ Erreur lors de la fermeture du ticket: {str(e)}", ephemeral=True)
+            await interaction.followup.send(f"<:ErrorLOGO:1407071682031648850> Erreur lors de la fermeture du ticket: {str(e)}", ephemeral=True)
 
     @bot.tree.command(name="delete", description="Supprime le ticket actuel")
     async def delete_command(interaction: discord.Interaction):
@@ -3266,7 +3266,7 @@ def setup_ticket_system(bot):
         is_ticket = any(pattern in channel_name for pattern in ['-0', '-1', '-2', '-3', '-4', '-5', '-6', '-7', '-8', '-9']) or channel_name.startswith("closed-")
 
         if not is_ticket:
-            await interaction.response.send_message("❌ Cette commande ne peut être utilisée que dans un channel de ticket.", ephemeral=True)
+            await interaction.response.send_message("<:ErrorLOGO:1407071682031648850> Cette commande ne peut être utilisée que dans un channel de ticket.", ephemeral=True)
             return
 
         try:
@@ -3278,7 +3278,7 @@ def setup_ticket_system(bot):
 
             # Send deletion message
             deletion_embed = discord.Embed(
-                title="🗑️ Deleting Ticket...",
+                title="<:DeleteLOGO:1407071421363916841> Deleting Ticket...",
                 description="Deleting the ticket in 3 seconds...",
                 color=discord.Color.red()
             )
@@ -3292,7 +3292,7 @@ def setup_ticket_system(bot):
             remove_ticket_status(interaction.channel.id)
 
         except Exception as e:
-            await interaction.response.send_message(f"❌ Erreur lors de la suppression du ticket: {str(e)}", ephemeral=True)
+            await interaction.response.send_message(f"<:ErrorLOGO:1407071682031648850> Erreur lors de la suppression du ticket: {str(e)}", ephemeral=True)
 
     @bot.tree.command(name="claim", description="Prend possession du ticket, supprime tous les autres staff")
     async def claim_command(interaction: discord.Interaction):
@@ -3302,7 +3302,7 @@ def setup_ticket_system(bot):
 
         if not is_ticket:
             embed = discord.Embed(
-                title="❌ Erreur",
+                title="<:ErrorLOGO:1407071682031648850> Erreur",
                 description="Cette commande ne peut être utilisée que dans un channel de ticket.",
                 color=discord.Color.red()
             )
@@ -3335,14 +3335,14 @@ def setup_ticket_system(bot):
             })
 
             embed = discord.Embed(
-                title="✅ Ticket Claimed",
+                title="<:SucessLOGO:1407071637840592977> Ticket Claimed",
                 description="This ticket has been claimed.",
                 color=discord.Color.green()
             )
             await interaction.response.send_message(embed=embed)
 
         except Exception as e:
-            await interaction.response.send_message(f"❌ Erreur lors de la prise en charge: {str(e)}", ephemeral=True)
+            await interaction.response.send_message(f"<:ErrorLOGO:1407071682031648850> Erreur lors de la prise en charge: {str(e)}", ephemeral=True)
 
     @bot.tree.command(name="reopen", description="Rouvre un ticket fermé")
     async def reopen_command(interaction: discord.Interaction):
@@ -3351,7 +3351,7 @@ def setup_ticket_system(bot):
         is_closed_ticket = channel_name.startswith("closed-")
 
         if not is_closed_ticket:
-            await interaction.response.send_message("❌ Cette commande ne peut être utilisée que dans un ticket fermé.", ephemeral=True)
+            await interaction.response.send_message("<:ErrorLOGO:1407071682031648850> Cette commande ne peut être utilisée que dans un ticket fermé.", ephemeral=True)
             return
 
         try:
@@ -3359,7 +3359,7 @@ def setup_ticket_system(bot):
             channel_data = data.get("closed_tickets", {}).get(str(interaction.channel.id))
 
             if not channel_data:
-                await interaction.response.send_message("❌ Ce ticket n'est pas dans l'état fermé ou les données sont introuvables.", ephemeral=True)
+                await interaction.response.send_message("<:ErrorLOGO:1407071682031648850> Ce ticket n'est pas dans l'état fermé ou les données sont introuvables.", ephemeral=True)
                 return
 
             # Restore original name (with delay to avoid rate limiting)
@@ -3395,7 +3395,7 @@ def setup_ticket_system(bot):
 
             # Send reopening message with new close button
             reopen_embed = discord.Embed(
-                title="🔓 Ticket Reopened",
+                title="<:ViewLOGO:1407071916824461435> Ticket Reopened",
                 description="This ticket has been reopened successfully!",
                 color=0x57f287
             )
@@ -3413,7 +3413,7 @@ def setup_ticket_system(bot):
             })
 
         except Exception as e:
-            await interaction.response.send_message(f"❌ Erreur lors de la réouverture du ticket: {str(e)}", ephemeral=True)
+            await interaction.response.send_message(f"<:ErrorLOGO:1407071682031648850> Erreur lors de la réouverture du ticket: {str(e)}", ephemeral=True)
 
     @bot.tree.command(name="transcript", description="Sauvegarde la transcription du ticket")
     async def transcript_command(interaction: discord.Interaction):
@@ -3422,7 +3422,7 @@ def setup_ticket_system(bot):
         is_ticket = any(pattern in channel_name for pattern in ['-0', '-1', '-2', '-3', '-4', '-5', '-6', '-7', '-8', '-9']) or channel_name.startswith("closed-")
 
         if not is_ticket:
-            await interaction.response.send_message("❌ Cette commande ne peut être utilisée que dans un channel de ticket.", ephemeral=True)
+            await interaction.response.send_message("<:ErrorLOGO:1407071682031648850> Cette commande ne peut être utilisée que dans un channel de ticket.", ephemeral=True)
             return
 
         try:
@@ -3434,7 +3434,7 @@ def setup_ticket_system(bot):
             # Find ticket owner and panel info
             ticket_owner = None
             panel_name = "Unknown Panel"
-            panel_emoji = "🎟️"
+            panel_emoji = "<:TicketLOGO:1407730639343714397>"
             ticket_type = "unknown"
 
             # Extract ticket type from channel name
@@ -3456,7 +3456,7 @@ def setup_ticket_system(bot):
                         sub_panel_name = sub_panel["name"].lower().strip()
                         if sub_panel_name == ticket_type.lower().strip():
                             panel_name = sub_panel.get("panel_title", sub_panel.get("ticket_title", sub_panel.get("title", "Panel par Défaut")))
-                            panel_emoji = sub_panel.get("panel_emoji", sub_panel.get("button_emoji", "🎟️"))
+                            panel_emoji = sub_panel.get("panel_emoji", sub_panel.get("button_emoji", "<:TicketLOGO:1407730639343714397>"))
                             break
                     else:
                         continue
@@ -3592,13 +3592,13 @@ def setup_ticket_system(bot):
                 "panel_name": panel_name
             })
 
-            await interaction.followup.send("✅ Transcript saved successfully and sent to logs!", ephemeral=True)
+            await interaction.followup.send("<:SucessLOGO:1407071637840592977> Transcript saved successfully and sent to logs!", ephemeral=True)
 
             # Update ticket status
             update_ticket_status(interaction.channel.id, {"transcript_saved": True})
 
         except Exception as e:
-            await interaction.followup.send(f"❌ Erreur lors de la sauvegarde de la transcription: {str(e)}", ephemeral=True)
+            await interaction.followup.send(f"<:ErrorLOGO:1407071682031648850> Erreur lors de la sauvegarde de la transcription: {str(e)}", ephemeral=True)
 
     @bot.event
     async def on_message(message):
@@ -3626,7 +3626,7 @@ def setup_ticket_system(bot):
         is_ticket = any(pattern in channel_name for pattern in ['-0', '-1', '-2', '-3', '-4', '-5', '-6', '-7', '-8', '-9'])
 
         if not is_ticket:
-            await interaction.response.send_message("❌ Cette commande ne peut être utilisée que dans un channel de ticket.", ephemeral=True)
+            await interaction.response.send_message("<:ErrorLOGO:1407071682031648850> Cette commande ne peut être utilisée que dans un channel de ticket.", ephemeral=True)
             return
 
         try:
@@ -3659,7 +3659,7 @@ def setup_ticket_system(bot):
 
             # Send closing message
             closing_embed = discord.Embed(
-                title="🔒 Closing Ticket...",
+                title="<a:LoadingLOGO:1407732919476424814> Closing Ticket...",
                 description="Closing the ticket in 3 seconds...",
                 color=discord.Color.red()
             )
@@ -3697,7 +3697,7 @@ def setup_ticket_system(bot):
 
             # Send closed actions view
             closed_embed = discord.Embed(
-                title="🔒 Ticket Closed",
+                title="<:CloseLOGO:1407072519420248256> Ticket Closed",
                 description="This ticket has been closed. What would you like to do?",
                 color=0x57f287
             )
@@ -3709,7 +3709,7 @@ def setup_ticket_system(bot):
             update_ticket_status(interaction.channel.id, {"status": "closed"})
 
         except Exception as e:
-            await interaction.followup.send(f"❌ Erreur lors de la fermeture du ticket: {str(e)}", ephemeral=True)
+            await interaction.followup.send(f"<:ErrorLOGO:1407071682031648850> Erreur lors de la fermeture du ticket: {str(e)}", ephemeral=True)
 
     @bot.tree.command(name="delete", description="Supprime le ticket actuel")
     async def delete_command(interaction: discord.Interaction):
@@ -3718,7 +3718,7 @@ def setup_ticket_system(bot):
         is_ticket = any(pattern in channel_name for pattern in ['-0', '-1', '-2', '-3', '-4', '-5', '-6', '-7', '-8', '-9']) or channel_name.startswith("closed-")
 
         if not is_ticket:
-            await interaction.response.send_message("❌ Cette commande ne peut être utilisée que dans un channel de ticket.", ephemeral=True)
+            await interaction.response.send_message("<:ErrorLOGO:1407071682031648850> Cette commande ne peut être utilisée que dans un channel de ticket.", ephemeral=True)
             return
 
         try:
@@ -3730,7 +3730,7 @@ def setup_ticket_system(bot):
 
             # Send deletion message
             deletion_embed = discord.Embed(
-                title="🗑️ Deleting Ticket...",
+                title="<:DeleteLOGO:1407071421363916841> Deleting Ticket...",
                 description="Deleting the ticket in 3 seconds...",
                 color=discord.Color.red()
             )
@@ -3744,7 +3744,7 @@ def setup_ticket_system(bot):
             remove_ticket_status(interaction.channel.id)
 
         except Exception as e:
-            await interaction.response.send_message(f"❌ Erreur lors de la suppression du ticket: {str(e)}", ephemeral=True)
+            await interaction.response.send_message(f"<:ErrorLOGO:1407071682031648850> Erreur lors de la suppression du ticket: {str(e)}", ephemeral=True)
 
     @bot.tree.command(name="claim", description="Prend possession du ticket, supprime tous les autres staff")
     async def claim_command(interaction: discord.Interaction):
@@ -3754,7 +3754,7 @@ def setup_ticket_system(bot):
 
         if not is_ticket:
             embed = discord.Embed(
-                title="❌ Erreur",
+                title="<:ErrorLOGO:1407071682031648850> Erreur",
                 description="Cette commande ne peut être utilisée que dans un channel de ticket.",
                 color=discord.Color.red()
             )
@@ -3787,14 +3787,14 @@ def setup_ticket_system(bot):
             })
 
             embed = discord.Embed(
-                title="✅ Ticket Claimed",
+                title="<:SucessLOGO:1407071637840592977> Ticket Claimed",
                 description="This ticket has been claimed.",
                 color=discord.Color.green()
             )
             await interaction.response.send_message(embed=embed)
 
         except Exception as e:
-            await interaction.response.send_message(f"❌ Erreur lors de la prise en charge: {str(e)}", ephemeral=True)
+            await interaction.response.send_message(f"<:ErrorLOGO:1407071682031648850> Erreur lors de la prise en charge: {str(e)}", ephemeral=True)
 
     @bot.tree.command(name="reopen", description="Rouvre un ticket fermé")
     async def reopen_command(interaction: discord.Interaction):
@@ -3803,7 +3803,7 @@ def setup_ticket_system(bot):
         is_closed_ticket = channel_name.startswith("closed-")
 
         if not is_closed_ticket:
-            await interaction.response.send_message("❌ Cette commande ne peut être utilisée que dans un ticket fermé.", ephemeral=True)
+            await interaction.response.send_message("<:ErrorLOGO:1407071682031648850> Cette commande ne peut être utilisée que dans un ticket fermé.", ephemeral=True)
             return
 
         try:
@@ -3811,7 +3811,7 @@ def setup_ticket_system(bot):
             channel_data = data.get("closed_tickets", {}).get(str(interaction.channel.id))
 
             if not channel_data:
-                await interaction.response.send_message("❌ Ce ticket n'est pas dans l'état fermé ou les données sont introuvables.", ephemeral=True)
+                await interaction.response.send_message("<:ErrorLOGO:1407071682031648850> Ce ticket n'est pas dans l'état fermé ou les données sont introuvables.", ephemeral=True)
                 return
 
             # Restore original name (with delay to avoid rate limiting)
@@ -3847,7 +3847,7 @@ def setup_ticket_system(bot):
 
             # Send reopening message with new close button
             reopen_embed = discord.Embed(
-                title="🔓 Ticket Reopened",
+                title="<:ViewLOGO:1407071916824461435> Ticket Reopened",
                 description="This ticket has been reopened successfully!",
                 color=0x57f287
             )
@@ -3865,7 +3865,7 @@ def setup_ticket_system(bot):
             })
 
         except Exception as e:
-            await interaction.response.send_message(f"❌ Erreur lors de la réouverture du ticket: {str(e)}", ephemeral=True)
+            await interaction.response.send_message(f"<:ErrorLOGO:1407071682031648850> Erreur lors de la réouverture du ticket: {str(e)}", ephemeral=True)
 
     @bot.tree.command(name="transcript", description="Sauvegarde la transcription du ticket")
     async def transcript_command(interaction: discord.Interaction):
@@ -3874,7 +3874,7 @@ def setup_ticket_system(bot):
         is_ticket = any(pattern in channel_name for pattern in ['-0', '-1', '-2', '-3', '-4', '-5', '-6', '-7', '-8', '-9']) or channel_name.startswith("closed-")
 
         if not is_ticket:
-            await interaction.response.send_message("❌ Cette commande ne peut être utilisée que dans un channel de ticket.", ephemeral=True)
+            await interaction.response.send_message("<:ErrorLOGO:1407071682031648850> Cette commande ne peut être utilisée que dans un channel de ticket.", ephemeral=True)
             return
 
         try:
@@ -3886,7 +3886,7 @@ def setup_ticket_system(bot):
             # Find ticket owner and panel info
             ticket_owner = None
             panel_name = "Unknown Panel"
-            panel_emoji = "🎟️"
+            panel_emoji = "<:TicketLOGO:1407730639343714397>"
             ticket_type = "unknown"
 
             # Extract ticket type from channel name
@@ -3908,7 +3908,7 @@ def setup_ticket_system(bot):
                         sub_panel_name = sub_panel["name"].lower().strip()
                         if sub_panel_name == ticket_type.lower().strip():
                             panel_name = sub_panel.get("panel_title", sub_panel.get("ticket_title", sub_panel.get("title", "Panel par Défaut")))
-                            panel_emoji = sub_panel.get("panel_emoji", sub_panel.get("button_emoji", "🎟️"))
+                            panel_emoji = sub_panel.get("panel_emoji", sub_panel.get("button_emoji", "<:TicketLOGO:1407730639343714397>"))
                             break
                     else:
                         continue
@@ -4044,13 +4044,13 @@ def setup_ticket_system(bot):
                 "panel_name": panel_name
             })
 
-            await interaction.followup.send("✅ Transcript saved successfully and sent to logs!", ephemeral=True)
+            await interaction.followup.send("<:SucessLOGO:1407071637840592977> Transcript saved successfully and sent to logs!", ephemeral=True)
 
             # Update ticket status
             update_ticket_status(interaction.channel.id, {"transcript_saved": True})
 
         except Exception as e:
-            await interaction.followup.send(f"❌ Erreur lors de la sauvegarde de la transcription: {str(e)}", ephemeral=True)
+            await interaction.followup.send(f"<:ErrorLOGO:1407071682031648850> Erreur lors de la sauvegarde de la transcription: {str(e)}", ephemeral=True)
 
     @bot.event
     async def on_message(message):
@@ -4101,7 +4101,7 @@ def setup_persistent_views(bot):
 
         # Ensure data structure is complete
         if not isinstance(data, dict):
-            print("❌ Invalid ticket data structure")
+            print("<:ErrorLOGO:1407071682031648850> Invalid ticket data structure")
             return
 
         # Add views for published panels
@@ -4112,15 +4112,15 @@ def setup_persistent_views(bot):
                     view = PublishedTicketView(panel_id)
                     bot.add_view(view)
                 except Exception as e:
-                    print(f"❌ Error adding view for panel {panel_id}: {e}")
+                    print(f"<:ErrorLOGO:1407071682031648850> Error adding view for panel {panel_id}: {e}")
 
         # Add ticket close views
         bot.add_view(TicketCloseView())
         bot.add_view(TicketClosedActionsView())
 
-        print("✅ Ticket system persistent views loaded successfully")
+        print("<:SucessLOGO:1407071637840592977> Ticket system persistent views loaded successfully")
     except Exception as e:
-        print(f"❌ Error setting up ticket persistent views: {e}")
+        print(f"<:ErrorLOGO:1407071682031648850> Error setting up ticket persistent views: {e}")
         # Initialize with empty data if there's an error
         try:
             empty_data = {
@@ -4136,7 +4136,7 @@ def setup_persistent_views(bot):
                         "footer": f"{get_bot_name()} - Ticket Bot"
                     },
                     "button_enabled": True,
-                    "button_emoji": "🔒",
+                    "button_emoji": "<:CloseLOGO:1407072519420248256>",
                     "button_label": "Close Ticket",
                     "ai_enabled": False,
                     "log_settings": {
@@ -4152,15 +4152,15 @@ def setup_persistent_views(bot):
                 "closed_tickets": {}
             }
             save_ticket_data(empty_data)
-            print("✅ Initialized empty ticket data structure")
+            print("<:SucessLOGO:1407071637840592977> Initialized empty ticket data structure")
         except Exception as init_error:
-            print(f"❌ Failed to initialize ticket data: {init_error}")
+            print(f"<:ErrorLOGO:1407071682031648850> Failed to initialize ticket data: {init_error}")
 
 # Helper functions for logs
 def create_logs_management_embed(data, guild):
     """Create logs management embed"""
     embed = discord.Embed(
-        title="📋 Logs Management",
+        title="<:DescriptionLOGO:1407733417172533299> Logs Management",
         description="Configure ticket logging settings:",
         color=0x2b2d31
     )
@@ -4171,14 +4171,14 @@ def create_logs_management_embed(data, guild):
 
     if log_channel:
         embed.add_field(
-            name="📍 Log Channel",
+            name="<:SettingLOGO:1407071854593839239> Log Channel",
             value=f"{log_channel.mention}",
             inline=False
         )
     else:
         embed.add_field(
-            name="📍 Log Channel",
-            value="❌ Not configured",
+            name="<:SettingLOGO:1407071854593839239> Log Channel",
+            value="<:ErrorLOGO:1407071682031648850> Not configured",
             inline=False
         )
 
@@ -4186,16 +4186,16 @@ def create_logs_management_embed(data, guild):
     log_settings = data["settings"].get("log_settings", {})
 
     log_types = [
-        ("🎫 Ticket Opened", "ticket_opened"),
-        ("✋ Ticket Claimed", "ticket_claimed"),
-        ("🔒 Ticket Closed", "ticket_closed"),
-        ("🗑️ Ticket Deleted", "ticket_deleted"),
-        ("📄 Transcript", "transcript_saved")
+        ("<:TicketLOGO:1407730639343714397> Ticket Opened", "ticket_opened"),
+        ("<:UnviewLOGO:1407072750220345475> Ticket Claimed", "ticket_claimed"),
+        ("<:CloseLOGO:1407072519420248256> Ticket Closed", "ticket_closed"),
+        ("<:DeleteLOGO:1407071421363916841> Ticket Deleted", "ticket_deleted"),
+        ("<:TXTFileLOGO:1407735600752361622> Transcript", "transcript_saved")
     ]
 
     status_list = []
     for name, key in log_types:
-        status = "🟢 On" if log_settings.get(key, True) else "🔴 Off"
+        status = "<:OnLOGO:1407072463883472978> On" if log_settings.get(key, True) else "<:OffLOGO:1407072621836894380> Off"
         status_list.append(f"{name}: {status}")
 
     embed.add_field(
@@ -4315,11 +4315,11 @@ async def log_ticket_action(guild, action_type, details):
                 ticket_name = f"Ticket-{parts[1]}"
 
     # Find panel info - better search logic
-    panel_name = "🎟️ Default Panel"
+    panel_name = "<:TicketLOGO:1407730639343714397> Default Panel"
 
     # Check if panel_name is already provided in details
     if "panel_name" in details and details["panel_name"]:
-        panel_name = f"🎟️ {details['panel_name']}"
+        panel_name = f"<:TicketLOGO:1407730639343714397> {details['panel_name']}"
     elif "ticket_type" in details:
         ticket_type = details["ticket_type"]
         # Search for matching panel
@@ -4330,7 +4330,7 @@ async def log_ticket_action(guild, action_type, details):
                     if sub_panel_name == ticket_type.lower().strip():
                         # Prioritize panel_title, then ticket_title, then title
                         panel_title = sub_panel.get("panel_title") or sub_panel.get("ticket_title") or sub_panel.get("title", "Default Panel")
-                        panel_name = f"🎟️ {panel_title}"
+                        panel_name = f"<:TicketLOGO:1407730639343714397> {panel_title}"
                         break
                 else:
                     continue
@@ -4343,7 +4343,7 @@ async def log_ticket_action(guild, action_type, details):
                     sub_panel_name = sub_panel["name"].lower().strip()
                     if sub_panel_name == ticket_type.lower().strip():
                         panel_title = sub_panel.get("panel_title") or sub_panel.get("ticket_title") or sub_panel.get("title", "Default Panel")
-                        panel_name = f"🎟️ {panel_title}"
+                        panel_name = f"<:TicketLOGO:1407730639343714397> {panel_title}"
                         break
                 else:
                     continue
