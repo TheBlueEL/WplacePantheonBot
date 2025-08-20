@@ -14,6 +14,7 @@ load_dotenv()
 # Configuration des intents
 intents = discord.Intents.default()
 intents.message_content = True
+intents.members = True  # Nécessaire pour surveiller les membres du serveur
 
 # Créer le bot Discord avec support des commandes
 
