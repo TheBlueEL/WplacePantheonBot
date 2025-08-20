@@ -51,7 +51,7 @@ class GitHubSync:
                 if os.path.isfile(item) and item not in excluded_files:
                     current_files.append(item)
             
-            print(f"📤 Synchronisation de {len(current_files)} fichier(s) vers GitHub...")
+            print(f"Synchronisation de {len(current_files)} fichier(s) vers GitHub...")
             
             # Synchroniser chaque fichier
             for filename in current_files:
