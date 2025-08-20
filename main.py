@@ -26,7 +26,7 @@ async def on_ready():
     print(f'Bot ID: {client.user.id}')
 
     # Synchroniser avec GitHub au démarrage
-    print("🔄 Synchronisation avec GitHub...")
+    print("Synchronisation avec GitHub...")
     github_sync = GitHubSync()
     await github_sync.sync_all_files_to_github()
 
