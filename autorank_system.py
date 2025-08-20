@@ -21,13 +21,21 @@ def normalize_emoji(emoji_str):
     if emoji_str.startswith('<:') or emoji_str.startswith('<a:'):
         return emoji_str
     
-    # Essayer de décoder les formats JSON Unicode comme "\u2b50"
+    # Gérer spécifiquement le format \u2b50 (⭐)
+    if emoji_str == "\\u2b50" or emoji_str == "\u2b50":
+        return "⭐"
+    
+    # Essayer de décoder les formats JSON Unicode génériques
     try:
         import json
-        # Créer une chaîne JSON valide et la décoder
-        json_str = f'"{emoji_str}"'
-        decoded = json.loads(json_str)
-        return decoded
+        # Si l'emoji contient des caractères Unicode échappés
+        if '\\u' in emoji_str:
+            # Créer une chaîne JSON valide et la décoder
+            json_str = f'"{emoji_str}"'
+            decoded = json.loads(json_str)
+            return decoded
+        else:
+            return emoji_str
     except:
         # Si le décodage échoue, retourner l'emoji par défaut
         return "⭐"
