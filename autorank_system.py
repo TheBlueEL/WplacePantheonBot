@@ -1380,81 +1380,117 @@ class AutoRankSystem(commands.Cog):
     @commands.Cog.listener()
     async def on_reaction_add(self, reaction, user):
         """Handle reaction autoranks"""
-        print(f"🎯 Réaction détectée: {reaction.emoji} par {user.display_name} sur message {reaction.message.id}")
+        print(f"\n🎯 === RÉACTION DÉTECTÉE ===")
+        print(f"👤 Utilisateur: {user.display_name} (ID: {user.id})")
+        print(f"📝 Message ID: {reaction.message.id}")
+        print(f"📺 Channel ID: {reaction.message.channel.id}")
+        print(f"⭐ Emoji: '{reaction.emoji}' (Type: {type(reaction.emoji)})")
+        print(f"🤖 Est un bot: {user.bot}")
         
         if user.bot:
-            print(f"❌ Ignoré: {user.display_name} est un bot")
+            print(f"❌ IGNORÉ: {user.display_name} est un bot")
             return
             
         data = load_autorank_data()
         autoranks = data.get("autoranks", {})
         
-        print(f"📊 {len(autoranks)} autoranks trouvés dans le fichier")
+        print(f"\n📊 {len(autoranks)} autoranks dans le fichier:")
+        for aid, ar in autoranks.items():
+            print(f"   - AutoRank {aid}: {ar['type']} (Rôle: {ar.get('role_id')})")
         
         for autorank_id, autorank in autoranks.items():
-            print(f"🔍 Vérification autorank {autorank_id}: type={autorank['type']}")
+            print(f"\n🔍 === VÉRIFICATION AUTORANK {autorank_id} ===")
+            print(f"📝 Type: {autorank['type']}")
             
             if autorank["type"] == "reaction":
-                print(f"🎯 AutoRank Reaction trouvé:")
-                print(f"   - Message ID config: {autorank.get('message_id')}")
-                print(f"   - Message ID actuel: {reaction.message.id}")
-                print(f"   - Channel ID config: {autorank.get('channel_id')}")
-                print(f"   - Channel ID actuel: {reaction.message.channel.id}")
+                config_message_id = autorank.get('message_id')
+                config_channel_id = autorank.get('channel_id')
+                config_emoji = autorank.get("reaction_emoji", "⭐")
                 
-                if (autorank.get("message_id") == reaction.message.id and
-                    autorank.get("channel_id") == reaction.message.channel.id):
+                print(f"🎯 Configuration AutoRank Reaction:")
+                print(f"   - Message ID attendu: {config_message_id}")
+                print(f"   - Message ID reçu: {reaction.message.id}")
+                print(f"   - Match Message: {config_message_id == reaction.message.id}")
+                print(f"   - Channel ID attendu: {config_channel_id}")
+                print(f"   - Channel ID reçu: {reaction.message.channel.id}")
+                print(f"   - Match Channel: {config_channel_id == reaction.message.channel.id}")
+                
+                if (config_message_id == reaction.message.id and
+                    config_channel_id == reaction.message.channel.id):
+                    
+                    print(f"\n✅ MESSAGE ET CHANNEL CORRESPONDENT!")
                     
                     # Normaliser les emojis pour la comparaison
-                    config_emoji = normalize_emoji(autorank.get("reaction_emoji", "⭐"))
-                    user_emoji = str(reaction.emoji)
+                    normalized_config = normalize_emoji(config_emoji)
+                    user_emoji_str = str(reaction.emoji)
                     
-                    print(f"🔍 Comparaison emojis: Config='{config_emoji}' vs User='{user_emoji}'")
+                    print(f"🔍 COMPARAISON EMOJIS:")
+                    print(f"   - Config original: '{config_emoji}'")
+                    print(f"   - Config normalisé: '{normalized_config}'")
+                    print(f"   - User emoji: '{user_emoji_str}'")
+                    print(f"   - Match emoji: {normalized_config == user_emoji_str}")
                     
                     # Comparaison directe des emojis
-                    if config_emoji == user_emoji:
-                        print(f"✅ Emojis correspondent ! Attribution du rôle...")
+                    if normalized_config == user_emoji_str:
+                        print(f"\n🎉 EMOJIS CORRESPONDENT! ATTRIBUTION DU RÔLE...")
                         try:
                             guild = reaction.message.guild
                             role = guild.get_role(autorank["role_id"])
                             
+                            print(f"🎭 Rôle recherché: ID {autorank['role_id']}")
+                            print(f"🎭 Rôle trouvé: {role.name if role else 'INTROUVABLE'}")
+                            
                             if not role:
-                                print(f"❌ Rôle {autorank['role_id']} introuvable sur le serveur")
+                                print(f"❌ ERREUR: Rôle {autorank['role_id']} introuvable sur le serveur")
                                 continue
                             
                             # Vérifier les permissions du bot
                             bot_member = guild.get_member(self.bot.user.id)
+                            print(f"🤖 Bot membre: {bot_member.display_name if bot_member else 'INTROUVABLE'}")
+                            
                             if not bot_member:
-                                print(f"❌ Bot non trouvé sur le serveur")
+                                print(f"❌ ERREUR: Bot non trouvé sur le serveur")
                                 continue
                                 
+                            print(f"🔐 Permissions bot manage_roles: {bot_member.guild_permissions.manage_roles}")
                             if not bot_member.guild_permissions.manage_roles:
-                                print(f"❌ Bot n'a pas la permission manage_roles")
+                                print(f"❌ ERREUR: Bot n'a pas la permission manage_roles")
                                 continue
                             
-                            # Vérifier si le rôle du bot est plus haut que le rôle cible
+                            # Vérifier la hiérarchie des rôles
+                            print(f"📊 Rôle bot le plus haut: {bot_member.top_role.name} (Position: {bot_member.top_role.position})")
+                            print(f"📊 Rôle cible: {role.name} (Position: {role.position})")
+                            print(f"📊 Hiérarchie OK: {role < bot_member.top_role}")
+                            
                             if role >= bot_member.top_role:
-                                print(f"❌ Rôle {role.name} est plus haut que le rôle du bot")
+                                print(f"❌ ERREUR: Rôle {role.name} est plus haut que le rôle du bot")
                                 continue
                             
                             # Vérifier si l'utilisateur a déjà le rôle
-                            if role in user.roles:
-                                print(f"ℹ️ {user.display_name} a déjà le rôle {role.name}")
+                            has_role = role in user.roles
+                            print(f"👤 {user.display_name} a déjà le rôle: {has_role}")
+                            
+                            if has_role:
+                                print(f"ℹ️ DÉJÀ POSSÉDÉ: {user.display_name} a déjà le rôle {role.name}")
                                 continue
                             
                             # Attribuer le rôle
+                            print(f"🚀 ATTRIBUTION DU RÔLE EN COURS...")
                             await user.add_roles(role, reason="AutoRank: Reaction")
-                            print(f"✅ Rôle {role.name} donné à {user.display_name} via réaction {reaction.emoji}")
+                            print(f"🎉 SUCCÈS! Rôle {role.name} donné à {user.display_name} via réaction {reaction.emoji}")
                             
-                        except discord.Forbidden:
-                            print(f"❌ Permissions insuffisantes pour attribuer le rôle {role.name}")
+                        except discord.Forbidden as e:
+                            print(f"❌ ERREUR PERMISSIONS: {e}")
                         except discord.HTTPException as e:
-                            print(f"❌ Erreur HTTP lors de l'attribution du rôle: {e}")
+                            print(f"❌ ERREUR HTTP: {e}")
                         except Exception as e:
-                            print(f"❌ Erreur attribution rôle via réaction: {e}")
+                            print(f"❌ ERREUR GÉNÉRALE: {type(e).__name__}: {e}")
                     else:
-                        print(f"❌ Emojis ne correspondent pas: '{config_emoji}' != '{user_emoji}'")
+                        print(f"❌ EMOJIS NE CORRESPONDENT PAS!")
                 else:
-                    print(f"❌ Message ou channel ne correspond pas")
+                    print(f"❌ MESSAGE OU CHANNEL NE CORRESPOND PAS")
+                    
+        print(f"🏁 === FIN TRAITEMENT RÉACTION ===\n")
 
     @discord.app_commands.command(name="autorank", description="Manage server auto-ranking system")
     async def autorank(self, interaction: discord.Interaction):
