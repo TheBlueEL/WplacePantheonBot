@@ -1,16 +1,28 @@
 {
-    "tickets": {
-        }
-    },
+    "tickets": {},
     "staff_roles": [],
     "settings": {
+        "default_embed": {
+            "title": "",
+            "outside_description": "",
+            "description": "Support will be with you shortly. To close this ticket.",
+            "thumbnail": "",
+            "image": "",
+            "footer": "Wplace - Pantheon - Ticket Bot"
         },
-        },
-        "log_channel_id": 1405303214643085314
-    },
-    "ticket_counters": {
-    },
-    "closed_tickets": {
+        "button_enabled": true,
+        "button_emoji": "<:CloseLOGO:1407072519420248256>",
+        "button_label": "Close Ticket",
+        "ai_enabled": false,
+        "log_settings": {
+            "ticket_opened": true,
+            "ticket_claimed": true,
+            "ticket_closed": true,
+            "ticket_deleted": true,
+            "ticket_reopened": true,
+            "transcript_saved": true
         }
-    }
+    },
+    "ticket_counters": {},
+    "closed_tickets": {}
 }
