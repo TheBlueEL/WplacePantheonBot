@@ -5,36 +5,41 @@ import json
 import re
 from datetime import datetime
 import asyncio
-import codecs
+import emoji
 
 def normalize_emoji(emoji_str):
-    """Normalize emoji from different Unicode formats"""
+    """Normalize emoji from different Unicode formats using emoji library"""
     # Si pas d'emoji défini, retourner l'emoji par défaut
     if not emoji_str:
         return "⭐"
-    
-    # Gérer directement les emojis Unicode comme ⭐, 🎯, etc.
-    if emoji_str in ["⭐", "🎯", "✅", "❌", "🔥", "💎", "🎪", "🎊"]:
-        return emoji_str
     
     # Pour les emojis custom Discord <:nom:id>, les retourner tels quels
     if emoji_str.startswith('<:') or emoji_str.startswith('<a:'):
         return emoji_str
     
-    # Si c'est un code Unicode, le convertir directement
-    if emoji_str == "\u2b50" or emoji_str == "\\u2b50":
+    # Utiliser la librairie emoji pour convertir les codes Unicode
+    try:
+        # Si c'est un code Unicode comme \u2b50, le convertir
+        if '\\u' in emoji_str:
+            # Décoder le code Unicode
+            decoded = emoji_str.encode().decode('unicode_escape')
+            return decoded
+        
+        # Si c'est déjà un emoji valide, le retourner
+        if emoji.is_emoji(emoji_str):
+            return emoji_str
+            
+        # Essayer de convertir depuis différents formats
+        converted = emoji.emojize(emoji_str, language='en')
+        if converted != emoji_str:
+            return converted
+            
+        # Si rien ne fonctionne, retourner l'emoji par défaut
         return "⭐"
-    elif emoji_str == "\u2728" or emoji_str == "\\u2728":
-        return "✨"
-    elif emoji_str == "\ud83c\udfaf" or emoji_str == "\\ud83c\\udfaf":
-        return "🎯"
-    elif emoji_str == "\u2705" or emoji_str == "\\u2705":
-        return "✅"
-    elif emoji_str == "\u274c" or emoji_str == "\\u274c":
-        return "❌"
-    
-    # Si c'est déjà un emoji normal, le retourner tel quel
-    return emoji_str if len(emoji_str) <= 2 else "⭐"
+        
+    except Exception:
+        # En cas d'erreur, retourner l'emoji par défaut
+        return "⭐"
 
 # File management functions
 def load_autorank_data():
