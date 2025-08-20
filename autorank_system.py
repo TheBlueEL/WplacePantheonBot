@@ -1452,7 +1452,7 @@ class AutoRankSystem(commands.Cog):
                         except Exception as e:
                             print(f"❌ Erreur attribution rôle via réaction: {e}")
                     else:
-                        print(f"❌ Emojis ne correspondent pas: '{reaction_emoji}' != '{user_emoji}'")
+                        print(f"❌ Emojis ne correspondent pas: '{config_emoji}' != '{user_emoji}'")
                 else:
                     print(f"❌ Message ou channel ne correspond pas")
 
