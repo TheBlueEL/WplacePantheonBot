@@ -1668,7 +1668,7 @@ class TicketCloseView(discord.ui.View):
 
     async def close_ticket(self, interaction: discord.Interaction):
         embed = discord.Embed(
-            title="<:CloseLOGO:1407072519420248256> Close Ticket",
+            title="<:TicketLOGO:1407730639343714397> Close Ticket",
             description="Are you sure you want to close this ticket?",
             color=0xed4245
         )
@@ -1680,7 +1680,7 @@ class ConfirmCloseView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=60)
 
-    @discord.ui.button(label='Yes, Close', style=discord.ButtonStyle.danger, emoji='<:SucessLOGO:1407071637840592977>')
+    @discord.ui.button(label='Yes', style=discord.ButtonStyle.danger, emoji='<:ConfirmLOGO:1407072680267481249>')
     async def confirm_close(self, interaction: discord.Interaction, button: discord.ui.Button):
         try:
             # Save ticket data before closing
@@ -1767,7 +1767,7 @@ class ConfirmCloseView(discord.ui.View):
             else:
                 await interaction.followup.send(f"<:ErrorLOGO:1407071682031648850> Error closing ticket: {str(e)}", ephemeral=True)
 
-    @discord.ui.button(label='Cancel', style=discord.ButtonStyle.secondary, emoji='<:ErrorLOGO:1407071682031648850>')
+    @discord.ui.button(label='Cancel', style=discord.ButtonStyle.secondary, emoji='<:CloseLOGO:1407072519420248256>')
     async def cancel_close(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.edit_message(content="Ticket close cancelled.", embed=None, view=None)
 
@@ -2028,7 +2028,7 @@ class PanelDeleteConfirmView(discord.ui.View):
         embed = create_ticket_panel_embed(data)
         await interaction.response.edit_message(embed=embed, view=view)
 
-    @discord.ui.button(label='Cancel', style=discord.ButtonStyle.secondary, emoji='<:ErrorLOGO:1407071682031648850>')
+    @discord.ui.button(label='Cancel', style=discord.ButtonStyle.secondary, emoji='<:CloseLOGO:1407072519420248256>')
     async def cancel_delete(self, interaction: discord.Interaction, button: discord.ui.Button):
         # Return to main panel
         view = TicketPanelView()
