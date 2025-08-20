@@ -1171,14 +1171,15 @@ class BackToEditButton(discord.ui.Button):
         )
         await interaction.response.edit_message(embed=embed, view=view)
 
-# Function to restore autorank buttons
+# Function to restore autorank buttons and reactions
 async def restore_autorank_buttons(bot):
-    """Restore autorank buttons when bot starts"""
+    """Restore autorank buttons and reactions when bot starts"""
     try:
         data = load_autorank_data()
         autoranks = data.get("autoranks", {})
         
         for autorank_id, autorank in autoranks.items():
+            # Restaurer les boutons
             if autorank["type"] == "button":
                 try:
                     guild = bot.get_guild(autorank["guild_id"])
@@ -1201,10 +1202,46 @@ async def restore_autorank_buttons(bot):
                                 button.emoji = autorank.get("button_emoji", "<:ConfirmLOGO:1407072680267481249>")
                                 
                                 await message.edit(view=view)
+                                print(f"✅ Bouton AutoRank {autorank_id} restauré")
                 except Exception as e:
                     print(f"❌ Error restoring autorank button {autorank_id}: {e}")
+            
+            # Restaurer les réactions
+            elif autorank["type"] == "reaction":
+                try:
+                    guild = bot.get_guild(autorank["guild_id"])
+                    if guild:
+                        channel = guild.get_channel(autorank["channel_id"])
+                        if channel:
+                            message = await channel.fetch_message(autorank["message_id"])
+                            if message:
+                                reaction_emoji = autorank.get("reaction_emoji", "⭐")
+                                
+                                # Decoder l'emoji Unicode si nécessaire
+                                if reaction_emoji.startswith("\\u"):
+                                    try:
+                                        reaction_emoji = reaction_emoji.encode().decode('unicode_escape')
+                                    except:
+                                        pass
+                                
+                                # Vérifier si la réaction existe déjà
+                                reaction_exists = False
+                                for reaction in message.reactions:
+                                    if str(reaction.emoji) == reaction_emoji:
+                                        reaction_exists = True
+                                        break
+                                
+                                # Ajouter la réaction si elle n'existe pas
+                                if not reaction_exists:
+                                    await message.add_reaction(reaction_emoji)
+                                    print(f"✅ Réaction AutoRank {autorank_id} restaurée: {reaction_emoji}")
+                                else:
+                                    print(f"ℹ️ Réaction AutoRank {autorank_id} déjà présente: {reaction_emoji}")
+                                    
+                except Exception as e:
+                    print(f"❌ Erreur restauration réaction AutoRank {autorank_id}: {e}")
         
-        print("✅ AutoRank buttons restored successfully")
+        print("✅ AutoRank buttons et reactions restored successfully")
     except Exception as e:
         print(f"❌ Error restoring autorank buttons: {e}")
 
@@ -1329,21 +1366,22 @@ class AutoRankSystem(commands.Cog):
                 if (autorank.get("message_id") == reaction.message.id and
                     autorank.get("channel_id") == reaction.message.channel.id):
                     
-                    # Vérification plus robuste de l'emoji
+                    # Gérer l'emoji Unicode échappé et normal
                     reaction_emoji = autorank.get("reaction_emoji", "⭐")
                     user_emoji = str(reaction.emoji)
                     
+                    # Decoder l'emoji Unicode si nécessaire
+                    if reaction_emoji.startswith("\\u"):
+                        try:
+                            reaction_emoji = reaction_emoji.encode().decode('unicode_escape')
+                        except:
+                            pass
+                    
                     print(f"🔍 Comparaison emojis: Config='{reaction_emoji}' vs User='{user_emoji}'")
-                    print(f"🔍 Types: Config={type(reaction_emoji)} vs User={type(user_emoji)}")
-                    print(f"🔍 Longueurs: Config={len(reaction_emoji)} vs User={len(user_emoji)}")
+                    print(f"🔍 Emoji décodé: '{reaction_emoji}'")
                     
-                    # Comparaison plus flexible des emojis
-                    emojis_match = (reaction_emoji == user_emoji or 
-                                   reaction_emoji.strip() == user_emoji.strip() or
-                                   reaction_emoji in user_emoji or 
-                                   user_emoji in reaction_emoji)
-                    
-                    if emojis_match:
+                    # Comparaison directe des emojis
+                    if reaction_emoji == user_emoji:
                         print(f"✅ Emojis correspondent ! Attribution du rôle...")
                         try:
                             role = reaction.message.guild.get_role(autorank["role_id"])
@@ -1358,7 +1396,7 @@ class AutoRankSystem(commands.Cog):
                         except Exception as e:
                             print(f"❌ Erreur attribution rôle via réaction: {e}")
                     else:
-                        print(f"❌ Emojis ne correspondent pas")
+                        print(f"❌ Emojis ne correspondent pas: '{reaction_emoji}' != '{user_emoji}'")
                 else:
                     print(f"❌ Message ou channel ne correspond pas")
 
