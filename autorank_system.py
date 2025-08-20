@@ -1,4 +1,3 @@
-
 import discord
 from discord.ext import commands
 import json
@@ -23,23 +22,29 @@ class AutoRankMainView(discord.ui.View):
         super().__init__(timeout=300)
         self.user = user
 
-    def get_main_embed(self):
+    def get_main_embed(self, guild=None):
         data = load_autorank_data()
         autoranks = data.get("autoranks", {})
-        
+
         embed = discord.Embed(
             title="Auto-Rank Management",
             description=f"Welcome back {self.user.mention}!\n\nManage your server's auto-ranking system below:",
             color=0x5865f2
         )
-        
+
         if autoranks:
             autorank_list = []
             for autorank_id, autorank in autoranks.items():
-                role_mention = f"<@&{autorank['role_id']}>"
+                # Get role name instead of mention
+                if guild:
+                    role = guild.get_role(autorank['role_id'])
+                    role_name = role.name if role else f"Role {autorank['role_id']}"
+                else:
+                    role_name = f"Role {autorank['role_id']}"
+
                 autorank_type = autorank['type'].replace('_', ' ').title()
-                autorank_list.append(f"• {role_mention} ({autorank_type})")
-            
+                autorank_list.append(f"• {role_name} ({autorank_type})")
+
             embed.add_field(
                 name="**AutoRank(s)**",
                 value="\n".join(autorank_list),
@@ -51,7 +56,7 @@ class AutoRankMainView(discord.ui.View):
                 value="No autoranks configured",
                 inline=False
             )
-            
+
         return embed
 
     @discord.ui.button(label='Create', style=discord.ButtonStyle.success, emoji='➕')
@@ -64,11 +69,11 @@ class AutoRankMainView(discord.ui.View):
     async def edit_autorank(self, interaction: discord.Interaction, button: discord.ui.Button):
         data = load_autorank_data()
         autoranks = data.get("autoranks", {})
-        
+
         if not autoranks:
             await interaction.response.send_message("❌ No autoranks to edit!", ephemeral=True)
             return
-            
+
         view = AutoRankEditView(self.user)
         embed = discord.Embed(
             title="✏️ Edit AutoRanks",
@@ -81,13 +86,14 @@ class AutoRankMainView(discord.ui.View):
     async def delete_autorank(self, interaction: discord.Interaction, button: discord.ui.Button):
         data = load_autorank_data()
         autoranks = data.get("autoranks", {})
-        
+
         if not autoranks:
             await interaction.response.send_message("❌ No autoranks to delete!", ephemeral=True)
             return
-            
+
         view = AutoRankDeleteView(self.user)
-        await interaction.response.edit_message(embed=self.get_main_embed(), view=view)
+        embed = self.get_main_embed(interaction.guild)
+        await interaction.response.edit_message(embed=embed, view=view)
 
 # Create AutoRank View
 class AutoRankCreateView(discord.ui.View):
@@ -134,7 +140,7 @@ class AutoRankTypeSelect(discord.ui.Select):
 
     async def callback(self, interaction: discord.Interaction):
         autorank_type = self.values[0]
-        
+
         if autorank_type == "new_members":
             view = NewMembersConfigView(self.view.user)
             embed = view.get_embed()
@@ -160,7 +166,7 @@ class NewMembersConfigView(discord.ui.View):
     def update_view(self):
         self.clear_items()
         self.add_item(RoleSelect(self))
-        
+
         # All Members Toggle Button
         toggle_button = discord.ui.Button(
             label="All Members",
@@ -169,12 +175,12 @@ class NewMembersConfigView(discord.ui.View):
         )
         toggle_button.callback = self.toggle_all_members
         self.add_item(toggle_button)
-        
+
         if self.selected_role:
             confirm_button = discord.ui.Button(label="Confirm", style=discord.ButtonStyle.success, emoji="✅")
             confirm_button.callback = self.confirm_new_members
             self.add_item(confirm_button)
-        
+
         self.add_item(BackToCreateButton(self.user))
 
     async def toggle_all_members(self, interaction: discord.Interaction):
@@ -186,25 +192,25 @@ class NewMembersConfigView(discord.ui.View):
     async def confirm_new_members(self, interaction: discord.Interaction):
         data = load_autorank_data()
         autorank_id = str(len(data.get("autoranks", {})) + 1)
-        
+
         if "autoranks" not in data:
             data["autoranks"] = {}
-            
+
         data["autoranks"][autorank_id] = {
             "type": "new_members",
             "role_id": self.selected_role.id,
             "all_members": self.all_members_enabled,
             "created_at": datetime.now().isoformat()
         }
-        
+
         save_autorank_data(data)
-        
+
         # Apply to existing members if enabled
         if self.all_members_enabled:
             await self.apply_to_existing_members(interaction)
-        
+
         view = AutoRankMainView(self.user)
-        embed = view.get_main_embed()
+        embed = view.get_main_embed(interaction.guild)
         await interaction.response.edit_message(embed=embed, view=view)
 
     async def apply_to_existing_members(self, interaction):
@@ -212,7 +218,7 @@ class NewMembersConfigView(discord.ui.View):
             guild = interaction.guild
             role = self.selected_role
             count = 0
-            
+
             for member in guild.members:
                 if not member.bot and role not in member.roles:
                     try:
@@ -220,7 +226,7 @@ class NewMembersConfigView(discord.ui.View):
                         count += 1
                     except:
                         pass
-                        
+
             if count > 0:
                 await interaction.followup.send(f"✅ Applied role to {count} existing members!", ephemeral=True)
         except:
@@ -232,21 +238,21 @@ class NewMembersConfigView(discord.ui.View):
             description="Which role would you like to give to all new server members?",
             color=0x5865f2
         )
-        
+
         if self.selected_role:
             embed.add_field(
                 name="Selected Role",
                 value=self.selected_role.mention,
                 inline=False
             )
-            
+
         status = "✅ Enabled" if self.all_members_enabled else "❌ Disabled"
         embed.add_field(
             name="Apply to Existing Members",
             value=f"{status} - Apply role to current server members (excluding bots)",
             inline=False
         )
-        
+
         return embed
 
 # Reaction Configuration View
@@ -261,17 +267,17 @@ class ReactionConfigView(discord.ui.View):
     def update_view(self):
         self.clear_items()
         self.add_item(RoleSelect(self))
-        
+
         if self.selected_role:
             message_button = discord.ui.Button(label="Message Link", style=discord.ButtonStyle.primary, emoji="🔗")
             message_button.callback = self.set_message_link
             self.add_item(message_button)
-            
+
             if self.message_link:
                 confirm_button = discord.ui.Button(label="Confirm", style=discord.ButtonStyle.success, emoji="✅")
                 confirm_button.callback = self.confirm_reaction
                 self.add_item(confirm_button)
-        
+
         self.add_item(BackToCreateButton(self.user))
 
     async def set_message_link(self, interaction: discord.Interaction):
@@ -281,16 +287,16 @@ class ReactionConfigView(discord.ui.View):
     async def confirm_reaction(self, interaction: discord.Interaction):
         data = load_autorank_data()
         autorank_id = str(len(data.get("autoranks", {})) + 1)
-        
+
         if "autoranks" not in data:
             data["autoranks"] = {}
-            
+
         # Parse message link
         parts = self.message_link.split('/')
         guild_id = int(parts[-3])
         channel_id = int(parts[-2])
         message_id = int(parts[-1])
-        
+
         data["autoranks"][autorank_id] = {
             "type": "reaction",
             "role_id": self.selected_role.id,
@@ -299,11 +305,11 @@ class ReactionConfigView(discord.ui.View):
             "message_id": message_id,
             "created_at": datetime.now().isoformat()
         }
-        
+
         save_autorank_data(data)
-        
+
         view = AutoRankMainView(self.user)
-        embed = view.get_main_embed()
+        embed = view.get_main_embed(interaction.guild)
         await interaction.response.edit_message(embed=embed, view=view)
 
     def get_embed(self):
@@ -312,21 +318,21 @@ class ReactionConfigView(discord.ui.View):
             description="Which role would you like to give to members who react to a message?",
             color=0x5865f2
         )
-        
+
         if self.selected_role:
             embed.add_field(
                 name="Selected Role",
                 value=self.selected_role.mention,
                 inline=False
             )
-            
+
         if self.message_link:
             embed.add_field(
                 name="Message Link",
                 value=f"[Jump to Message]({self.message_link})",
                 inline=False
             )
-            
+
         return embed
 
 # Button Configuration View
@@ -344,30 +350,30 @@ class ButtonConfigView(discord.ui.View):
     def update_view(self):
         self.clear_items()
         self.add_item(RoleSelect(self))
-        
+
         if self.selected_role:
             # Button customization buttons
             color_button = discord.ui.Button(label="Button Color", style=discord.ButtonStyle.secondary, emoji="🎨")
             color_button.callback = self.set_button_color
             self.add_item(color_button)
-            
+
             text_button = discord.ui.Button(label="Button Text", style=discord.ButtonStyle.secondary, emoji="📝")
             text_button.callback = self.set_button_text
             self.add_item(text_button)
-            
+
             emoji_button = discord.ui.Button(label="Button Emoji", style=discord.ButtonStyle.secondary, emoji="😀")
             emoji_button.callback = self.set_button_emoji
             self.add_item(emoji_button)
-            
+
             message_button = discord.ui.Button(label="Message Link", style=discord.ButtonStyle.primary, emoji="🔗")
             message_button.callback = self.set_message_link
             self.add_item(message_button)
-            
+
             if self.message_link:
                 confirm_button = discord.ui.Button(label="Confirm", style=discord.ButtonStyle.success, emoji="✅")
                 confirm_button.callback = self.confirm_button
                 self.add_item(confirm_button)
-        
+
         self.add_item(BackToCreateButton(self.user))
 
     async def set_button_color(self, interaction: discord.Interaction):
@@ -394,16 +400,16 @@ class ButtonConfigView(discord.ui.View):
     async def confirm_button(self, interaction: discord.Interaction):
         data = load_autorank_data()
         autorank_id = str(len(data.get("autoranks", {})) + 1)
-        
+
         if "autoranks" not in data:
             data["autoranks"] = {}
-            
+
         # Parse message link
         parts = self.message_link.split('/')
         guild_id = int(parts[-3])
         channel_id = int(parts[-2])
         message_id = int(parts[-1])
-        
+
         data["autoranks"][autorank_id] = {
             "type": "button",
             "role_id": self.selected_role.id,
@@ -415,28 +421,28 @@ class ButtonConfigView(discord.ui.View):
             "button_emoji": self.button_emoji,
             "created_at": datetime.now().isoformat()
         }
-        
+
         save_autorank_data(data)
-        
+
         # Add button to message
         await self.add_button_to_message(interaction, data["autoranks"][autorank_id])
-        
+
         view = AutoRankMainView(self.user)
-        embed = view.get_main_embed()
+        embed = view.get_main_embed(interaction.guild)
         await interaction.response.edit_message(embed=embed, view=view)
 
     async def add_button_to_message(self, interaction, autorank_data):
         try:
             channel = interaction.guild.get_channel(autorank_data["channel_id"])
             message = await channel.fetch_message(autorank_data["message_id"])
-            
+
             style_map = {
                 "blue": discord.ButtonStyle.primary,
                 "green": discord.ButtonStyle.success,
                 "red": discord.ButtonStyle.danger,
                 "grey": discord.ButtonStyle.secondary
             }
-            
+
             view = discord.ui.View(timeout=None)
             button = discord.ui.Button(
                 label=autorank_data["button_text"] or None,
@@ -445,7 +451,7 @@ class ButtonConfigView(discord.ui.View):
                 custom_id=f"autorank_button_{len(load_autorank_data().get('autoranks', {}))}"
             )
             view.add_item(button)
-            
+
             await message.edit(view=view)
         except:
             pass
@@ -456,34 +462,34 @@ class ButtonConfigView(discord.ui.View):
             description="Which role would you like to give to members who interact with a button?",
             color=0x5865f2
         )
-        
+
         if self.selected_role:
             embed.add_field(
                 name="Selected Role",
                 value=self.selected_role.mention,
                 inline=False
             )
-            
+
         # Button preview
         color_emoji = {"blue": "🟦", "green": "🟩", "red": "🟥", "grey": "⬛"}
         preview = f"{color_emoji[self.button_color]} "
         if self.button_text:
             preview += f"**{self.button_text}** "
         preview += self.button_emoji
-        
+
         embed.add_field(
             name="Button Preview",
             value=preview,
             inline=False
         )
-            
+
         if self.message_link:
             embed.add_field(
                 name="Message Link",
                 value=f"[Jump to Message]({self.message_link})",
                 inline=False
             )
-            
+
         return embed
 
 # Button Color Selection View
@@ -535,12 +541,12 @@ class AutoRankDeleteSelect(discord.ui.Select):
     def __init__(self):
         data = load_autorank_data()
         autoranks = data.get("autoranks", {})
-        
+
         options = []
         for autorank_id, autorank in autoranks.items():
             autorank_type = autorank['type'].replace('_', ' ').title()
             created_at = autorank.get('created_at', 'Unknown')
-            
+
             # Format date to "Made the DD/MM/YYYY At HH:MM"
             if created_at != 'Unknown':
                 try:
@@ -551,22 +557,25 @@ class AutoRankDeleteSelect(discord.ui.Select):
                     formatted_date = f"Made At: {created_at[:16]}"
             else:
                 formatted_date = "Made At: Unknown"
-            
+
+            # Get role name instead of mention
+            role_name = f"Role ID {autorank['role_id']}"  # Fallback
+
             options.append(discord.SelectOption(
-                label=f"Role ID {autorank['role_id']} ({autorank_type})",
+                label=f"{role_name} ({autorank_type})",
                 value=autorank_id,
                 description=formatted_date
             ))
-            
+
         super().__init__(placeholder="Select autorank to delete...", options=options)
 
     async def callback(self, interaction: discord.Interaction):
         data = load_autorank_data()
         del data["autoranks"][self.values[0]]
         save_autorank_data(data)
-        
+
         view = AutoRankMainView(self.view.user)
-        embed = view.get_main_embed()
+        embed = view.get_main_embed(interaction.guild)
         await interaction.response.edit_message(embed=embed, view=view)
 
 # Modals
@@ -585,29 +594,29 @@ class MessageLinkModal(discord.ui.Modal):
     async def on_submit(self, interaction: discord.Interaction):
         link = self.message_link.value
         pattern = r'https://discord\.com/channels/\d+/\d+/\d+'
-        
+
         if not re.match(pattern, link):
             await interaction.response.send_message("❌ Invalid message link format! Please use: https://discord.com/channels/guild_id/channel_id/message_id", ephemeral=True)
             return
-        
+
         # Validate if message is accessible and editable
         try:
             parts = link.split('/')
             guild_id = int(parts[-3])
             channel_id = int(parts[-2])
             message_id = int(parts[-1])
-            
+
             # Check if it's the correct guild
             if guild_id != interaction.guild.id:
                 await interaction.response.send_message("❌ The message link must be from this server!", ephemeral=True)
                 return
-            
+
             # Try to access the channel and message
             channel = interaction.guild.get_channel(channel_id)
             if not channel:
                 await interaction.response.send_message("❌ Cannot access the specified channel! Make sure the bot has permissions.", ephemeral=True)
                 return
-            
+
             try:
                 message = await channel.fetch_message(message_id)
                 # Check if the message can be edited (must be sent by the bot)
@@ -620,13 +629,13 @@ class MessageLinkModal(discord.ui.Modal):
             except discord.Forbidden:
                 await interaction.response.send_message("❌ Cannot access this message! Make sure the bot has the necessary permissions in that channel.", ephemeral=True)
                 return
-            
+
             # If all validations pass
             self.parent_view.message_link = link
             self.parent_view.update_view()
             embed = self.parent_view.get_embed()
             await interaction.response.edit_message(embed=embed, view=self.parent_view)
-            
+
         except (ValueError, IndexError):
             await interaction.response.send_message("❌ Invalid message link format! Please use: https://discord.com/channels/guild_id/channel_id/message_id", ephemeral=True)
 
@@ -675,7 +684,7 @@ class BackToMainButton(discord.ui.Button):
 
     async def callback(self, interaction: discord.Interaction):
         view = AutoRankMainView(self.user)
-        embed = view.get_main_embed()
+        embed = view.get_main_embed(interaction.guild)
         await interaction.response.edit_message(embed=embed, view=view)
 
 class BackToCreateButton(discord.ui.Button):
@@ -707,9 +716,9 @@ class PersistentAutoRankButtonView(discord.ui.View):
         """Handle persistent autorank button clicks"""
         data = load_autorank_data()
         autoranks = data.get("autoranks", {})
-        
+
         for autorank_id, autorank in autoranks.items():
-            if (autorank["type"] == "button" and 
+            if (autorank["type"] == "button" and
                 autorank.get("message_id") == interaction.message.id):
                 try:
                     role = interaction.guild.get_role(autorank["role_id"])
@@ -736,12 +745,12 @@ class AutoRankEditSelect(discord.ui.Select):
     def __init__(self):
         data = load_autorank_data()
         autoranks = data.get("autoranks", {})
-        
+
         options = []
         for autorank_id, autorank in autoranks.items():
             autorank_type = autorank['type'].replace('_', ' ').title()
             created_at = autorank.get('created_at', 'Unknown')
-            
+
             # Format date to "Made the DD/MM/YYYY At HH:MM"
             if created_at != 'Unknown':
                 try:
@@ -752,23 +761,23 @@ class AutoRankEditSelect(discord.ui.Select):
                     formatted_date = f"Made At: {created_at[:16]}"
             else:
                 formatted_date = "Made At: Unknown"
-            
+
             # Get role name instead of mention
             role_name = f"Role ID {autorank['role_id']}"  # Fallback
-            
+
             options.append(discord.SelectOption(
                 label=f"{role_name} ({autorank_type})",
                 value=autorank_id,
                 description=formatted_date
             ))
-            
+
         super().__init__(placeholder="Select autorank to edit...", options=options)
 
     async def callback(self, interaction: discord.Interaction):
         autorank_id = self.values[0]
         data = load_autorank_data()
         autorank = data["autoranks"][autorank_id]
-        
+
         if autorank["type"] == "new_members":
             view = EditNewMembersConfigView(self.view.user, autorank_id)
             embed = view.get_embed()
@@ -797,7 +806,7 @@ class EditNewMembersConfigView(discord.ui.View):
     def update_view(self):
         self.clear_items()
         self.add_item(RoleSelect(self))
-        
+
         toggle_button = discord.ui.Button(
             label="All Members",
             style=discord.ButtonStyle.success if self.all_members_enabled else discord.ButtonStyle.danger,
@@ -805,16 +814,16 @@ class EditNewMembersConfigView(discord.ui.View):
         )
         toggle_button.callback = self.toggle_all_members
         self.add_item(toggle_button)
-        
+
         if self.selected_role:
             confirm_button = discord.ui.Button(label="Update", style=discord.ButtonStyle.success, emoji="✅")
             confirm_button.callback = self.update_autorank
             self.add_item(confirm_button)
-        
+
         delete_button = discord.ui.Button(label="Delete", style=discord.ButtonStyle.danger, emoji="🗑️")
         delete_button.callback = self.delete_autorank
         self.add_item(delete_button)
-        
+
         self.add_item(BackToEditButton(self.user))
 
     async def toggle_all_members(self, interaction: discord.Interaction):
@@ -830,45 +839,45 @@ class EditNewMembersConfigView(discord.ui.View):
             "all_members": self.all_members_enabled
         })
         save_autorank_data(data)
-        
+
         view = AutoRankMainView(self.user)
-        embed = view.get_main_embed()
+        embed = view.get_main_embed(interaction.guild)
         await interaction.response.edit_message(embed=embed, view=view)
 
     async def delete_autorank(self, interaction: discord.Interaction):
         data = load_autorank_data()
         del data["autoranks"][self.autorank_id]
         save_autorank_data(data)
-        
+
         view = AutoRankMainView(self.user)
-        embed = view.get_main_embed()
+        embed = view.get_main_embed(interaction.guild)
         await interaction.response.edit_message(embed=embed, view=view)
 
     def get_embed(self):
         data = load_autorank_data()
         autorank = data["autoranks"][self.autorank_id]
         current_role = f"<@&{autorank['role_id']}>"
-        
+
         embed = discord.Embed(
             title="✏️ Edit New Members AutoRank",
             description=f"Currently configured role: {current_role}\n\nSelect a new role if you want to change it:",
             color=0xffa500
         )
-        
+
         if self.selected_role:
             embed.add_field(
                 name="New Selected Role",
                 value=self.selected_role.mention,
                 inline=False
             )
-            
+
         status = "✅ Enabled" if self.all_members_enabled else "❌ Disabled"
         embed.add_field(
             name="Apply to Existing Members",
             value=f"{status} - Apply role to current server members (excluding bots)",
             inline=False
         )
-        
+
         return embed
 
 class EditReactionConfigView(discord.ui.View):
@@ -885,20 +894,20 @@ class EditReactionConfigView(discord.ui.View):
     def update_view(self):
         self.clear_items()
         self.add_item(RoleSelect(self))
-        
+
         if self.selected_role:
             message_button = discord.ui.Button(label="Message Link", style=discord.ButtonStyle.primary, emoji="🔗")
             message_button.callback = self.set_message_link
             self.add_item(message_button)
-            
+
             confirm_button = discord.ui.Button(label="Update", style=discord.ButtonStyle.success, emoji="✅")
             confirm_button.callback = self.update_autorank
             self.add_item(confirm_button)
-        
+
         delete_button = discord.ui.Button(label="Delete", style=discord.ButtonStyle.danger, emoji="🗑️")
         delete_button.callback = self.delete_autorank
         self.add_item(delete_button)
-        
+
         self.add_item(BackToEditButton(self.user))
 
     async def set_message_link(self, interaction: discord.Interaction):
@@ -911,7 +920,7 @@ class EditReactionConfigView(discord.ui.View):
         guild_id = int(parts[-3])
         channel_id = int(parts[-2])
         message_id = int(parts[-1])
-        
+
         data["autoranks"][self.autorank_id].update({
             "role_id": self.selected_role.id,
             "guild_id": guild_id,
@@ -919,44 +928,44 @@ class EditReactionConfigView(discord.ui.View):
             "message_id": message_id
         })
         save_autorank_data(data)
-        
+
         view = AutoRankMainView(self.user)
-        embed = view.get_main_embed()
+        embed = view.get_main_embed(interaction.guild)
         await interaction.response.edit_message(embed=embed, view=view)
 
     async def delete_autorank(self, interaction: discord.Interaction):
         data = load_autorank_data()
         del data["autoranks"][self.autorank_id]
         save_autorank_data(data)
-        
+
         view = AutoRankMainView(self.user)
-        embed = view.get_main_embed()
+        embed = view.get_main_embed(interaction.guild)
         await interaction.response.edit_message(embed=embed, view=view)
 
     def get_embed(self):
         data = load_autorank_data()
         autorank = data["autoranks"][self.autorank_id]
         current_role = f"<@&{autorank['role_id']}>"
-        
+
         embed = discord.Embed(
             title="✏️ Edit Reaction AutoRank",
             description=f"Currently configured role: {current_role}\n\nSelect a new role if you want to change it:",
             color=0xffa500
         )
-        
+
         if self.selected_role:
             embed.add_field(
                 name="New Selected Role",
                 value=self.selected_role.mention,
                 inline=False
             )
-            
+
         embed.add_field(
             name="Message Link",
             value=f"[Jump to Message]({self.message_link})",
             inline=False
         )
-        
+
         return embed
 
 class EditButtonConfigView(discord.ui.View):
@@ -976,32 +985,32 @@ class EditButtonConfigView(discord.ui.View):
     def update_view(self):
         self.clear_items()
         self.add_item(RoleSelect(self))
-        
+
         if self.selected_role:
             color_button = discord.ui.Button(label="Button Color", style=discord.ButtonStyle.secondary, emoji="🎨")
             color_button.callback = self.set_button_color
             self.add_item(color_button)
-            
+
             text_button = discord.ui.Button(label="Button Text", style=discord.ButtonStyle.secondary, emoji="📝")
             text_button.callback = self.set_button_text
             self.add_item(text_button)
-            
+
             emoji_button = discord.ui.Button(label="Button Emoji", style=discord.ButtonStyle.secondary, emoji="😀")
             emoji_button.callback = self.set_button_emoji
             self.add_item(emoji_button)
-            
+
             message_button = discord.ui.Button(label="Message Link", style=discord.ButtonStyle.primary, emoji="🔗")
             message_button.callback = self.set_message_link
             self.add_item(message_button)
-            
+
             confirm_button = discord.ui.Button(label="Update", style=discord.ButtonStyle.success, emoji="✅")
             confirm_button.callback = self.update_autorank
             self.add_item(confirm_button)
-        
+
         delete_button = discord.ui.Button(label="Delete", style=discord.ButtonStyle.danger, emoji="🗑️")
         delete_button.callback = self.delete_autorank
         self.add_item(delete_button)
-        
+
         self.add_item(BackToEditButton(self.user))
 
     async def set_button_color(self, interaction: discord.Interaction):
@@ -1031,7 +1040,7 @@ class EditButtonConfigView(discord.ui.View):
         guild_id = int(parts[-3])
         channel_id = int(parts[-2])
         message_id = int(parts[-1])
-        
+
         data["autoranks"][self.autorank_id].update({
             "role_id": self.selected_role.id,
             "guild_id": guild_id,
@@ -1042,32 +1051,32 @@ class EditButtonConfigView(discord.ui.View):
             "button_emoji": self.button_emoji
         })
         save_autorank_data(data)
-        
+
         # Update button on message
         await self.update_button_on_message(interaction, data["autoranks"][self.autorank_id])
-        
+
         view = AutoRankMainView(self.user)
-        embed = view.get_main_embed()
+        embed = view.get_main_embed(interaction.guild)
         await interaction.response.edit_message(embed=embed, view=view)
 
     async def update_button_on_message(self, interaction, autorank_data):
         try:
             channel = interaction.guild.get_channel(autorank_data["channel_id"])
             message = await channel.fetch_message(autorank_data["message_id"])
-            
+
             style_map = {
                 "blue": discord.ButtonStyle.primary,
                 "green": discord.ButtonStyle.success,
                 "red": discord.ButtonStyle.danger,
                 "grey": discord.ButtonStyle.secondary
             }
-            
+
             view = PersistentAutoRankButtonView()
             button = view.children[0]
             button.label = autorank_data["button_text"] or None
             button.style = style_map[autorank_data["button_color"]]
             button.emoji = autorank_data["button_emoji"]
-            
+
             await message.edit(view=view)
         except:
             pass
@@ -1076,48 +1085,48 @@ class EditButtonConfigView(discord.ui.View):
         data = load_autorank_data()
         del data["autoranks"][self.autorank_id]
         save_autorank_data(data)
-        
+
         view = AutoRankMainView(self.user)
-        embed = view.get_main_embed()
+        embed = view.get_main_embed(interaction.guild)
         await interaction.response.edit_message(embed=embed, view=view)
 
     def get_embed(self):
         data = load_autorank_data()
         autorank = data["autoranks"][self.autorank_id]
         current_role = f"<@&{autorank['role_id']}>"
-        
+
         embed = discord.Embed(
             title="✏️ Edit Button AutoRank",
             description=f"Currently configured role: {current_role}\n\nSelect a new role if you want to change it:",
             color=0xffa500
         )
-        
+
         if self.selected_role:
             embed.add_field(
                 name="New Selected Role",
                 value=self.selected_role.mention,
                 inline=False
             )
-            
+
         # Button preview
         color_emoji = {"blue": "🟦", "green": "🟩", "red": "🟥", "grey": "⬛"}
         preview = f"{color_emoji[self.button_color]} "
         if self.button_text:
             preview += f"**{self.button_text}** "
         preview += self.button_emoji
-        
+
         embed.add_field(
             name="Button Preview",
             value=preview,
             inline=False
         )
-            
+
         embed.add_field(
             name="Message Link",
             value=f"[Jump to Message]({self.message_link})",
             inline=False
         )
-        
+
         return embed
 
 # Additional Navigation Button
@@ -1141,7 +1150,7 @@ async def restore_autorank_buttons(bot):
     try:
         data = load_autorank_data()
         autoranks = data.get("autoranks", {})
-        
+
         for autorank_id, autorank in autoranks.items():
             if autorank["type"] == "button":
                 try:
@@ -1157,17 +1166,17 @@ async def restore_autorank_buttons(bot):
                                     "red": discord.ButtonStyle.danger,
                                     "grey": discord.ButtonStyle.secondary
                                 }
-                                
+
                                 view = PersistentAutoRankButtonView()
                                 button = view.children[0]
                                 button.label = autorank.get("button_text") or None
                                 button.style = style_map[autorank.get("button_color", "green")]
                                 button.emoji = autorank.get("button_emoji", "<:ConfirmLOGO:1407072680267481249>")
-                                
+
                                 await message.edit(view=view)
                 except Exception as e:
                     print(f"❌ Error restoring autorank button {autorank_id}: {e}")
-        
+
         print("✅ AutoRank buttons restored successfully")
     except Exception as e:
         print(f"❌ Error restoring autorank buttons: {e}")
@@ -1182,7 +1191,7 @@ class AutoRankSystem(commands.Cog):
         """Handle new member autoranks"""
         data = load_autorank_data()
         autoranks = data.get("autoranks", {})
-        
+
         for autorank_id, autorank in autoranks.items():
             if autorank["type"] == "new_members":
                 try:
@@ -1197,12 +1206,12 @@ class AutoRankSystem(commands.Cog):
         """Handle reaction autoranks"""
         if user.bot:
             return
-            
+
         data = load_autorank_data()
         autoranks = data.get("autoranks", {})
-        
+
         for autorank_id, autorank in autoranks.items():
-            if (autorank["type"] == "reaction" and 
+            if (autorank["type"] == "reaction" and
                 autorank.get("message_id") == reaction.message.id):
                 try:
                     role = reaction.message.guild.get_role(autorank["role_id"])
@@ -1211,11 +1220,11 @@ class AutoRankSystem(commands.Cog):
                 except:
                     pass
 
-    @discord.app_commands.command(name="autorank", description="Manage server auto-ranking system")
+    @commands.app_commands.command(name="autorank", description="Manage server auto-ranking system")
     async def autorank(self, interaction: discord.Interaction):
         """Main autorank management command"""
         view = AutoRankMainView(interaction.user)
-        embed = view.get_main_embed()
+        embed = view.get_main_embed(interaction.guild)
         await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
 
 async def setup(bot):
