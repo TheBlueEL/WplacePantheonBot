@@ -49,6 +49,12 @@ async def on_ready():
     except Exception as e:
         print(f'Failed to load notation_system: {e}')
 
+    try:
+        await client.load_extension('autorank_system')
+        print('AutoRank system loaded!')
+    except Exception as e:
+        print(f'Failed to load autorank_system: {e}')
+
     # Setup du système de tickets
     try:
         from ticket_bot import setup_ticket_system, setup_persistent_views
