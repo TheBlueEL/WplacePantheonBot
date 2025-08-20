@@ -1214,9 +1214,12 @@ class AutoRankSystem(commands.Cog):
             print(f"🔄 AutoRank Monitor: Checking {len(autoranks)} autorank(s)")
             
             for autorank_id, autorank in autoranks.items():
-                if autorank["type"] == "new_members" and autorank.get("all_members", False):
-                    print(f"🎯 Processing new_members autorank {autorank_id}")
-                    await self.check_new_members_autorank(autorank)
+                if autorank["type"] == "new_members":
+                    if autorank.get("all_members", False):
+                        print(f"🎯 Processing new_members autorank {autorank_id} (All Members mode)")
+                        await self.check_all_members_autorank(autorank)
+                    else:
+                        print(f"🎯 New_members autorank {autorank_id} is in 'New Members Only' mode")
                     
         except Exception as e:
             print(f"🔄 Error in autorank monitor: {e}")
@@ -1226,8 +1229,8 @@ class AutoRankSystem(commands.Cog):
         """Wait until bot is ready before starting the monitor"""
         await self.bot.wait_until_ready()
 
-    async def check_new_members_autorank(self, autorank):
-        """Check and maintain new members autorank conditions"""
+    async def check_all_members_autorank(self, autorank):
+        """Check and give roles to ALL members when All Members is enabled"""
         try:
             role_id = autorank["role_id"]
             print(f"🔍 Checking autorank for role ID: {role_id}")
@@ -1285,20 +1288,58 @@ class AutoRankSystem(commands.Cog):
         except Exception as e:
             print(f"🔄 Error checking new members autorank: {e}")
 
+    async def check_new_members_only_autorank(self, autorank, new_member):
+        """Give role to a specific new member only"""
+        try:
+            role_id = autorank["role_id"]
+            role = new_member.guild.get_role(role_id)
+            
+            if not role:
+                print(f"❌ Role {role_id} not found for new member {new_member.display_name}")
+                return
+            
+            # Check bot permissions
+            bot_member = new_member.guild.get_member(self.bot.user.id)
+            if not bot_member.guild_permissions.manage_roles:
+                print(f"❌ Bot doesn't have 'Manage Roles' permission")
+                return
+            
+            # Check if bot's role is higher than target role
+            if role >= bot_member.top_role:
+                print(f"❌ Bot's role is not higher than target role '{role.name}' in hierarchy")
+                return
+            
+            # Add role to new member
+            try:
+                await new_member.add_roles(role, reason="AutoRank: New Member")
+                print(f"✅ Added role {role.name} to new member {new_member.display_name}")
+            except discord.Forbidden:
+                print(f"❌ Forbidden: Cannot add role {role.name} to {new_member.display_name}")
+            except discord.HTTPException as e:
+                print(f"❌ HTTP Error adding role {role.name} to {new_member.display_name}: {e}")
+            except Exception as e:
+                print(f"❌ Failed to add role {role.name} to {new_member.display_name}: {e}")
+                
+        except Exception as e:
+            print(f"🔄 Error checking new member autorank: {e}")
+
     @commands.Cog.listener()
     async def on_member_join(self, member):
-        """Handle new member autoranks"""
-        data = load_autorank_data()
-        autoranks = data.get("autoranks", {})
-        
-        for autorank_id, autorank in autoranks.items():
-            if autorank["type"] == "new_members":
-                try:
-                    role = member.guild.get_role(autorank["role_id"])
-                    if role:
-                        await member.add_roles(role)
-                except:
-                    pass
+        """Handle new member autoranks - only for new members"""
+        try:
+            print(f"👋 New member joined: {member.display_name}")
+            data = load_autorank_data()
+            autoranks = data.get("autoranks", {})
+            
+            for autorank_id, autorank in autoranks.items():
+                if autorank["type"] == "new_members":
+                    if autorank.get("all_members", False):
+                        print(f"🎯 Autorank {autorank_id} is in 'All Members' mode - handled by monitor")
+                    else:
+                        print(f"🎯 Processing new member for autorank {autorank_id} (New Members Only mode)")
+                        await self.check_new_members_only_autorank(autorank, member)
+        except Exception as e:
+            print(f"❌ Error processing new member: {e}")
 
     @commands.Cog.listener()
     async def on_reaction_add(self, reaction, user):
