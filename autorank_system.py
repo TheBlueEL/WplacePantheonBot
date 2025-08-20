@@ -155,21 +155,11 @@ class NewMembersConfigView(discord.ui.View):
         super().__init__(timeout=300)
         self.user = user
         self.selected_role = None
-        self.all_members_enabled = True
         self.update_view()
 
     def update_view(self):
         self.clear_items()
         self.add_item(RoleSelect(self))
-        
-        # All Members Toggle Button
-        toggle_button = discord.ui.Button(
-            label="All Members",
-            style=discord.ButtonStyle.success if self.all_members_enabled else discord.ButtonStyle.danger,
-            emoji="🟢" if self.all_members_enabled else "🔴"
-        )
-        toggle_button.callback = self.toggle_all_members
-        self.add_item(toggle_button)
         
         if self.selected_role:
             confirm_button = discord.ui.Button(label="Confirm", style=discord.ButtonStyle.success, emoji="✅")
@@ -177,12 +167,6 @@ class NewMembersConfigView(discord.ui.View):
             self.add_item(confirm_button)
         
         self.add_item(BackToCreateButton(self.user))
-
-    async def toggle_all_members(self, interaction: discord.Interaction):
-        self.all_members_enabled = not self.all_members_enabled
-        self.update_view()
-        embed = self.get_embed()
-        await interaction.response.edit_message(embed=embed, view=self)
 
     async def confirm_new_members(self, interaction: discord.Interaction):
         data = load_autorank_data()
@@ -194,38 +178,14 @@ class NewMembersConfigView(discord.ui.View):
         data["autoranks"][autorank_id] = {
             "type": "new_members",
             "role_id": self.selected_role.id,
-            "all_members": self.all_members_enabled,
             "created_at": datetime.now().isoformat()
         }
         
         save_autorank_data(data)
         
-        # Apply to existing members if enabled
-        if self.all_members_enabled:
-            await self.apply_to_existing_members(interaction)
-        
         view = AutoRankMainView(self.user)
         embed = view.get_main_embed()
         await interaction.response.edit_message(embed=embed, view=view)
-
-    async def apply_to_existing_members(self, interaction):
-        try:
-            guild = interaction.guild
-            role = self.selected_role
-            count = 0
-            
-            for member in guild.members:
-                if not member.bot and role not in member.roles:
-                    try:
-                        await member.add_roles(role)
-                        count += 1
-                    except:
-                        pass
-                        
-            if count > 0:
-                await interaction.followup.send(f"✅ Applied role to {count} existing members!", ephemeral=True)
-        except:
-            pass
 
     def get_embed(self):
         embed = discord.Embed(
@@ -240,13 +200,6 @@ class NewMembersConfigView(discord.ui.View):
                 value=self.selected_role.mention,
                 inline=False
             )
-            
-        status = "✅ Enabled" if self.all_members_enabled else "❌ Disabled"
-        embed.add_field(
-            name="Apply to Existing Members",
-            value=f"{status} - Apply role to current server members (excluding bots)",
-            inline=False
-        )
         
         return embed
 
@@ -811,23 +764,12 @@ class EditNewMembersConfigView(discord.ui.View):
         super().__init__(timeout=300)
         self.user = user
         self.autorank_id = autorank_id
-        data = load_autorank_data()
-        autorank = data["autoranks"][autorank_id]
         self.selected_role = None
-        self.all_members_enabled = autorank.get("all_members", True)
         self.update_view()
 
     def update_view(self):
         self.clear_items()
         self.add_item(RoleSelect(self))
-        
-        toggle_button = discord.ui.Button(
-            label="All Members",
-            style=discord.ButtonStyle.success if self.all_members_enabled else discord.ButtonStyle.danger,
-            emoji="🟢" if self.all_members_enabled else "🔴"
-        )
-        toggle_button.callback = self.toggle_all_members
-        self.add_item(toggle_button)
         
         if self.selected_role:
             confirm_button = discord.ui.Button(label="Update", style=discord.ButtonStyle.success, emoji="✅")
@@ -840,17 +782,10 @@ class EditNewMembersConfigView(discord.ui.View):
         
         self.add_item(BackToEditButton(self.user))
 
-    async def toggle_all_members(self, interaction: discord.Interaction):
-        self.all_members_enabled = not self.all_members_enabled
-        self.update_view()
-        embed = self.get_embed()
-        await interaction.response.edit_message(embed=embed, view=self)
-
     async def update_autorank(self, interaction: discord.Interaction):
         data = load_autorank_data()
         data["autoranks"][self.autorank_id].update({
-            "role_id": self.selected_role.id,
-            "all_members": self.all_members_enabled
+            "role_id": self.selected_role.id
         })
         save_autorank_data(data)
         
@@ -884,13 +819,6 @@ class EditNewMembersConfigView(discord.ui.View):
                 value=self.selected_role.mention,
                 inline=False
             )
-            
-        status = "✅ Enabled" if self.all_members_enabled else "❌ Disabled"
-        embed.add_field(
-            name="Apply to Existing Members",
-            value=f"{status} - Apply role to current server members (excluding bots)",
-            inline=False
-        )
         
         return embed
 
@@ -1199,147 +1127,43 @@ async def restore_autorank_buttons(bot):
 class AutoRankSystem(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.autorank_monitor.start()  # Start the monitoring task
 
-    def cog_unload(self):
-        self.autorank_monitor.cancel()
-
-    @tasks.loop(seconds=30.0)
-    async def autorank_monitor(self):
-        """Monitor and maintain autorank conditions every 30 seconds"""
-        try:
-            data = load_autorank_data()
-            autoranks = data.get("autoranks", {})
-            
-            print(f"🔄 AutoRank Monitor: Checking {len(autoranks)} autorank(s)")
-            
-            for autorank_id, autorank in autoranks.items():
-                if autorank["type"] == "new_members":
-                    if autorank.get("all_members", False):
-                        print(f"🎯 Processing new_members autorank {autorank_id} (All Members mode)")
-                        await self.check_all_members_autorank(autorank)
-                    else:
-                        print(f"🎯 New_members autorank {autorank_id} is in 'New Members Only' mode")
-                    
-        except Exception as e:
-            print(f"🔄 Error in autorank monitor: {e}")
-
-    @autorank_monitor.before_loop
-    async def before_autorank_monitor(self):
-        """Wait until bot is ready before starting the monitor"""
-        await self.bot.wait_until_ready()
-
-    async def check_all_members_autorank(self, autorank):
-        """Check and give roles to ALL members when All Members is enabled"""
-        try:
-            role_id = autorank["role_id"]
-            print(f"🔍 Checking autorank for role ID: {role_id}")
-            
-            # Find the guild that contains this role
-            target_guild = None
-            target_role = None
-            
-            for guild in self.bot.guilds:
-                role = guild.get_role(role_id)
-                if role:
-                    target_guild = guild
-                    target_role = role
-                    print(f"✅ Found role '{role.name}' in guild '{guild.name}'")
-                    break
-            
-            if not target_guild or not target_role:
-                print(f"❌ Role {role_id} not found in any guild")
-                return
-            
-            # Check bot permissions
-            bot_member = target_guild.get_member(self.bot.user.id)
-            if not bot_member.guild_permissions.manage_roles:
-                print(f"❌ Bot doesn't have 'Manage Roles' permission in {target_guild.name}")
-                return
-            
-            # Check if bot's role is higher than target role
-            if target_role >= bot_member.top_role:
-                print(f"❌ Bot's role is not higher than target role '{target_role.name}' in hierarchy")
-                return
-                    
-            # Check all members in the specific guild
-            members_without_role = []
-            for member in target_guild.members:
-                if member.bot:
-                    continue  # Skip bots
-                    
-                # If member doesn't have the role but should (new member autorank with all_members enabled)
-                if target_role not in member.roles:
-                    members_without_role.append(member)
-            
-            print(f"📊 Found {len(members_without_role)} members without role '{target_role.name}'")
-            
-            for member in members_without_role:
-                try:
-                    await member.add_roles(target_role, reason="AutoRank: New Members (All Members enabled)")
-                    print(f"✅ Added role {target_role.name} to {member.display_name}")
-                except discord.Forbidden:
-                    print(f"❌ Forbidden: Cannot add role {target_role.name} to {member.display_name} (permission issue)")
-                except discord.HTTPException as e:
-                    print(f"❌ HTTP Error adding role {target_role.name} to {member.display_name}: {e}")
-                except Exception as e:
-                    print(f"❌ Failed to add role {target_role.name} to {member.display_name}: {e}")
-                            
-        except Exception as e:
-            print(f"🔄 Error checking new members autorank: {e}")
-
-    async def check_new_members_only_autorank(self, autorank, new_member):
-        """Give role to a specific new member only"""
+    async def give_role_to_new_member(self, autorank, new_member):
+        """Give role to a new member"""
         try:
             role_id = autorank["role_id"]
             role = new_member.guild.get_role(role_id)
             
             if not role:
-                print(f"❌ Role {role_id} not found for new member {new_member.display_name}")
                 return
             
             # Check bot permissions
             bot_member = new_member.guild.get_member(self.bot.user.id)
             if not bot_member.guild_permissions.manage_roles:
-                print(f"❌ Bot doesn't have 'Manage Roles' permission")
                 return
             
             # Check if bot's role is higher than target role
             if role >= bot_member.top_role:
-                print(f"❌ Bot's role is not higher than target role '{role.name}' in hierarchy")
                 return
             
             # Add role to new member
-            try:
-                await new_member.add_roles(role, reason="AutoRank: New Member")
-                print(f"✅ Added role {role.name} to new member {new_member.display_name}")
-            except discord.Forbidden:
-                print(f"❌ Forbidden: Cannot add role {role.name} to {new_member.display_name}")
-            except discord.HTTPException as e:
-                print(f"❌ HTTP Error adding role {role.name} to {new_member.display_name}: {e}")
-            except Exception as e:
-                print(f"❌ Failed to add role {role.name} to {new_member.display_name}: {e}")
+            await new_member.add_roles(role, reason="AutoRank: New Member")
                 
-        except Exception as e:
-            print(f"🔄 Error checking new member autorank: {e}")
+        except Exception:
+            pass
 
     @commands.Cog.listener()
     async def on_member_join(self, member):
-        """Handle new member autoranks - only for new members"""
+        """Handle new member autoranks"""
         try:
-            print(f"👋 New member joined: {member.display_name}")
             data = load_autorank_data()
             autoranks = data.get("autoranks", {})
             
             for autorank_id, autorank in autoranks.items():
                 if autorank["type"] == "new_members":
-                    if autorank.get("all_members", False):
-                        print(f"🎯 Autorank {autorank_id} is in 'All Members' mode - handled by monitor")
-                    else:
-                        print(f"🎯 Processing new member for autorank {autorank_id} (New Members Only mode)")
-                        await self.check_new_members_only_autorank(autorank, member)
-        except Exception as e:
-            print(f"❌ Error processing new member: {e}")
+                    await self.give_role_to_new_member(autorank, member)
+        except Exception:
+            pass
 
     @commands.Cog.listener()
     async def on_reaction_add(self, reaction, user):
