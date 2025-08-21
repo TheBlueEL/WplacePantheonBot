@@ -1,4 +1,3 @@
-
 import discord
 from discord.ext import commands
 from discord import app_commands
@@ -77,17 +76,17 @@ class PixelsConverterView(discord.ui.View):
                 for color in data.get("colors", []):
                     if "hidden" not in color:
                         color["hidden"] = False
-                
+
                 # S'assurer que les paramètres globaux existent
                 if "settings" not in data:
                     data["settings"] = {"semi_transparent": False}
                 elif "semi_transparent" not in data["settings"]:
                     data["settings"]["semi_transparent"] = False
-                
+
                 # S'assurer que user_data existe
                 if "user_data" not in data:
                     data["user_data"] = {}
-                
+
                 # Initialiser les données utilisateur si pas présentes
                 user_str = str(self.user_id)
                 if user_str not in data["user_data"]:
@@ -96,7 +95,7 @@ class PixelsConverterView(discord.ui.View):
                     }
                 elif "dithering" not in data["user_data"][user_str]:
                     data["user_data"][user_str]["dithering"] = False
-                
+
                 return data
         except (FileNotFoundError, json.JSONDecodeError):
             # Return default data if file doesn't exist
@@ -124,7 +123,7 @@ class PixelsConverterView(discord.ui.View):
             self.colors_data["user_data"] = {}
         if user_str not in self.colors_data["user_data"]:
             self.colors_data["user_data"][user_str] = {}
-        
+
         self.colors_data["user_data"][user_str]["dithering"] = enabled
         self.save_colors()
 
@@ -176,7 +175,7 @@ class PixelsConverterView(discord.ui.View):
 
         width, height = image.size
         img_array = np.array(image, dtype=np.float64)
-        
+
         # Palette de couleurs du JavaScript
         js_palette = [
             [0,0,0],[60,60,60],[120,120,120],[170,170,170],[210,210,210],[255,255,255],
@@ -190,24 +189,24 @@ class PixelsConverterView(discord.ui.View):
             [209,128,81],[248,178,119],[255,197,165],[109,100,63],[148,140,107],[205,197,158],
             [51,57,65],[109,117,141],[179,185,209]
         ]
-        
+
         palette_np = np.array(js_palette, dtype=np.float64)
-        
+
         # Algorithme Floyd-Steinberg comme dans le JavaScript
         for y in range(height):
             for x in range(width):
                 old_pixel = img_array[y, x].copy()
-                
+
                 # Trouver la couleur la plus proche
                 distances = np.sqrt(np.sum((palette_np - old_pixel) ** 2, axis=1))
                 closest_idx = np.argmin(distances)
                 new_pixel = palette_np[closest_idx]
-                
+
                 img_array[y, x] = new_pixel
-                
+
                 # Calculer l'erreur de quantification
                 quant_error = old_pixel - new_pixel
-                
+
                 # Diffuser l'erreur aux pixels voisins (Floyd-Steinberg)
                 if x + 1 < width:
                     img_array[y, x + 1] = np.clip(img_array[y, x + 1] + quant_error * 7/16, 0, 255)
@@ -221,7 +220,7 @@ class PixelsConverterView(discord.ui.View):
         # Créer l'image finale
         result_array = np.clip(img_array, 0, 255).astype(np.uint8)
         result_image = Image.fromarray(result_array)
-        
+
         return result_image
 
     def find_closest_color_javascript_exact(self, pixel_color, palette_rgb):
@@ -232,13 +231,13 @@ class PixelsConverterView(discord.ui.View):
 
         for palette_color in palette_rgb:
             pr, pg, pb = palette_color
-            
+
             # Algorithme de distance couleur amélioré pour plus de précision
             # Utilise la distance euclidienne pondérée pour la perception humaine
             dr = pr - r
             dg = pg - g
             db = pb - b
-            
+
             # Pondération basée sur la perception humaine des couleurs
             distance = np.sqrt(0.3 * dr*dr + 0.59 * dg*dg + 0.11 * db*db)
 
@@ -266,22 +265,22 @@ class PixelsConverterView(discord.ui.View):
 
         width, height = image.size
         img_data = list(image.getdata())
-        
+
         # Créer la palette RGB simple
         palette_rgb = []
         for color in palette:
             if not color.get("hidden", False):
                 palette_rgb.append(color["rgb"])
-        
+
         if not palette_rgb:
             return image
 
         # Variables pour compter les couleurs
         color_counts = {}
-        
+
         # Gérer la transparence (comme dans le JS)
         transparent_hide_active = self.colors_data["settings"].get("semi_transparent", False)
-        
+
         # Traitement pixel par pixel EXACTEMENT comme le JavaScript (mode non-dithered)
         processed_data = []
         for i, pixel in enumerate(img_data):
@@ -294,7 +293,7 @@ class PixelsConverterView(discord.ui.View):
             # Trouver la couleur la plus proche avec l'algorithme JavaScript exact
             closest_rgb = self.find_closest_color_javascript_exact([r, g, b], palette_rgb)
             nr, ng, nb = closest_rgb
-            
+
             # Vérifier si la couleur est cachée (per-color HIDE comme dans le JS)
             key = f"{nr},{ng},{nb}"
             is_hidden = any(
@@ -310,7 +309,7 @@ class PixelsConverterView(discord.ui.View):
 
             # Écrire la couleur quantifiée
             new_pixel = [nr, ng, nb]
-            
+
             # Gestion de l'alpha (exactement comme le JS)
             if a == 0:
                 new_alpha = 0
@@ -318,12 +317,12 @@ class PixelsConverterView(discord.ui.View):
                 new_alpha = 0 if transparent_hide_active else 255
             else:
                 new_alpha = 255
-            
+
             if original_mode in ('RGBA', 'LA', 'P') or transparent_hide_active or any(color.get("hidden", False) for color in palette):
                 processed_data.append((nr, ng, nb, new_alpha))
             else:
                 processed_data.append((nr, ng, nb))
-            
+
             # Compter seulement les pixels visibles
             if new_alpha != 0:
                 color_counts[key] = color_counts.get(key, 0) + 1
@@ -335,7 +334,7 @@ class PixelsConverterView(discord.ui.View):
         else:
             result_image = Image.new('RGB', (width, height))
             result_image.putdata(processed_data)
-        
+
         return result_image
 
     def pixelate_image(self, image, pixel_size):
@@ -994,8 +993,8 @@ class PixelsConverterView(discord.ui.View):
                 self.converter_data.image_width = new_width
                 self.converter_data.image_height = new_height
 
-                # Reprocesser l'image immédiatement avec les nouvelles dimensions
-                processed_url = await self.process_image_ultra_fast()
+                # Reprocesser l'image immédiatement avec les nouvelles dimensions en gardant le dithering
+                processed_url = await self.process_image()
                 if processed_url:
                     self.converter_data.pixelated_url = processed_url
 
@@ -1031,8 +1030,8 @@ class PixelsConverterView(discord.ui.View):
                 self.converter_data.image_width = new_width
                 self.converter_data.image_height = new_height
 
-                # Reprocesser l'image immédiatement avec les nouvelles dimensions
-                processed_url = await self.process_image_ultra_fast()
+                # Reprocesser l'image immédiatement avec les nouvelles dimensions en gardant le dithering
+                processed_url = await self.process_image()
                 if processed_url:
                     self.converter_data.pixelated_url = processed_url
 
@@ -1210,11 +1209,11 @@ class PixelsConverterView(discord.ui.View):
 
             async def dithering_callback(interaction):
                 await interaction.response.defer()
-                
+
                 # Toggle dithering pour cet utilisateur
                 new_dithering_state = not self.get_user_dithering_setting()
                 self.set_user_dithering_setting(new_dithering_state)
-                
+
                 # Reprocesser l'image en arrière-plan avec le nouveau paramètre
                 if self.converter_data.image_url:
                     processed_url = await self.process_image()
@@ -1236,11 +1235,11 @@ class PixelsConverterView(discord.ui.View):
 
             async def semi_transparent_callback(interaction):
                 await interaction.response.defer()
-                
+
                 # Toggle semi-transparent
                 self.colors_data["settings"]["semi_transparent"] = not self.colors_data["settings"]["semi_transparent"]
                 self.save_colors()
-                
+
                 # Reprocess image automatically if we have one
                 if self.converter_data.image_url:
                     processed_url = await self.process_image_ultra_fast()
@@ -1308,7 +1307,7 @@ class ImageURLModal(discord.ui.Modal):
                         self.converter_data.pixelated_url = ""  # Reset processed image
 
                         # Traiter automatiquement l'image avec la palette par défaut
-                        processed_url = await self.parent_view.process_image_ultra_fast()
+                        processed_url = await self.parent_view.process_image()
                         if processed_url:
                             self.converter_data.pixelated_url = processed_url
 
@@ -1437,7 +1436,7 @@ class ConvertersCommand(commands.Cog):
                                             manager.waiting_for_image = False
 
                                             # Traiter automatiquement l'image avec la palette par défaut
-                                            processed_url = await manager.process_image_ultra_fast()
+                                            processed_url = await manager.process_image()
                                             if processed_url:
                                                 manager.converter_data.pixelated_url = processed_url
 
@@ -1462,7 +1461,7 @@ class ConvertersCommand(commands.Cog):
                                 manager.waiting_for_image = False
 
                                 # Traiter automatiquement l'image avec la palette par défaut
-                                processed_url = await manager.process_image_ultra_fast()
+                                processed_url = await manager.process_image()
                                 if processed_url:
                                     manager.converter_data.pixelated_url = processed_url
 
