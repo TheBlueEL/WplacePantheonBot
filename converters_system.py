@@ -384,7 +384,7 @@ class PixelsConverterView(discord.ui.View):
             print(f"Erreur lors du traitement ultra rapide de l'image: {e}")
             return None
 
-    def process_image_fast(self):
+    async def process_image_fast(self):
         """Version rapide du traitement d'image inspirée du code JavaScript"""
         # NOTE: This function is now deprecated and replaced by process_image_ultra_fast
         # for near-instantaneous processing. It's kept here for reference if needed,
@@ -597,7 +597,6 @@ class PixelsConverterView(discord.ui.View):
         total_pixels = self.converter_data.image_width * self.converter_data.image_height
         embed = discord.Embed(
             title="<:WplacePantheonLOGO:1407152471226187776> Wplace Convertor",
-            description=f"**Width:** {self.converter_data.image_width}px\n**Height:** {self.converter_data.image_height}px\n**Total Pixels:** {total_pixels:,}px",
             color=0x5865F2
         )
 
@@ -606,13 +605,45 @@ class PixelsConverterView(discord.ui.View):
         if image_to_show:
             embed.set_image(url=image_to_show)
 
-        # Informations sur le traitement
+        # Utiliser des champs inline pour afficher les informations sur la même ligne
+        embed.add_field(
+            name="📏 Width",
+            value=f"{self.converter_data.image_width}px",
+            inline=True
+        )
+        
+        embed.add_field(
+            name="📐 Height", 
+            value=f"{self.converter_data.image_height}px",
+            inline=True
+        )
+        
+        embed.add_field(
+            name="🖼️ Total Pixels",
+            value=f"{total_pixels:,}px",
+            inline=True
+        )
+
+        # Informations sur le traitement sur une nouvelle ligne
         active_colors = self.get_active_colors()
         dithering_status = "ON" if self.colors_data["settings"]["dithering"] else "OFF"
-
+        
         embed.add_field(
-            name="Processing Info",
-            value=f"**Colors:** {len(active_colors)}\n**Dithering:** {dithering_status}",
+            name="🎨 Active Colors",
+            value=f"{len(active_colors)}",
+            inline=True
+        )
+        
+        embed.add_field(
+            name="⚡ Dithering",
+            value=f"{dithering_status}",
+            inline=True
+        )
+        
+        # Champ vide pour l'alignement
+        embed.add_field(
+            name="\u200b",
+            value="\u200b",
             inline=True
         )
 
