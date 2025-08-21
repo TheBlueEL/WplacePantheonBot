@@ -8,6 +8,9 @@ import aiohttp
 import uuid
 from datetime import datetime
 import time
+from PIL import Image, ImageDraw
+import numpy as np
+import io
 
 def get_bot_name(bot):
     """Récupère le nom d'affichage du bot"""
@@ -18,6 +21,8 @@ class ConverterData:
         self.image_url = ""
         self.image_width = 0
         self.image_height = 0
+        self.pixelated_url = ""
+        self.pixel_scale = 8  # Taille des pixels (plus grand = plus pixelisé)
 
 class PixelsConverterView(discord.ui.View):
     def __init__(self, bot, user_id):
@@ -46,6 +51,163 @@ class PixelsConverterView(discord.ui.View):
     def save_colors(self):
         with open('converters_data.json', 'w') as f:
             json.dump(self.colors_data, f, indent=2)
+
+    def get_active_colors(self):
+        """Récupère les couleurs activées dans la palette"""
+        return [c for c in self.colors_data["colors"] if c.get("enabled", False)]
+
+    def rgb_distance(self, color1, color2):
+        """Calcule la distance entre deux couleurs RGB"""
+        return sum((a - b) ** 2 for a, b in zip(color1, color2)) ** 0.5
+
+    def find_closest_color(self, pixel_color, palette):
+        """Trouve la couleur la plus proche dans la palette"""
+        min_distance = float('inf')
+        closest_color = palette[0]["rgb"]
+        
+        for color in palette:
+            distance = self.rgb_distance(pixel_color, color["rgb"])
+            if distance < min_distance:
+                min_distance = distance
+                closest_color = color["rgb"]
+        
+        return closest_color
+
+    def floyd_steinberg_dithering(self, image, palette):
+        """Applique le dithering Floyd-Steinberg"""
+        img_array = np.array(image, dtype=float)
+        height, width, channels = img_array.shape
+        
+        for y in range(height):
+            for x in range(width):
+                old_pixel = img_array[y, x]
+                new_pixel = self.find_closest_color(old_pixel, palette)
+                img_array[y, x] = new_pixel
+                
+                quant_error = old_pixel - new_pixel
+                
+                # Distribuer l'erreur aux pixels adjacents
+                if x + 1 < width:
+                    img_array[y, x + 1] += quant_error * 7/16
+                if y + 1 < height and x > 0:
+                    img_array[y + 1, x - 1] += quant_error * 3/16
+                if y + 1 < height:
+                    img_array[y + 1, x] += quant_error * 5/16
+                if y + 1 < height and x + 1 < width:
+                    img_array[y + 1, x + 1] += quant_error * 1/16
+        
+        return Image.fromarray(np.clip(img_array, 0, 255).astype(np.uint8))
+
+    def quantize_colors(self, image, palette):
+        """Réduit l'image aux couleurs de la palette"""
+        if not palette:
+            return image
+            
+        img_array = np.array(image)
+        height, width, channels = img_array.shape
+        
+        for y in range(height):
+            for x in range(width):
+                if channels == 4:  # RGBA
+                    pixel_color = img_array[y, x][:3]  # Ignore alpha
+                else:
+                    pixel_color = img_array[y, x]
+                
+                closest_color = self.find_closest_color(pixel_color, palette)
+                img_array[y, x][:3] = closest_color
+        
+        return Image.fromarray(img_array)
+
+    def pixelate_image(self, image, pixel_size):
+        """Pixelise l'image en réduisant puis agrandissant"""
+        # Obtenir la taille originale
+        original_size = image.size
+        
+        # Réduire l'image
+        small_size = (original_size[0] // pixel_size, original_size[1] // pixel_size)
+        if small_size[0] < 1:
+            small_size = (1, small_size[1])
+        if small_size[1] < 1:
+            small_size = (small_size[0], 1)
+            
+        small_image = image.resize(small_size, Image.Resampling.NEAREST)
+        
+        # Agrandir l'image avec des pixels nets
+        pixelated = small_image.resize(original_size, Image.Resampling.NEAREST)
+        
+        return pixelated
+
+    async def process_image(self):
+        """Traite l'image selon les paramètres sélectionnés"""
+        if not self.converter_data.image_url:
+            return None
+            
+        try:
+            # Télécharger l'image
+            async with aiohttp.ClientSession() as session:
+                async with session.get(self.converter_data.image_url) as response:
+                    if response.status != 200:
+                        return None
+                    image_data = await response.read()
+            
+            # Ouvrir l'image avec PIL
+            image = Image.open(io.BytesIO(image_data))
+            
+            # Convertir en RGB si nécessaire
+            if image.mode in ('RGBA', 'LA', 'P'):
+                if not self.colors_data["settings"]["semi_transparent"]:
+                    # Créer un fond blanc pour les images transparentes
+                    background = Image.new('RGB', image.size, (255, 255, 255))
+                    if image.mode == 'P':
+                        image = image.convert('RGBA')
+                    background.paste(image, mask=image.split()[-1] if image.mode == 'RGBA' else None)
+                    image = background
+                else:
+                    image = image.convert('RGBA')
+            else:
+                image = image.convert('RGB')
+            
+            # Pixeliser l'image
+            pixelated = self.pixelate_image(image, self.converter_data.pixel_scale)
+            
+            # Obtenir la palette de couleurs actives
+            active_colors = self.get_active_colors()
+            
+            if active_colors:
+                # Appliquer la quantification des couleurs
+                if self.colors_data["settings"]["dithering"]:
+                    processed = self.floyd_steinberg_dithering(pixelated, active_colors)
+                else:
+                    processed = self.quantize_colors(pixelated, active_colors)
+            else:
+                processed = pixelated
+            
+            # Sauvegarder l'image traitée
+            os.makedirs('images', exist_ok=True)
+            filename = f"pixelated_{uuid.uuid4()}.png"
+            file_path = os.path.join('images', filename)
+            processed.save(file_path, 'PNG')
+            
+            # Synchroniser avec GitHub
+            from github_sync import GitHubSync
+            github_sync = GitHubSync()
+            sync_success = await github_sync.sync_image_to_pictures_repo(file_path)
+            
+            if sync_success:
+                try:
+                    os.remove(file_path)
+                except:
+                    pass
+                
+                github_url = f"https://raw.githubusercontent.com/TheBlueEL/pictures/main/{filename}"
+                self.converter_data.pixelated_url = github_url
+                return github_url
+            
+            return None
+            
+        except Exception as e:
+            print(f"Erreur lors du traitement de l'image: {e}")
+            return None
 
     def get_main_embed(self, username):
         embed = discord.Embed(
@@ -89,12 +251,24 @@ class PixelsConverterView(discord.ui.View):
     def get_image_preview_embed(self):
         embed = discord.Embed(
             title="<:CreateLOGO:1407071205026168853> Wplace Convertor",
-            description=f"**Width:** {self.converter_data.image_width}px\n**Height:** {self.converter_data.image_height}px",
+            description=f"**Width:** {self.converter_data.image_width}px\n**Height:** {self.converter_data.image_height}px\n**Pixel Size:** {self.converter_data.pixel_scale}px",
             color=0x5865F2
         )
 
-        if self.converter_data.image_url:
-            embed.set_image(url=self.converter_data.image_url)
+        # Afficher l'image pixelisée si disponible, sinon l'originale
+        image_to_show = self.converter_data.pixelated_url if self.converter_data.pixelated_url else self.converter_data.image_url
+        if image_to_show:
+            embed.set_image(url=image_to_show)
+
+        # Informations sur le traitement
+        active_colors = self.get_active_colors()
+        dithering_status = "ON" if self.colors_data["settings"]["dithering"] else "OFF"
+        
+        embed.add_field(
+            name="Processing Info",
+            value=f"**Colors:** {len(active_colors)}\n**Dithering:** {dithering_status}",
+            inline=True
+        )
 
         bot_name = get_bot_name(self.bot)
         embed.set_footer(text=f"{bot_name} | {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}", icon_url=self.bot.user.display_avatar.url)
@@ -238,36 +412,60 @@ class PixelsConverterView(discord.ui.View):
             self.add_item(back_button)
 
         elif self.current_mode == "image_preview":
-            # Scale buttons
+            # Pixel scale buttons
             shrink_button = discord.ui.Button(
-                label="Shrink",
+                label="More Pixels",
                 style=discord.ButtonStyle.secondary,
                 emoji="🔽"
             )
 
             async def shrink_callback(interaction):
-                # Simulate shrinking (reduce dimensions by 10%)
-                self.converter_data.image_width = int(self.converter_data.image_width * 0.9)
-                self.converter_data.image_height = int(self.converter_data.image_height * 0.9)
+                if self.converter_data.pixel_scale > 2:
+                    self.converter_data.pixel_scale -= 2
                 embed = self.get_image_preview_embed()
                 await interaction.response.edit_message(embed=embed, view=self)
 
             shrink_button.callback = shrink_callback
 
             enlarge_button = discord.ui.Button(
-                label="Enlarge",
+                label="Less Pixels",
                 style=discord.ButtonStyle.secondary,
                 emoji="🔼"
             )
 
             async def enlarge_callback(interaction):
-                # Simulate enlarging (increase dimensions by 10%)
-                self.converter_data.image_width = int(self.converter_data.image_width * 1.1)
-                self.converter_data.image_height = int(self.converter_data.image_height * 1.1)
+                if self.converter_data.pixel_scale < 50:
+                    self.converter_data.pixel_scale += 2
                 embed = self.get_image_preview_embed()
                 await interaction.response.edit_message(embed=embed, view=self)
 
             enlarge_button.callback = enlarge_callback
+
+            # Process button
+            process_button = discord.ui.Button(
+                label="Process Image",
+                style=discord.ButtonStyle.success,
+                emoji="⚡"
+            )
+
+            async def process_callback(interaction):
+                await interaction.response.defer()
+                
+                # Traiter l'image
+                processed_url = await self.process_image()
+                
+                if processed_url:
+                    embed = self.get_image_preview_embed()
+                    await interaction.followup.edit_message(message_id=interaction.message.id, embed=embed, view=self)
+                else:
+                    error_embed = discord.Embed(
+                        title="<:ErrorLOGO:1407071682031648850> Processing Failed",
+                        description="Failed to process the image. Please try again.",
+                        color=discord.Color.red()
+                    )
+                    await interaction.followup.send(embed=error_embed, ephemeral=True)
+
+            process_button.callback = process_callback
 
             # Color button
             color_button = discord.ui.Button(
@@ -318,6 +516,7 @@ class PixelsConverterView(discord.ui.View):
 
             self.add_item(shrink_button)
             self.add_item(enlarge_button)
+            self.add_item(process_button)
             self.add_item(color_button)
             self.add_item(settings_button)
             self.add_item(back_button)
@@ -498,15 +697,22 @@ class ImageURLModal(discord.ui.Modal):
     async def on_submit(self, interaction: discord.Interaction):
         image_url = self.url_input.value.strip()
         
-        # Check if URL is accessible
+        # Check if URL is accessible and get image dimensions
         try:
             async with aiohttp.ClientSession() as session:
-                async with session.head(image_url) as response:
+                async with session.get(image_url) as response:
                     if response.status == 200:
-                        # Simulate getting image dimensions (you'd use PIL in real implementation)
+                        image_data = await response.read()
+                        
+                        # Obtenir les vraies dimensions avec PIL
+                        from PIL import Image
+                        import io
+                        image = Image.open(io.BytesIO(image_data))
+                        
                         self.converter_data.image_url = image_url
-                        self.converter_data.image_width = 800  # Simulated width
-                        self.converter_data.image_height = 600  # Simulated height
+                        self.converter_data.image_width = image.width
+                        self.converter_data.image_height = image.height
+                        self.converter_data.pixelated_url = ""  # Reset processed image
                         
                         self.parent_view.current_mode = "image_preview"
                         embed = self.parent_view.get_image_preview_embed()
@@ -514,7 +720,7 @@ class ImageURLModal(discord.ui.Modal):
                         await interaction.response.edit_message(embed=embed, view=self.parent_view)
                     else:
                         raise Exception("Image not found")
-        except:
+        except Exception as e:
             error_embed = discord.Embed(
                 title="<:ErrorLOGO:1407071682031648850> Image Not Found",
                 description="The provided URL does not contain a valid image or is not accessible.",
@@ -606,16 +812,39 @@ class ConvertersCommand(commands.Cog):
                         )
 
                         async def continue_callback(interaction):
-                            # Set image data
-                            manager.converter_data.image_url = local_file
-                            manager.converter_data.image_width = 800  # Simulated
-                            manager.converter_data.image_height = 600  # Simulated
-                            manager.current_mode = "image_preview"
-                            manager.waiting_for_image = False
+                            # Get real image dimensions
+                            try:
+                                async with aiohttp.ClientSession() as session:
+                                    async with session.get(local_file) as response:
+                                        if response.status == 200:
+                                            image_data = await response.read()
+                                            from PIL import Image
+                                            import io
+                                            image = Image.open(io.BytesIO(image_data))
+                                            
+                                            manager.converter_data.image_url = local_file
+                                            manager.converter_data.image_width = image.width
+                                            manager.converter_data.image_height = image.height
+                                            manager.converter_data.pixelated_url = ""  # Reset processed image
+                                            manager.current_mode = "image_preview"
+                                            manager.waiting_for_image = False
 
-                            embed = manager.get_image_preview_embed()
-                            manager.update_buttons()
-                            await interaction.response.edit_message(embed=embed, view=manager)
+                                            embed = manager.get_image_preview_embed()
+                                            manager.update_buttons()
+                                            await interaction.response.edit_message(embed=embed, view=manager)
+                            except Exception as e:
+                                print(f"Error getting image dimensions: {e}")
+                                # Fallback to default dimensions
+                                manager.converter_data.image_url = local_file
+                                manager.converter_data.image_width = 800
+                                manager.converter_data.image_height = 600
+                                manager.converter_data.pixelated_url = ""
+                                manager.current_mode = "image_preview"
+                                manager.waiting_for_image = False
+
+                                embed = manager.get_image_preview_embed()
+                                manager.update_buttons()
+                                await interaction.response.edit_message(embed=embed, view=manager)
 
                         continue_button.callback = continue_callback
 
