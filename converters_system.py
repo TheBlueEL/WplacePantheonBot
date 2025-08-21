@@ -70,9 +70,10 @@ class PixelsConverterView(discord.ui.View):
         gdiff = g1 - g2
         bdiff = b1 - b2
         
-        x = (512 + rmean) * rdiff * rdiff >> 8
+        # Utilisation d'entiers pour éviter l'erreur de bit shift sur float
+        x = int((512 + rmean) * rdiff * rdiff) >> 8
         y = 4 * gdiff * gdiff
-        z = (767 - rmean) * bdiff * bdiff >> 8
+        z = int((767 - rmean) * bdiff * bdiff) >> 8
         
         return (x + y + z) ** 0.5
 
@@ -199,6 +200,132 @@ class PixelsConverterView(discord.ui.View):
         pixelated = small_image.resize(original_size, Image.Resampling.NEAREST)
 
         return pixelated
+
+    def create_default_palette(self):
+        """Crée la palette par défaut à partir du JSON"""
+        default_palette = [
+            [0,0,0], [60,60,60], [120,120,120], [170,170,170], [210,210,210], [255,255,255],
+            [96,0,24], [165,14,30], [237,28,36], [250,128,114], [228,92,26], [255,127,39], [246,170,9],
+            [249,221,59], [255,250,188], [156,132,49], [197,173,49], [232,212,95], [74,107,58], [90,148,74], [132,197,115],
+            [14,185,104], [19,230,123], [135,255,94], [12,129,110], [16,174,166], [19,225,190], [15,121,159], [96,247,242],
+            [187,250,242], [40,80,158], [64,147,228], [125,199,255], [77,49,184], [107,80,246], [153,177,251],
+            [74,66,132], [122,113,196], [181,174,241], [170,56,185], [224,159,249],
+            [203,0,122], [236,31,128], [243,141,169], [155,82,73], [209,128,120], [250,182,164],
+            [104,70,52], [149,104,42], [219,164,99], [123,99,82], [156,132,107], [214,181,148],
+            [209,128,81], [248,178,119], [255,197,165], [109,100,63], [148,140,107], [205,197,158],
+            [51,57,65], [109,117,141], [179,185,209]
+        ]
+        return default_palette
+
+    def find_closest_color_fast(self, pixel_rgb, palette):
+        """Version rapide de la recherche de couleur la plus proche"""
+        min_distance = float('inf')
+        closest_color = [0, 0, 0]
+        
+        r, g, b = pixel_rgb
+        
+        for palette_color in palette:
+            pr, pg, pb = palette_color
+            
+            # Algorithme optimisé de distance couleur
+            rmean = (r + pr) / 2
+            rdiff = r - pr
+            gdiff = g - pg
+            bdiff = b - pb
+            
+            x = int((512 + rmean) * rdiff * rdiff) >> 8
+            y = 4 * gdiff * gdiff
+            z = int((767 - rmean) * bdiff * bdiff) >> 8
+            
+            distance = (x + y + z) ** 0.5
+            
+            if distance < min_distance:
+                min_distance = distance
+                closest_color = palette_color
+        
+        return closest_color
+
+    async def process_image_fast(self):
+        """Version rapide du traitement d'image inspirée du code JavaScript"""
+        if not self.converter_data.image_url:
+            return None
+
+        try:
+            # Télécharger l'image
+            async with aiohttp.ClientSession() as session:
+                async with session.get(self.converter_data.image_url) as response:
+                    if response.status != 200:
+                        return None
+                    image_data = await response.read()
+
+            # Ouvrir l'image avec PIL
+            image = Image.open(io.BytesIO(image_data))
+
+            # Redimensionner l'image selon les dimensions spécifiées
+            target_size = (self.converter_data.image_width, self.converter_data.image_height)
+            if image.size != target_size:
+                image = image.resize(target_size, Image.Resampling.LANCZOS)
+
+            # Convertir en RGB
+            if image.mode != 'RGB':
+                if image.mode in ('RGBA', 'LA', 'P'):
+                    # Créer un fond blanc pour les images transparentes
+                    background = Image.new('RGB', image.size, (255, 255, 255))
+                    if image.mode == 'P':
+                        image = image.convert('RGBA')
+                    if image.mode == 'RGBA':
+                        background.paste(image, mask=image.split()[-1])
+                    else:
+                        background.paste(image)
+                    image = background
+                else:
+                    image = image.convert('RGB')
+
+            # Utiliser la palette par défaut
+            palette = self.create_default_palette()
+            
+            # Traitement pixel par pixel super rapide
+            img_array = np.array(image)
+            height, width, _ = img_array.shape
+            
+            # Vectorisation pour plus de rapidité
+            reshaped = img_array.reshape(-1, 3)
+            processed = np.zeros_like(reshaped)
+            
+            for i in range(len(reshaped)):
+                closest = self.find_closest_color_fast(reshaped[i], palette)
+                processed[i] = closest
+            
+            # Reconstruire l'image
+            processed_array = processed.reshape(height, width, 3)
+            processed_image = Image.fromarray(processed_array.astype(np.uint8))
+
+            # Sauvegarder l'image traitée
+            os.makedirs('images', exist_ok=True)
+            filename = f"processed_{uuid.uuid4()}.png"
+            file_path = os.path.join('images', filename)
+            processed_image.save(file_path, 'PNG')
+
+            # Synchroniser avec GitHub
+            from github_sync import GitHubSync
+            github_sync = GitHubSync()
+            sync_success = await github_sync.sync_image_to_pictures_repo(file_path)
+
+            if sync_success:
+                try:
+                    os.remove(file_path)
+                except:
+                    pass
+
+                github_url = f"https://raw.githubusercontent.com/TheBlueEL/pictures/main/{filename}"
+                self.converter_data.pixelated_url = github_url
+                return github_url
+
+            return None
+
+        except Exception as e:
+            print(f"Erreur lors du traitement rapide de l'image: {e}")
+            return None
 
     async def process_image(self):
         """Traite l'image selon les paramètres sélectionnés avec l'algorithme avancé"""
@@ -497,6 +624,8 @@ class PixelsConverterView(discord.ui.View):
             )
 
             async def shrink_callback(interaction):
+                await interaction.response.defer()
+                
                 # Réduire proportionnellement width et height
                 scale_factor = 0.9  # Réduction de 10%
                 new_width = max(10, int(self.converter_data.image_width * scale_factor))
@@ -505,13 +634,13 @@ class PixelsConverterView(discord.ui.View):
                 self.converter_data.image_width = new_width
                 self.converter_data.image_height = new_height
                 
-                # Reprocesser l'image avec les nouvelles dimensions
-                processed_url = await self.process_image()
+                # Reprocesser l'image immédiatement avec les nouvelles dimensions
+                processed_url = await self.process_image_fast()
                 if processed_url:
                     self.converter_data.pixelated_url = processed_url
                 
                 embed = self.get_image_preview_embed()
-                await interaction.response.edit_message(embed=embed, view=self)
+                await interaction.followup.edit_message(message_id=interaction.message.id, embed=embed, view=self)
 
             shrink_button.callback = shrink_callback
 
@@ -522,6 +651,8 @@ class PixelsConverterView(discord.ui.View):
             )
 
             async def enlarge_callback(interaction):
+                await interaction.response.defer()
+                
                 # Agrandir proportionnellement width et height
                 scale_factor = 1.1  # Augmentation de 10%
                 new_width = int(self.converter_data.image_width * scale_factor)
@@ -540,13 +671,13 @@ class PixelsConverterView(discord.ui.View):
                 self.converter_data.image_width = new_width
                 self.converter_data.image_height = new_height
                 
-                # Reprocesser l'image avec les nouvelles dimensions
-                processed_url = await self.process_image()
+                # Reprocesser l'image immédiatement avec les nouvelles dimensions
+                processed_url = await self.process_image_fast()
                 if processed_url:
                     self.converter_data.pixelated_url = processed_url
                 
                 embed = self.get_image_preview_embed()
-                await interaction.response.edit_message(embed=embed, view=self)
+                await interaction.followup.edit_message(message_id=interaction.message.id, embed=embed, view=self)
 
             enlarge_button.callback = enlarge_callback
 
@@ -823,8 +954,8 @@ class ImageURLModal(discord.ui.Modal):
                         self.converter_data.image_height = image.height
                         self.converter_data.pixelated_url = ""  # Reset processed image
 
-                        # Traiter automatiquement l'image avec les couleurs par défaut
-                        processed_url = await self.parent_view.process_image()
+                        # Traiter automatiquement l'image avec la palette par défaut
+                        processed_url = await self.parent_view.process_image_fast()
                         if processed_url:
                             self.converter_data.pixelated_url = processed_url
 
@@ -943,8 +1074,8 @@ class ConvertersCommand(commands.Cog):
                                             manager.current_mode = "image_preview"
                                             manager.waiting_for_image = False
 
-                                            # Traiter automatiquement l'image avec les couleurs par défaut
-                                            processed_url = await manager.process_image()
+                                            # Traiter automatiquement l'image avec la palette par défaut
+                                            processed_url = await manager.process_image_fast()
                                             if processed_url:
                                                 manager.converter_data.pixelated_url = processed_url
 
@@ -961,8 +1092,8 @@ class ConvertersCommand(commands.Cog):
                                 manager.current_mode = "image_preview"
                                 manager.waiting_for_image = False
 
-                                # Traiter automatiquement l'image avec les couleurs par défaut
-                                processed_url = await manager.process_image()
+                                # Traiter automatiquement l'image avec la palette par défaut
+                                processed_url = await manager.process_image_fast()
                                 if processed_url:
                                     manager.converter_data.pixelated_url = processed_url
 
