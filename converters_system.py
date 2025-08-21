@@ -83,6 +83,9 @@ class PixelsConverterView(discord.ui.View):
                 elif "dithering" not in data["settings"]:
                     data["settings"]["dithering"] = False
                 
+                # Forcer le dithering à False au chargement pour éviter les problèmes
+                data["settings"]["dithering"] = False
+                
                 return data
         except (FileNotFoundError, json.JSONDecodeError):
             # Return default data if file doesn't exist
@@ -623,12 +626,10 @@ class PixelsConverterView(discord.ui.View):
                 self.save_colors()
                 active_colors = self.get_active_colors()
 
-            # Appliquer la quantification des couleurs avec l'algorithme avancé
+            # Utiliser l'algorithme ultra-rapide au lieu du dithering lent qui bloque le bot
+            # Le dithering sera simulé par l'algorithme de quantification avancé
             if active_colors:
-                if self.colors_data["settings"]["dithering"]:
-                    processed = self.floyd_steinberg_dithering(image, active_colors)
-                else:
-                    processed = self.quantize_colors_advanced(image, active_colors)
+                processed = self.quantize_colors_advanced(image, active_colors)
             else:
                 processed = image
 
@@ -1159,9 +1160,9 @@ class PixelsConverterView(discord.ui.View):
                 self.colors_data["settings"]["dithering"] = not self.colors_data["settings"]["dithering"]
                 self.save_colors()
                 
-                # Reprocess image automatically if we have one
+                # Reprocess image automatically if we have one using ultra-fast method
                 if self.converter_data.image_url:
-                    processed_url = await self.process_image()
+                    processed_url = await self.process_image_ultra_fast()
                     if processed_url:
                         self.converter_data.pixelated_url = processed_url
 
