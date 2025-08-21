@@ -254,27 +254,27 @@ def process_image_chunk_parallel(chunk_data, palette, chunk_index):
     try:
         chunk_pixels = chunk_data.reshape(-1, 3)
         processed_chunk = np.zeros_like(chunk_pixels)
-        
+
         palette_np = np.array(palette, dtype=np.int32)
-        
+
         for i, pixel in enumerate(chunk_pixels):
             pixel_safe = np.clip(pixel, 0, 255).astype(np.int32)
             min_distance = float('inf')
             closest_color = palette_np[0]
-            
+
             for palette_color in palette_np:
                 # Distance euclidienne simple mais rapide
                 diff = pixel_safe - palette_color
                 distance = np.sqrt(np.sum(diff * diff))
-                
+
                 if distance < min_distance:
                     min_distance = distance
                     closest_color = palette_color
-            
+
             processed_chunk[i] = closest_color
-        
+
         return chunk_index, processed_chunk.reshape(chunk_data.shape)
-        
+
     except Exception as e:
         print(f"Erreur dans le chunk {chunk_index}: {e}")
         return chunk_index, chunk_data  # Retourne le chunk original en cas d'erreur
@@ -285,24 +285,24 @@ def process_image_vectorized_fast(image_array, palette):
         height, width, channels = image_array.shape
         reshaped = image_array.reshape(-1, 3).astype(np.float32)
         palette_np = np.array(palette, dtype=np.float32)
-        
+
         # Calcul vectorisé des distances pour tous les pixels à la fois
         # Utilise broadcasting pour calculer les distances entre chaque pixel et chaque couleur
         distances = np.sqrt(np.sum((reshaped[:, np.newaxis, :] - palette_np[np.newaxis, :, :]) ** 2, axis=2))
-        
+
         # Trouve l'index de la couleur la plus proche pour chaque pixel
         closest_indices = np.argmin(distances, axis=1)
-        
+
         # Applique les couleurs correspondantes
         processed = palette_np[closest_indices]
-        
+
         return processed.reshape(height, width, channels).astype(np.uint8)
-        
+
     except Exception as e:
         print(f"Erreur vectorisation: {e}")
         # Fallback vers la méthode chunk
         return None
-    
+
     async def process_image_ultra_fast(self):
         """Version ultra rapide du traitement d'image avec traitement parallèle par chunks"""
         if not self.converter_data.image_url:
@@ -344,7 +344,7 @@ def process_image_vectorized_fast(image_array, palette):
 
             # Essayer d'abord la méthode vectorisée ultra-rapide
             processed_array = process_image_vectorized_fast(img_array, palette)
-            
+
             if processed_array is None:
                 # Fallback vers le traitement parallèle par chunks
                 processed_array = await self.process_image_parallel_chunks(img_array, palette)
@@ -383,21 +383,21 @@ def process_image_vectorized_fast(image_array, palette):
         """Traite l'image en parallèle par chunks pour une vitesse maximale"""
         try:
             height, width, channels = img_array.shape
-            
+
             # Calculer le nombre optimal de chunks basé sur les CPU disponibles
             num_cores = min(cpu_count(), 8)  # Limiter à 8 pour éviter trop de overhead
             chunk_size = max(1, height // num_cores)
-            
+
             # Diviser l'image en chunks horizontaux
             chunks = []
             for i in range(0, height, chunk_size):
                 end_i = min(i + chunk_size, height)
                 chunk = img_array[i:end_i, :, :]
                 chunks.append((chunk, i))  # (chunk_data, start_row)
-            
+
             # Traitement parallèle avec ThreadPoolExecutor (plus rapide pour I/O bound)
             loop = asyncio.get_event_loop()
-            
+
             with ThreadPoolExecutor(max_workers=num_cores) as executor:
                 # Créer les tâches pour chaque chunk
                 futures = []
@@ -410,41 +410,41 @@ def process_image_vectorized_fast(image_array, palette):
                         chunk_idx
                     )
                     futures.append((future, start_row, chunk_data.shape[0]))
-                
+
                 # Attendre tous les résultats
                 processed_chunks = {}
                 for future, start_row, chunk_height in futures:
                     chunk_idx, processed_chunk = await future
                     processed_chunks[start_row] = processed_chunk
-            
+
             # Réassembler l'image
             processed_array = np.zeros_like(img_array)
             for start_row in sorted(processed_chunks.keys()):
                 chunk = processed_chunks[start_row]
                 end_row = start_row + chunk.shape[0]
                 processed_array[start_row:end_row, :, :] = chunk
-            
+
             return processed_array
-            
+
         except Exception as e:
             print(f"Erreur lors du traitement parallèle: {e}")
             # Fallback vers traitement séquentiel simple
             return self.process_image_sequential_fallback(img_array, palette)
-    
+
     def process_image_sequential_fallback(self, img_array, palette):
         """Traitement séquentiel simple en cas d'échec du parallélisme"""
         try:
             height, width, channels = img_array.shape
             processed = np.zeros_like(img_array)
-            
+
             for y in range(height):
                 for x in range(width):
                     pixel = img_array[y, x]
                     closest = self.find_closest_color_fast(pixel, palette)
                     processed[y, x] = closest
-            
+
             return processed
-            
+
         except Exception as e:
             print(f"Erreur fallback: {e}")
             return img_array  # Retourne l'image originale en dernier recours
@@ -676,13 +676,13 @@ def process_image_vectorized_fast(image_array, palette):
             value=f"{self.converter_data.image_width}px",
             inline=True
         )
-        
+
         embed.add_field(
             name="📐 Height", 
             value=f"{self.converter_data.image_height}px",
             inline=True
         )
-        
+
         embed.add_field(
             name="🖼️ Total Pixels",
             value=f"{total_pixels:,}px",
@@ -692,19 +692,19 @@ def process_image_vectorized_fast(image_array, palette):
         # Informations sur le traitement sur une nouvelle ligne
         active_colors = self.get_active_colors()
         dithering_status = "ON" if self.colors_data["settings"]["dithering"] else "OFF"
-        
+
         embed.add_field(
             name="🎨 Active Colors",
             value=f"{len(active_colors)}",
             inline=True
         )
-        
+
         embed.add_field(
             name="⚡ Dithering",
             value=f"{dithering_status}",
             inline=True
         )
-        
+
         # Champ vide pour l'alignement
         embed.add_field(
             name="\u200b",
