@@ -140,18 +140,27 @@ class PixelsConverterView(discord.ui.View):
         """Limite la valeur entre 0 et 255"""
         return max(0, min(255, int(value)))
 
+    def clamp_byte(self, value):
+        """Limite la valeur entre 0 et 255 - fonction exacte du JavaScript"""
+        return max(0, min(255, int(value)))
+
     def floyd_steinberg_dithering(self, image, palette):
-        """Applique le dithering Floyd-Steinberg basé exactement sur le code JavaScript"""
+        """Applique le dithering Floyd-Steinberg EXACTEMENT comme le code JavaScript"""
         if image.mode != 'RGB':
             image = image.convert('RGB')
 
         width, height = image.size
-        img_array = np.array(image, dtype=np.uint8)
+        img_data = image.getdata()
+        
+        # Convertir en liste pour modification (comme dans le JS)
+        data = list(img_data)
+        
+        # Buffer flottant pour porter l'erreur de diffusion (exactement comme le JS)
+        buf = []
+        for pixel in data:
+            buf.extend([float(pixel[0]), float(pixel[1]), float(pixel[2]), 255.0])
 
-        # Buffer flottant pour porter l'erreur de diffusion (comme dans le JS)
-        buf = img_array.astype(np.float32)
-
-        # Créer la palette numpy pour une recherche plus rapide
+        # Créer la palette RGB simple
         palette_rgb = []
         for color in palette:
             if not color.get("hidden", False):
@@ -160,19 +169,52 @@ class PixelsConverterView(discord.ui.View):
         if not palette_rgb:
             return image
 
-        palette_np = np.array(palette_rgb, dtype=np.float32)
+        # Variables pour compter les couleurs
+        color_counts = {}
 
+        # Traitement pixel par pixel exactement comme le JavaScript
         for y in range(height):
             for x in range(width):
-                # Pixel actuel
-                r, g, b = buf[y, x]
+                idx = (y * width + x) * 4
+
+                r = buf[idx]
+                g = buf[idx + 1] 
+                b = buf[idx + 2]
+                a = buf[idx + 3]
+
+                # Gérer les pixels semi-transparents (comme dans le JS)
+                transparent_hide_active = self.colors_data["settings"].get("semi_transparent", False)
+                if a < 255 and a > 0:
+                    if transparent_hide_active:
+                        # Rendre transparent et continuer
+                        data[y * width + x] = (0, 0, 0, 0)
+                        continue
+                    else:
+                        a = 255  # Traiter comme opaque
 
                 # Quantifier vers la couleur la plus proche (algorithme du JS)
                 closest_rgb = self.find_closest_color_dithering([int(r), int(g), int(b)], palette_rgb)
                 nr, ng, nb = closest_rgb
 
+                # Vérifier si la couleur est cachée
+                key = f"{nr},{ng},{nb}"
+                is_hidden = any(
+                    color.get("hidden", False)
+                    for color in palette
+                    if color["rgb"] == [nr, ng, nb]
+                )
+
+                if is_hidden:
+                    # Rendre transparent et ne pas diffuser l'erreur
+                    data[y * width + x] = (0, 0, 0, 0)
+                    continue
+
                 # Écrire la couleur quantifiée
-                img_array[y, x] = [nr, ng, nb]
+                data[y * width + x] = (nr, ng, nb, 255 if a != 0 else 0)
+
+                # Compter les couleurs visibles
+                if data[y * width + x][3] != 0:
+                    color_counts[key] = color_counts.get(key, 0) + 1
 
                 # Calculer l'erreur
                 er = r - nr
@@ -182,82 +224,143 @@ class PixelsConverterView(discord.ui.View):
                 # Diffuser l'erreur aux pixels voisins (Floyd-Steinberg exactement comme le JS)
                 def push_error(xx, yy, fraction):
                     if 0 <= xx < width and 0 <= yy < height:
-                        buf[yy, xx, 0] = np.clip(buf[yy, xx, 0] + er * fraction, 0, 255)
-                        buf[yy, xx, 1] = np.clip(buf[yy, xx, 1] + eg * fraction, 0, 255)
-                        buf[yy, xx, 2] = np.clip(buf[yy, xx, 2] + eb * fraction, 0, 255)
+                        j = (yy * width + xx) * 4
+                        buf[j] = self.clamp_byte(buf[j] + er * fraction)
+                        buf[j + 1] = self.clamp_byte(buf[j + 1] + eg * fraction)
+                        buf[j + 2] = self.clamp_byte(buf[j + 2] + eb * fraction)
 
                 push_error(x + 1, y, 7/16)      # droite
                 push_error(x - 1, y + 1, 3/16)  # bas-gauche
                 push_error(x, y + 1, 5/16)      # bas
                 push_error(x + 1, y + 1, 1/16)  # bas-droite
 
-        return Image.fromarray(img_array)
+        # Créer l'image finale avec les données modifiées
+        result_image = Image.new('RGBA', (width, height))
+        result_image.putdata(data)
+        
+        # Convertir en RGB si pas de transparence
+        if not transparent_hide_active and not any(color.get("hidden", False) for color in palette):
+            result_image = result_image.convert('RGB')
+        
+        return result_image
 
     def find_closest_color_dithering(self, pixel_color, palette_rgb):
-        """Trouve la couleur la plus proche avec l'algorithme optimisé du JavaScript"""
+        """Trouve la couleur la plus proche avec l'algorithme EXACT du JavaScript"""
         r, g, b = pixel_color
         min_distance = float('inf')
         closest_color = palette_rgb[0]
 
-        for pr, pg, pb in palette_rgb:
-            # Algorithme de distance couleur optimisé du code JavaScript
+        for palette_color in palette_rgb:
+            pr, pg, pb = palette_color
+            
+            # Algorithme de distance couleur EXACT du code JavaScript
+            # https://www.compuphase.com/cmetric.htm#:~:text=A%20low%2Dcost%20approximation
             rmean = (pr + r) // 2
             rdiff = pr - r
             gdiff = pg - g
             bdiff = pb - b
-
-            x = ((512 + rmean) * rdiff * rdiff) >> 8
+            
+            x = (512 + rmean) * rdiff * rdiff >> 8
             y = 4 * gdiff * gdiff
-            z = ((767 - rmean) * bdiff * bdiff) >> 8
-
+            z = (767 - rmean) * bdiff * bdiff >> 8
+            
             distance = np.sqrt(x + y + z)
 
             if distance < min_distance:
                 min_distance = distance
-                closest_color = [pr, pg, pb]
+                closest_color = palette_color
 
         return closest_color
 
     def quantize_colors_advanced(self, image, palette):
-        """Réduit l'image aux couleurs de la palette définie avec l'algorithme avancé"""
+        """Réduit l'image aux couleurs de la palette définie EXACTEMENT comme le JavaScript (sans dithering)"""
         if not palette:
             return image
 
-        # Convertir l'image en mode RGB si nécessaire
-        if image.mode != 'RGB':
+        # Convertir selon le mode et gérer la transparence comme le JS
+        original_mode = image.mode
+        if image.mode in ('RGBA', 'LA', 'P'):
+            # Garder le canal alpha pour le traitement
+            if image.mode == 'P':
+                image = image.convert('RGBA')
+            elif image.mode == 'LA':
+                image = image.convert('RGBA')
+        else:
             image = image.convert('RGB')
 
-        img_array = np.array(image)
-        height, width, channels = img_array.shape
+        width, height = image.size
+        img_data = list(image.getdata())
+        
+        # Créer la palette RGB simple
+        palette_rgb = []
+        for color in palette:
+            if not color.get("hidden", False):
+                palette_rgb.append(color["rgb"])
+        
+        if not palette_rgb:
+            return image
 
-        # Créer une nouvelle image avec les couleurs quantifiées
-        quantized_array = np.zeros_like(img_array)
-
-        # Gérer la transparence
+        # Variables pour compter les couleurs
+        color_counts = {}
+        
+        # Gérer la transparence (comme dans le JS)
         transparent_hide_active = self.colors_data["settings"].get("semi_transparent", False)
+        
+        # Traitement pixel par pixel EXACTEMENT comme le JavaScript (mode non-dithered)
+        processed_data = []
+        for i, pixel in enumerate(img_data):
+            if len(pixel) == 4:  # RGBA
+                r, g, b, a = pixel
+            else:  # RGB
+                r, g, b = pixel
+                a = 255
 
-        for y in range(height):
-            for x in range(width):
-                pixel_color = img_array[y, x]
+            # Trouver la couleur la plus proche
+            closest_rgb = self.find_closest_color_dithering([r, g, b], palette_rgb)
+            nr, ng, nb = closest_rgb
+            
+            # Vérifier si la couleur est cachée (per-color HIDE comme dans le JS)
+            key = f"{nr},{ng},{nb}"
+            is_hidden = any(
+                color.get("hidden", False)
+                for color in palette
+                if color["rgb"] == [nr, ng, nb]
+            )
 
-                # Trouver la couleur la plus proche
-                closest_color = self.find_closest_color(pixel_color, palette)
-                color_key = f"{closest_color[0]},{closest_color[1]},{closest_color[2]}"
+            if is_hidden:
+                # Rendre transparent si caché
+                processed_data.append((0, 0, 0, 0))
+                continue
 
-                # Vérifier si la couleur est cachée
-                is_hidden = any(
-                    color.get("hidden", False)
-                    for color in palette
-                    if color["rgb"] == list(closest_color)
-                )
+            # Écrire la couleur quantifiée
+            new_pixel = [nr, ng, nb]
+            
+            # Gestion de l'alpha (exactement comme le JS)
+            if a == 0:
+                new_alpha = 0
+            elif a < 255:
+                new_alpha = 0 if transparent_hide_active else 255
+            else:
+                new_alpha = 255
+            
+            if original_mode in ('RGBA', 'LA', 'P') or transparent_hide_active or any(color.get("hidden", False) for color in palette):
+                processed_data.append((nr, ng, nb, new_alpha))
+            else:
+                processed_data.append((nr, ng, nb))
+            
+            # Compter seulement les pixels visibles
+            if new_alpha != 0:
+                color_counts[key] = color_counts.get(key, 0) + 1
 
-                if is_hidden:
-                    # Rendre transparent si caché
-                    quantized_array[y, x] = [0, 0, 0]  # Sera rendu transparent plus tard
-                else:
-                    quantized_array[y, x] = closest_color
-
-        return Image.fromarray(quantized_array.astype(np.uint8))
+        # Créer l'image finale
+        if original_mode in ('RGBA', 'LA', 'P') or transparent_hide_active or any(color.get("hidden", False) for color in palette):
+            result_image = Image.new('RGBA', (width, height))
+            result_image.putdata(processed_data)
+        else:
+            result_image = Image.new('RGB', (width, height))
+            result_image.putdata(processed_data)
+        
+        return result_image
 
     def pixelate_image(self, image, pixel_size):
         """Pixelise l'image en réduisant puis agrandissant"""
@@ -626,10 +729,12 @@ class PixelsConverterView(discord.ui.View):
                 self.save_colors()
                 active_colors = self.get_active_colors()
 
-            # Utiliser l'algorithme ultra-rapide au lieu du dithering lent qui bloque le bot
-            # Le dithering sera simulé par l'algorithme de quantification avancé
+            # Appliquer la quantification avec ou sans dithering selon les paramètres
             if active_colors:
-                processed = self.quantize_colors_advanced(image, active_colors)
+                if self.colors_data["settings"]["dithering"]:
+                    processed = self.floyd_steinberg_dithering(image, active_colors)
+                else:
+                    processed = self.quantize_colors_advanced(image, active_colors)
             else:
                 processed = image
 
@@ -1160,9 +1265,9 @@ class PixelsConverterView(discord.ui.View):
                 self.colors_data["settings"]["dithering"] = not self.colors_data["settings"]["dithering"]
                 self.save_colors()
                 
-                # Reprocess image automatically if we have one using ultra-fast method
+                # Reprocess image automatically if we have one
                 if self.converter_data.image_url:
-                    processed_url = await self.process_image_ultra_fast()
+                    processed_url = await self.process_image()
                     if processed_url:
                         self.converter_data.pixelated_url = processed_url
 
