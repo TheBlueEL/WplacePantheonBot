@@ -1,4 +1,3 @@
-
 import discord
 from discord.ext import commands
 from discord import app_commands
@@ -64,28 +63,28 @@ class PixelsConverterView(discord.ui.View):
         """Trouve la couleur la plus proche dans la palette"""
         min_distance = float('inf')
         closest_color = palette[0]["rgb"]
-        
+
         for color in palette:
             distance = self.rgb_distance(pixel_color, color["rgb"])
             if distance < min_distance:
                 min_distance = distance
                 closest_color = color["rgb"]
-        
+
         return closest_color
 
     def floyd_steinberg_dithering(self, image, palette):
         """Applique le dithering Floyd-Steinberg"""
         img_array = np.array(image, dtype=float)
         height, width, channels = img_array.shape
-        
+
         for y in range(height):
             for x in range(width):
                 old_pixel = img_array[y, x]
                 new_pixel = self.find_closest_color(old_pixel, palette)
                 img_array[y, x] = new_pixel
-                
+
                 quant_error = old_pixel - new_pixel
-                
+
                 # Distribuer l'erreur aux pixels adjacents
                 if x + 1 < width:
                     img_array[y, x + 1] += quant_error * 7/16
@@ -95,56 +94,56 @@ class PixelsConverterView(discord.ui.View):
                     img_array[y + 1, x] += quant_error * 5/16
                 if y + 1 < height and x + 1 < width:
                     img_array[y + 1, x + 1] += quant_error * 1/16
-        
+
         return Image.fromarray(np.clip(img_array, 0, 255).astype(np.uint8))
 
     def quantize_colors(self, image, palette):
         """Réduit l'image aux couleurs de la palette définie"""
         if not palette:
             return image
-            
+
         # Convertir l'image en mode RGB si nécessaire
         if image.mode != 'RGB':
             image = image.convert('RGB')
-            
+
         img_array = np.array(image)
         height, width, channels = img_array.shape
-        
+
         # Créer une nouvelle image avec les couleurs quantifiées
         quantized_array = np.zeros_like(img_array)
-        
+
         for y in range(height):
             for x in range(width):
                 pixel_color = img_array[y, x]
                 closest_color = self.find_closest_color(pixel_color, palette)
                 quantized_array[y, x] = closest_color
-        
+
         return Image.fromarray(quantized_array.astype(np.uint8))
 
     def pixelate_image(self, image, pixel_size):
         """Pixelise l'image en réduisant puis agrandissant"""
         # Obtenir la taille originale
         original_size = image.size
-        
+
         # Réduire l'image
         small_size = (original_size[0] // pixel_size, original_size[1] // pixel_size)
         if small_size[0] < 1:
             small_size = (1, small_size[1])
         if small_size[1] < 1:
             small_size = (small_size[0], 1)
-            
+
         small_image = image.resize(small_size, Image.Resampling.NEAREST)
-        
+
         # Agrandir l'image avec des pixels nets
         pixelated = small_image.resize(original_size, Image.Resampling.NEAREST)
-        
+
         return pixelated
 
     async def process_image(self):
         """Traite l'image selon les paramètres sélectionnés"""
         if not self.converter_data.image_url:
             return None
-            
+
         try:
             # Télécharger l'image
             async with aiohttp.ClientSession() as session:
@@ -152,10 +151,10 @@ class PixelsConverterView(discord.ui.View):
                     if response.status != 200:
                         return None
                     image_data = await response.read()
-            
+
             # Ouvrir l'image avec PIL
             image = Image.open(io.BytesIO(image_data))
-            
+
             # Convertir en RGB si nécessaire
             if image.mode in ('RGBA', 'LA', 'P'):
                 if not self.colors_data["settings"]["semi_transparent"]:
@@ -172,10 +171,10 @@ class PixelsConverterView(discord.ui.View):
                     image = image.convert('RGBA')
             else:
                 image = image.convert('RGB')
-            
+
             # Obtenir la palette de couleurs actives
             active_colors = self.get_active_colors()
-            
+
             # Si aucune couleur n'est activée, utiliser toutes les couleurs gratuites par défaut
             if not active_colors:
                 for color in self.colors_data["colors"]:
@@ -183,7 +182,7 @@ class PixelsConverterView(discord.ui.View):
                         color["enabled"] = True
                 self.save_colors()
                 active_colors = self.get_active_colors()
-            
+
             # Appliquer d'abord la quantification des couleurs à l'image originale
             if active_colors:
                 if self.colors_data["settings"]["dithering"]:
@@ -192,33 +191,33 @@ class PixelsConverterView(discord.ui.View):
                     color_quantized = self.quantize_colors(image, active_colors)
             else:
                 color_quantized = image
-            
+
             # Puis pixeliser l'image avec les couleurs quantifiées
             processed = self.pixelate_image(color_quantized, self.converter_data.pixel_scale)
-            
+
             # Sauvegarder l'image traitée
             os.makedirs('images', exist_ok=True)
             filename = f"pixelated_{uuid.uuid4()}.png"
             file_path = os.path.join('images', filename)
             processed.save(file_path, 'PNG')
-            
+
             # Synchroniser avec GitHub
             from github_sync import GitHubSync
             github_sync = GitHubSync()
             sync_success = await github_sync.sync_image_to_pictures_repo(file_path)
-            
+
             if sync_success:
                 try:
                     os.remove(file_path)
                 except:
                     pass
-                
+
                 github_url = f"https://raw.githubusercontent.com/TheBlueEL/pictures/main/{filename}"
                 self.converter_data.pixelated_url = github_url
                 return github_url
-            
+
             return None
-            
+
         except Exception as e:
             print(f"Erreur lors du traitement de l'image: {e}")
             return None
@@ -277,7 +276,7 @@ class PixelsConverterView(discord.ui.View):
         # Informations sur le traitement
         active_colors = self.get_active_colors()
         dithering_status = "ON" if self.colors_data["settings"]["dithering"] else "OFF"
-        
+
         embed.add_field(
             name="Processing Info",
             value=f"**Colors:** {len(active_colors)}\n**Dithering:** {dithering_status}",
@@ -464,10 +463,10 @@ class PixelsConverterView(discord.ui.View):
 
             async def process_callback(interaction):
                 await interaction.response.defer()
-                
+
                 # Traiter l'image
                 processed_url = await self.process_image()
-                
+
                 if processed_url:
                     embed = self.get_image_preview_embed()
                     await interaction.followup.edit_message(message_id=interaction.message.id, embed=embed, view=self)
@@ -538,7 +537,7 @@ class PixelsConverterView(discord.ui.View):
         elif self.current_mode == "color_selection":
             # Navigation row
             total_pages = (len(self.colors_data["colors"]) + self.colors_per_page - 1) // self.colors_per_page
-            
+
             # Left arrow
             left_arrow = discord.ui.Button(
                 label="◀",
@@ -617,11 +616,11 @@ class PixelsConverterView(discord.ui.View):
             # Color buttons (2 rows of 4)
             start_idx = self.color_page * self.colors_per_page
             end_idx = min(start_idx + self.colors_per_page, len(self.colors_data["colors"]))
-            
+
             for i, color_idx in enumerate(range(start_idx, end_idx)):
                 color = self.colors_data["colors"][color_idx]
                 row = 1 + (i // 4)  # Start from row 1
-                
+
                 button = discord.ui.Button(
                     label=color["name"][:15],  # Truncate long names
                     style=discord.ButtonStyle.success if color["enabled"] else discord.ButtonStyle.danger,
@@ -710,24 +709,29 @@ class ImageURLModal(discord.ui.Modal):
 
     async def on_submit(self, interaction: discord.Interaction):
         image_url = self.url_input.value.strip()
-        
+
         # Check if URL is accessible and get image dimensions
         try:
             async with aiohttp.ClientSession() as session:
                 async with session.get(image_url) as response:
                     if response.status == 200:
                         image_data = await response.read()
-                        
+
                         # Obtenir les vraies dimensions avec PIL
                         from PIL import Image
                         import io
                         image = Image.open(io.BytesIO(image_data))
-                        
+
                         self.converter_data.image_url = image_url
                         self.converter_data.image_width = image.width
                         self.converter_data.image_height = image.height
                         self.converter_data.pixelated_url = ""  # Reset processed image
-                        
+
+                        # Traiter automatiquement l'image avec les couleurs par défaut
+                        processed_url = await self.parent_view.process_image()
+                        if processed_url:
+                            self.converter_data.pixelated_url = processed_url
+
                         self.parent_view.current_mode = "image_preview"
                         embed = self.parent_view.get_image_preview_embed()
                         self.parent_view.update_buttons()
@@ -835,13 +839,18 @@ class ConvertersCommand(commands.Cog):
                                             from PIL import Image
                                             import io
                                             image = Image.open(io.BytesIO(image_data))
-                                            
+
                                             manager.converter_data.image_url = local_file
                                             manager.converter_data.image_width = image.width
                                             manager.converter_data.image_height = image.height
                                             manager.converter_data.pixelated_url = ""  # Reset processed image
                                             manager.current_mode = "image_preview"
                                             manager.waiting_for_image = False
+
+                                            # Traiter automatiquement l'image avec les couleurs par défaut
+                                            processed_url = await manager.process_image()
+                                            if processed_url:
+                                                manager.converter_data.pixelated_url = processed_url
 
                                             embed = manager.get_image_preview_embed()
                                             manager.update_buttons()
@@ -855,6 +864,11 @@ class ConvertersCommand(commands.Cog):
                                 manager.converter_data.pixelated_url = ""
                                 manager.current_mode = "image_preview"
                                 manager.waiting_for_image = False
+
+                                # Traiter automatiquement l'image avec les couleurs par défaut
+                                processed_url = await manager.process_image()
+                                if processed_url:
+                                    manager.converter_data.pixelated_url = processed_url
 
                                 embed = manager.get_image_preview_embed()
                                 manager.update_buttons()
