@@ -192,8 +192,8 @@ class PixelsConverterView(discord.ui.View):
                     else:
                         a = 255  # Traiter comme opaque
 
-                # Quantifier vers la couleur la plus proche (algorithme du JS)
-                closest_rgb = self.find_closest_color_dithering([int(r), int(g), int(b)], palette_rgb)
+                # Quantifier vers la couleur la plus proche avec l'algorithme EXACT du JavaScript
+                closest_rgb = self.find_closest_color_javascript_exact([int(r), int(g), int(b)], palette_rgb)
                 nr, ng, nb = closest_rgb
 
                 # Vérifier si la couleur est cachée
@@ -244,7 +244,7 @@ class PixelsConverterView(discord.ui.View):
         
         return result_image
 
-    def find_closest_color_dithering(self, pixel_color, palette_rgb):
+    def find_closest_color_javascript_exact(self, pixel_color, palette_rgb):
         """Trouve la couleur la plus proche avec l'algorithme EXACT du JavaScript"""
         r, g, b = pixel_color
         min_distance = float('inf')
@@ -271,6 +271,10 @@ class PixelsConverterView(discord.ui.View):
                 closest_color = palette_color
 
         return closest_color
+
+    def find_closest_color_dithering(self, pixel_color, palette_rgb):
+        """Alias pour la compatibilité - utilise l'algorithme JavaScript exact"""
+        return self.find_closest_color_javascript_exact(pixel_color, palette_rgb)
 
     def quantize_colors_advanced(self, image, palette):
         """Réduit l'image aux couleurs de la palette définie EXACTEMENT comme le JavaScript (sans dithering)"""
@@ -315,8 +319,8 @@ class PixelsConverterView(discord.ui.View):
                 r, g, b = pixel
                 a = 255
 
-            # Trouver la couleur la plus proche
-            closest_rgb = self.find_closest_color_dithering([r, g, b], palette_rgb)
+            # Trouver la couleur la plus proche avec l'algorithme JavaScript exact
+            closest_rgb = self.find_closest_color_javascript_exact([r, g, b], palette_rgb)
             nr, ng, nb = closest_rgb
             
             # Vérifier si la couleur est cachée (per-color HIDE comme dans le JS)
