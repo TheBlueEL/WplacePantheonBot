@@ -1,39 +1,411 @@
 {
   "colors": [
-    { "id": 0, "premium": false, "name": "Transparent", "rgb": [0, 0, 0], "emoji": "<:Green:1407884777012461648>", "enabled": true },
-    { "id": 1, "premium": false, "name": "Black", "rgb": [0, 0, 0], "emoji": "<:Green:1407884777012461648>", "enabled": true },
-    { "id": 2, "premium": false, "name": "Dark Gray", "rgb": [60, 60, 60], "emoji": "<:Grey:1407882703243710635>", "enabled": true },
-    { "id": 3, "premium": false, "name": "Gray", "rgb": [120, 120, 120], "emoji": "<:Grey:1407882703243710635>", "enabled": true },
-    { "id": 4, "premium": false, "name": "Light Gray", "rgb": [210, 210, 210], "emoji": "<:LightGrey:1407882744184176813>", "enabled": true },
-    { "id": 5, "premium": false, "name": "White", "rgb": [255, 255, 255], "emoji": "<:White:1407882887876968518>", "enabled": true },
-    { "id": 6, "premium": false, "name": "Deep Red", "rgb": [96, 0, 24], "emoji": "<:DeepRed:1407882655348953262>", "enabled": true },
-    { "id": 7, "premium": false, "name": "Red", "rgb": [237, 28, 36], "emoji": "<:Red:1407882860597084332>", "enabled": true },
-    { "id": 8, "premium": false, "name": "Orange", "rgb": [255, 127, 39], "emoji": "<:Orange:1407882828846465044>", "enabled": true },
-    { "id": 9, "premium": false, "name": "Gold", "rgb": [246, 170, 9], "emoji": "<:Gold:1407882669055934504>", "enabled": true },
-    { "id": 10, "premium": false, "name": "Yellow", "rgb": [249, 221, 59], "emoji": "<:Yellow:1407884330713354412>", "enabled": true },
-    { "id": 11, "premium": false, "name": "Light Yellow", "rgb": [255, 250, 188], "emoji": "<:LightYellow:1407882813650501702>", "enabled": true },
-    { "id": 12, "premium": false, "name": "Dark Green", "rgb": [14, 185, 104], "emoji": "<:DarkGreen:1407882513975738531>", "enabled": true },
-    { "id": 13, "premium": false, "name": "Green", "rgb": [19, 230, 123], "emoji": "<:Green:1407884777012461648>", "enabled": true },
-    { "id": 14, "premium": false, "name": "Light Green", "rgb": [135, 255, 94], "emoji": "<:LightGreen:1407882730053570622>", "enabled": true },
-    { "id": 15, "premium": false, "name": "Dark Teal", "rgb": [12, 129, 110], "emoji": "<:DarkTeal:1407882637539803188>", "enabled": true },
-    { "id": 16, "premium": false, "name": "Teal", "rgb": [16, 174, 166], "emoji": "<:Teal:1407882874962706442>", "enabled": true },
-    { "id": 17, "premium": false, "name": "Light Teal", "rgb": [19, 225, 190], "emoji": "<:LightTeal:1407882798252949599>", "enabled": true },
-    { "id": 18, "premium": false, "name": "Dark Blue", "rgb": [40, 80, 158], "emoji": "<:Indigo:1407882718284615851>", "enabled": true },
-    { "id": 19, "premium": false, "name": "Blue", "rgb": [64, 147, 228], "emoji": "<:Indigo:1407882718284615851>", "enabled": true },
-    { "id": 20, "premium": false, "name": "Cyan", "rgb": [96, 247, 242], "emoji": "<:Teal:1407882874962706442>", "enabled": true },
-    { "id": 21, "premium": false, "name": "Indigo", "rgb": [107, 80, 246], "emoji": "<:Indigo:1407882718284615851>", "enabled": true },
-    { "id": 22, "premium": false, "name": "Light Indigo", "rgb": [153, 177, 251], "emoji": "<:LightIndigo:1407882763385966653>", "enabled": true },
-    { "id": 23, "premium": false, "name": "Dark Purple", "rgb": [120, 12, 153], "emoji": "<:DarkPurple:1407882619533787156>", "enabled": true },
-    { "id": 24, "premium": false, "name": "Purple", "rgb": [170, 56, 185], "emoji": "<:Purple:1407884497625682073>", "enabled": true },
-    { "id": 25, "premium": false, "name": "Light Purple", "rgb": [224, 159, 249], "emoji": "<:LightPurple:1407882780838330420>", "enabled": true },
-    { "id": 26, "premium": false, "name": "Dark Pink", "rgb": [203, 0, 122], "emoji": "<:DarkPink:1407882606951006288>", "enabled": true },
-    { "id": 27, "premium": false, "name": "Pink", "rgb": [236, 31, 128], "emoji": "<:Pink:1407882845187346523>", "enabled": true },
-    { "id": 28, "premium": false, "name": "Light Pink", "rgb": [243, 141, 169], "emoji": "<:LightPink:1407884351269765204>", "enabled": true },
-    { "id": 29, "premium": false, "name": "Dark Brown", "rgb": [104, 70, 52], "emoji": "<:DarkBrown:1407882473659961534>", "enabled": true },
-    { "id": 30, "premium": false, "name": "Brown", "rgb": [149, 104, 42], "emoji": "<:DarkBrown:1407882473659961534>", "enabled": true }
+    {
+      "id": 0,
+      "premium": false,
+      "name": "Transparent",
+      "rgb": [
+        0,
+        0,
+        0
+      ],
+      "emoji": "<:Green:1407884777012461648>",
+      "enabled": true,
+      "hidden": false
+    },
+    {
+      "id": 1,
+      "premium": false,
+      "name": "Black",
+      "rgb": [
+        0,
+        0,
+        0
+      ],
+      "emoji": "<:Green:1407884777012461648>",
+      "enabled": true,
+      "hidden": false
+    },
+    {
+      "id": 2,
+      "premium": false,
+      "name": "Dark Gray",
+      "rgb": [
+        60,
+        60,
+        60
+      ],
+      "emoji": "<:Grey:1407882703243710635>",
+      "enabled": true,
+      "hidden": false
+    },
+    {
+      "id": 3,
+      "premium": false,
+      "name": "Gray",
+      "rgb": [
+        120,
+        120,
+        120
+      ],
+      "emoji": "<:Grey:1407882703243710635>",
+      "enabled": true,
+      "hidden": false
+    },
+    {
+      "id": 4,
+      "premium": false,
+      "name": "Light Gray",
+      "rgb": [
+        210,
+        210,
+        210
+      ],
+      "emoji": "<:LightGrey:1407882744184176813>",
+      "enabled": true,
+      "hidden": false
+    },
+    {
+      "id": 5,
+      "premium": false,
+      "name": "White",
+      "rgb": [
+        255,
+        255,
+        255
+      ],
+      "emoji": "<:White:1407882887876968518>",
+      "enabled": true,
+      "hidden": false
+    },
+    {
+      "id": 6,
+      "premium": false,
+      "name": "Deep Red",
+      "rgb": [
+        96,
+        0,
+        24
+      ],
+      "emoji": "<:DeepRed:1407882655348953262>",
+      "enabled": true,
+      "hidden": false
+    },
+    {
+      "id": 7,
+      "premium": false,
+      "name": "Red",
+      "rgb": [
+        237,
+        28,
+        36
+      ],
+      "emoji": "<:Red:1407882860597084332>",
+      "enabled": true,
+      "hidden": false
+    },
+    {
+      "id": 8,
+      "premium": false,
+      "name": "Orange",
+      "rgb": [
+        255,
+        127,
+        39
+      ],
+      "emoji": "<:Orange:1407882828846465044>",
+      "enabled": true,
+      "hidden": false
+    },
+    {
+      "id": 9,
+      "premium": false,
+      "name": "Gold",
+      "rgb": [
+        246,
+        170,
+        9
+      ],
+      "emoji": "<:Gold:1407882669055934504>",
+      "enabled": true,
+      "hidden": false
+    },
+    {
+      "id": 10,
+      "premium": false,
+      "name": "Yellow",
+      "rgb": [
+        249,
+        221,
+        59
+      ],
+      "emoji": "<:Yellow:1407884330713354412>",
+      "enabled": true,
+      "hidden": false
+    },
+    {
+      "id": 11,
+      "premium": false,
+      "name": "Light Yellow",
+      "rgb": [
+        255,
+        250,
+        188
+      ],
+      "emoji": "<:LightYellow:1407882813650501702>",
+      "enabled": true,
+      "hidden": false
+    },
+    {
+      "id": 12,
+      "premium": false,
+      "name": "Dark Green",
+      "rgb": [
+        14,
+        185,
+        104
+      ],
+      "emoji": "<:DarkGreen:1407882513975738531>",
+      "enabled": true,
+      "hidden": false
+    },
+    {
+      "id": 13,
+      "premium": false,
+      "name": "Green",
+      "rgb": [
+        19,
+        230,
+        123
+      ],
+      "emoji": "<:Green:1407884777012461648>",
+      "enabled": true,
+      "hidden": false
+    },
+    {
+      "id": 14,
+      "premium": false,
+      "name": "Light Green",
+      "rgb": [
+        135,
+        255,
+        94
+      ],
+      "emoji": "<:LightGreen:1407882730053570622>",
+      "enabled": true,
+      "hidden": false
+    },
+    {
+      "id": 15,
+      "premium": false,
+      "name": "Dark Teal",
+      "rgb": [
+        12,
+        129,
+        110
+      ],
+      "emoji": "<:DarkTeal:1407882637539803188>",
+      "enabled": true,
+      "hidden": false
+    },
+    {
+      "id": 16,
+      "premium": false,
+      "name": "Teal",
+      "rgb": [
+        16,
+        174,
+        166
+      ],
+      "emoji": "<:Teal:1407882874962706442>",
+      "enabled": true,
+      "hidden": false
+    },
+    {
+      "id": 17,
+      "premium": false,
+      "name": "Light Teal",
+      "rgb": [
+        19,
+        225,
+        190
+      ],
+      "emoji": "<:LightTeal:1407882798252949599>",
+      "enabled": true,
+      "hidden": false
+    },
+    {
+      "id": 18,
+      "premium": false,
+      "name": "Dark Blue",
+      "rgb": [
+        40,
+        80,
+        158
+      ],
+      "emoji": "<:Indigo:1407882718284615851>",
+      "enabled": true,
+      "hidden": false
+    },
+    {
+      "id": 19,
+      "premium": false,
+      "name": "Blue",
+      "rgb": [
+        64,
+        147,
+        228
+      ],
+      "emoji": "<:Indigo:1407882718284615851>",
+      "enabled": true,
+      "hidden": false
+    },
+    {
+      "id": 20,
+      "premium": false,
+      "name": "Cyan",
+      "rgb": [
+        96,
+        247,
+        242
+      ],
+      "emoji": "<:Teal:1407882874962706442>",
+      "enabled": true,
+      "hidden": false
+    },
+    {
+      "id": 21,
+      "premium": false,
+      "name": "Indigo",
+      "rgb": [
+        107,
+        80,
+        246
+      ],
+      "emoji": "<:Indigo:1407882718284615851>",
+      "enabled": true,
+      "hidden": false
+    },
+    {
+      "id": 22,
+      "premium": false,
+      "name": "Light Indigo",
+      "rgb": [
+        153,
+        177,
+        251
+      ],
+      "emoji": "<:LightIndigo:1407882763385966653>",
+      "enabled": true,
+      "hidden": false
+    },
+    {
+      "id": 23,
+      "premium": false,
+      "name": "Dark Purple",
+      "rgb": [
+        120,
+        12,
+        153
+      ],
+      "emoji": "<:DarkPurple:1407882619533787156>",
+      "enabled": true,
+      "hidden": false
+    },
+    {
+      "id": 24,
+      "premium": false,
+      "name": "Purple",
+      "rgb": [
+        170,
+        56,
+        185
+      ],
+      "emoji": "<:Purple:1407884497625682073>",
+      "enabled": true,
+      "hidden": false
+    },
+    {
+      "id": 25,
+      "premium": false,
+      "name": "Light Purple",
+      "rgb": [
+        224,
+        159,
+        249
+      ],
+      "emoji": "<:LightPurple:1407882780838330420>",
+      "enabled": true,
+      "hidden": false
+    },
+    {
+      "id": 26,
+      "premium": false,
+      "name": "Dark Pink",
+      "rgb": [
+        203,
+        0,
+        122
+      ],
+      "emoji": "<:DarkPink:1407882606951006288>",
+      "enabled": true,
+      "hidden": false
+    },
+    {
+      "id": 27,
+      "premium": false,
+      "name": "Pink",
+      "rgb": [
+        236,
+        31,
+        128
+      ],
+      "emoji": "<:Pink:1407882845187346523>",
+      "enabled": true,
+      "hidden": false
+    },
+    {
+      "id": 28,
+      "premium": false,
+      "name": "Light Pink",
+      "rgb": [
+        243,
+        141,
+        169
+      ],
+      "emoji": "<:LightPink:1407884351269765204>",
+      "enabled": true,
+      "hidden": false
+    },
+    {
+      "id": 29,
+      "premium": false,
+      "name": "Dark Brown",
+      "rgb": [
+        104,
+        70,
+        52
+      ],
+      "emoji": "<:DarkBrown:1407882473659961534>",
+      "enabled": true,
+      "hidden": false
+    },
+    {
+      "id": 30,
+      "premium": false,
+      "name": "Brown",
+      "rgb": [
+        149,
+        104,
+        42
+      ],
+      "emoji": "<:DarkBrown:1407882473659961534>",
+      "enabled": true,
+      "hidden": false
+    }
   ],
   "settings": {
-    "dithering": false,
+    "dithering": true,
     "semi_transparent": false
   },
   "user_data": {}
