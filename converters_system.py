@@ -94,28 +94,19 @@ class PixelsConverterView(discord.ui.View):
         return [c for c in self.colors_data["colors"] if c.get("enabled", False)]
 
     def rgb_distance_advanced(self, color1, color2):
-        """Calcule la distance entre deux couleurs RGB avec l'algorithme optimisé et sécurisé"""
+        """Calcule la distance entre deux couleurs RGB avec un algorithme simple et fiable"""
         # Convert to numpy arrays if they're lists
         if isinstance(color1, list):
             color1 = np.array(color1)
         if isinstance(color2, list):
             color2 = np.array(color2)
             
-        r1, g1, b1 = np.clip(color1, 0, 255).astype(np.int32)
-        r2, g2, b2 = np.clip(color2, 0, 255).astype(np.int32)
-
-        # Algorithme de distance couleur optimisé avec protection contre overflow
-        rmean = (r1 + r2) // 2
-        rdiff = r1 - r2
-        gdiff = g1 - g2
-        bdiff = b1 - b2
-
-        # Calculs sécurisés avec limitation des valeurs
-        x = np.clip(((512 + rmean) * rdiff * rdiff) >> 8, 0, 2**31-1)
-        y = np.clip(4 * gdiff * gdiff, 0, 2**31-1)
-        z = np.clip(((767 - rmean) * bdiff * bdiff) >> 8, 0, 2**31-1)
-
-        return np.sqrt(np.clip(x + y + z, 0, 2**63-1))
+        # Simple euclidean distance - plus fiable
+        r1, g1, b1 = np.clip(color1, 0, 255).astype(float)
+        r2, g2, b2 = np.clip(color2, 0, 255).astype(float)
+        
+        # Distance euclidienne simple
+        return np.sqrt((r1 - r2)**2 + (g1 - g2)**2 + (b1 - b2)**2)
 
     def find_closest_color(self, pixel_color, palette):
         """Trouve la couleur la plus proche dans la palette"""
