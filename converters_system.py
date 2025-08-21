@@ -76,6 +76,13 @@ class PixelsConverterView(discord.ui.View):
                 for color in data.get("colors", []):
                     if "hidden" not in color:
                         color["hidden"] = False
+                
+                # S'assurer que le dithering est désactivé par défaut
+                if "settings" not in data:
+                    data["settings"] = {"dithering": False, "semi_transparent": False}
+                elif "dithering" not in data["settings"]:
+                    data["settings"]["dithering"] = False
+                
                 return data
         except (FileNotFoundError, json.JSONDecodeError):
             # Return default data if file doesn't exist
@@ -131,23 +138,34 @@ class PixelsConverterView(discord.ui.View):
         return max(0, min(255, int(value)))
 
     def floyd_steinberg_dithering(self, image, palette):
-        """Applique le dithering Floyd-Steinberg avancé basé sur le script JS"""
+        """Applique le dithering Floyd-Steinberg basé exactement sur le code JavaScript"""
         if image.mode != 'RGB':
             image = image.convert('RGB')
 
         width, height = image.size
-        img_array = np.array(image, dtype=float)
+        img_array = np.array(image, dtype=np.uint8)
 
-        # Buffer flottant pour porter l'erreur de diffusion
-        buf = img_array.copy()
+        # Buffer flottant pour porter l'erreur de diffusion (comme dans le JS)
+        buf = img_array.astype(np.float32)
+
+        # Créer la palette numpy pour une recherche plus rapide
+        palette_rgb = []
+        for color in palette:
+            if not color.get("hidden", False):
+                palette_rgb.append(color["rgb"])
+        
+        if not palette_rgb:
+            return image
+
+        palette_np = np.array(palette_rgb, dtype=np.float32)
 
         for y in range(height):
             for x in range(width):
                 # Pixel actuel
                 r, g, b = buf[y, x]
 
-                # Quantifier vers la couleur la plus proche de la palette
-                closest_rgb = self.find_closest_color([int(r), int(g), int(b)], palette)
+                # Quantifier vers la couleur la plus proche (algorithme du JS)
+                closest_rgb = self.find_closest_color_dithering([int(r), int(g), int(b)], palette_rgb)
                 nr, ng, nb = closest_rgb
 
                 # Écrire la couleur quantifiée
@@ -158,19 +176,44 @@ class PixelsConverterView(discord.ui.View):
                 eg = g - ng
                 eb = b - nb
 
-                # Diffuser l'erreur aux pixels voisins (Floyd-Steinberg)
+                # Diffuser l'erreur aux pixels voisins (Floyd-Steinberg exactement comme le JS)
                 def push_error(xx, yy, fraction):
                     if 0 <= xx < width and 0 <= yy < height:
-                        buf[yy, xx, 0] = self.clamp_byte(buf[yy, xx, 0] + er * fraction)
-                        buf[yy, xx, 1] = self.clamp_byte(buf[yy, xx, 1] + eg * fraction)
-                        buf[yy, xx, 2] = self.clamp_byte(buf[yy, xx, 2] + eb * fraction)
+                        buf[yy, xx, 0] = np.clip(buf[yy, xx, 0] + er * fraction, 0, 255)
+                        buf[yy, xx, 1] = np.clip(buf[yy, xx, 1] + eg * fraction, 0, 255)
+                        buf[yy, xx, 2] = np.clip(buf[yy, xx, 2] + eb * fraction, 0, 255)
 
                 push_error(x + 1, y, 7/16)      # droite
                 push_error(x - 1, y + 1, 3/16)  # bas-gauche
                 push_error(x, y + 1, 5/16)      # bas
                 push_error(x + 1, y + 1, 1/16)  # bas-droite
 
-        return Image.fromarray(np.clip(img_array, 0, 255).astype(np.uint8))
+        return Image.fromarray(img_array)
+
+    def find_closest_color_dithering(self, pixel_color, palette_rgb):
+        """Trouve la couleur la plus proche avec l'algorithme optimisé du JavaScript"""
+        r, g, b = pixel_color
+        min_distance = float('inf')
+        closest_color = palette_rgb[0]
+
+        for pr, pg, pb in palette_rgb:
+            # Algorithme de distance couleur optimisé du code JavaScript
+            rmean = (pr + r) // 2
+            rdiff = pr - r
+            gdiff = pg - g
+            bdiff = pb - b
+
+            x = ((512 + rmean) * rdiff * rdiff) >> 8
+            y = 4 * gdiff * gdiff
+            z = ((767 - rmean) * bdiff * bdiff) >> 8
+
+            distance = np.sqrt(x + y + z)
+
+            if distance < min_distance:
+                min_distance = distance
+                closest_color = [pr, pg, pb]
+
+        return closest_color
 
     def quantize_colors_advanced(self, image, palette):
         """Réduit l'image aux couleurs de la palette définie avec l'algorithme avancé"""
@@ -1102,7 +1145,7 @@ class PixelsConverterView(discord.ui.View):
                 self.add_item(button)
 
         elif self.current_mode == "settings":
-            # Dithering button
+            # Dithering button (default OFF/red)
             dithering_button = discord.ui.Button(
                 label="Dithering",
                 style=discord.ButtonStyle.success if self.colors_data["settings"]["dithering"] else discord.ButtonStyle.danger,
@@ -1110,11 +1153,21 @@ class PixelsConverterView(discord.ui.View):
             )
 
             async def dithering_callback(interaction):
+                await interaction.response.defer()
+                
+                # Toggle dithering
                 self.colors_data["settings"]["dithering"] = not self.colors_data["settings"]["dithering"]
                 self.save_colors()
+                
+                # Reprocess image automatically if we have one
+                if self.converter_data.image_url:
+                    processed_url = await self.process_image()
+                    if processed_url:
+                        self.converter_data.pixelated_url = processed_url
+
                 embed = self.get_settings_embed()
                 self.update_buttons()
-                await interaction.response.edit_message(embed=embed, view=self)
+                await interaction.followup.edit_message(message_id=interaction.message.id, embed=embed, view=self)
 
             dithering_button.callback = dithering_callback
 
