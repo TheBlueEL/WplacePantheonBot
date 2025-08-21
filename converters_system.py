@@ -975,11 +975,12 @@ class PixelsConverterView(discord.ui.View):
             self.add_item(back_button)
 
         elif self.current_mode == "image_preview":
-            # Dimension control buttons
+            # Première rangée: Less - Size - More
             shrink_button = discord.ui.Button(
                 label="Less",
                 style=discord.ButtonStyle.secondary,
-                emoji="🔽"
+                emoji="🔽",
+                row=0
             )
 
             async def shrink_callback(interaction):
@@ -1003,10 +1004,25 @@ class PixelsConverterView(discord.ui.View):
 
             shrink_button.callback = shrink_callback
 
+            # Nouveau bouton Size
+            size_button = discord.ui.Button(
+                label="Size",
+                style=discord.ButtonStyle.primary,
+                emoji="📏",
+                row=0
+            )
+
+            async def size_callback(interaction):
+                modal = SizeModal(self.converter_data, self)
+                await interaction.response.send_modal(modal)
+
+            size_button.callback = size_callback
+
             enlarge_button = discord.ui.Button(
                 label="More",
                 style=discord.ButtonStyle.secondary,
-                emoji="🔼"
+                emoji="🔼",
+                row=0
             )
 
             async def enlarge_callback(interaction):
@@ -1040,11 +1056,12 @@ class PixelsConverterView(discord.ui.View):
 
             enlarge_button.callback = enlarge_callback
 
-            # Color button
+            # Deuxième rangée: Colors - Settings - Back
             color_button = discord.ui.Button(
                 label="Colors",
                 style=discord.ButtonStyle.primary,
-                emoji="🎨"
+                emoji="🎨",
+                row=1
             )
 
             async def color_callback(interaction):
@@ -1060,7 +1077,8 @@ class PixelsConverterView(discord.ui.View):
             settings_button = discord.ui.Button(
                 label="Settings",
                 style=discord.ButtonStyle.secondary,
-                emoji="<:SettingLOGO:1407071854593839239>"
+                emoji="<:SettingLOGO:1407071854593839239>",
+                row=1
             )
 
             async def settings_callback(interaction):
@@ -1075,7 +1093,8 @@ class PixelsConverterView(discord.ui.View):
             back_button = discord.ui.Button(
                 label="Back",
                 style=discord.ButtonStyle.gray,
-                emoji="<:BackLOGO:1391511633431494666>"
+                emoji="<:BackLOGO:1391511633431494666>",
+                row=1
             )
 
             async def back_callback(interaction):
@@ -1087,6 +1106,7 @@ class PixelsConverterView(discord.ui.View):
             back_button.callback = back_callback
 
             self.add_item(shrink_button)
+            self.add_item(size_button)
             self.add_item(enlarge_button)
             self.add_item(color_button)
             self.add_item(settings_button)
@@ -1270,6 +1290,99 @@ class PixelsConverterView(discord.ui.View):
             self.add_item(dithering_button)
             self.add_item(semi_transparent_button)
             self.add_item(back_button)
+
+class SizeModal(discord.ui.Modal):
+    def __init__(self, converter_data, parent_view):
+        super().__init__(title='📏 Set Image Size')
+        self.converter_data = converter_data
+        self.parent_view = parent_view
+
+        self.width_input = discord.ui.TextInput(
+            label='Width (pixels)',
+            placeholder='Enter width...',
+            required=True,
+            default=str(converter_data.image_width),
+            max_length=10
+        )
+
+        self.height_input = discord.ui.TextInput(
+            label='Height (pixels)',
+            placeholder='Enter height...',
+            required=True,
+            default=str(converter_data.image_height),
+            max_length=10
+        )
+
+        self.add_item(self.width_input)
+        self.add_item(self.height_input)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        try:
+            # Récupérer les valeurs entrées
+            new_width = int(self.width_input.value.strip())
+            new_height = int(self.height_input.value.strip())
+
+            # Valider les valeurs
+            if new_width <= 0 or new_height <= 0:
+                raise ValueError("Les dimensions doivent être positives")
+
+            if new_width > 3000 or new_height > 3000:
+                raise ValueError("Les dimensions sont trop grandes (max 3000px)")
+
+            # Récupérer les dimensions actuelles
+            current_width = self.converter_data.image_width
+            current_height = self.converter_data.image_height
+
+            # Calculer les ratios actuels
+            current_ratio = current_width / current_height
+
+            # Calculer les distances entre les nouvelles valeurs et les anciennes
+            width_diff = abs(new_width - current_width)
+            height_diff = abs(new_height - current_height)
+
+            # Déterminer quelle dimension est la plus proche de l'originale
+            if width_diff <= height_diff:
+                # Utiliser la nouvelle largeur comme référence
+                final_width = new_width
+                final_height = int(new_width / current_ratio)
+            else:
+                # Utiliser la nouvelle hauteur comme référence
+                final_height = new_height
+                final_width = int(new_height * current_ratio)
+
+            # S'assurer que les dimensions finales sont dans les limites
+            final_width = max(10, min(3000, final_width))
+            final_height = max(10, min(3000, final_height))
+
+            await interaction.response.defer()
+
+            # Appliquer les nouvelles dimensions
+            self.converter_data.image_width = final_width
+            self.converter_data.image_height = final_height
+
+            # Reprocesser l'image avec les nouvelles dimensions en gardant le dithering
+            processed_url = await self.parent_view.process_image()
+            if processed_url:
+                self.converter_data.pixelated_url = processed_url
+
+            # Mettre à jour l'embed avec les nouvelles informations
+            embed = self.parent_view.get_image_preview_embed()
+            await interaction.followup.edit_message(message_id=interaction.message.id, embed=embed, view=self.parent_view)
+
+        except ValueError as e:
+            error_embed = discord.Embed(
+                title="<:ErrorLOGO:1407071682031648850> Invalid Input",
+                description=f"Please enter valid dimensions.\n\n**Error:** {str(e)}",
+                color=discord.Color.red()
+            )
+            await interaction.response.send_message(embed=error_embed, ephemeral=True)
+        except Exception as e:
+            error_embed = discord.Embed(
+                title="<:ErrorLOGO:1407071682031648850> Error",
+                description=f"An error occurred while processing the dimensions: {str(e)}",
+                color=discord.Color.red()
+            )
+            await interaction.response.send_message(embed=error_embed, ephemeral=True)
 
 class ImageURLModal(discord.ui.Modal):
     def __init__(self, converter_data, parent_view):
