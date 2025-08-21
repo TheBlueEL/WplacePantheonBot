@@ -77,14 +77,11 @@ class PixelsConverterView(discord.ui.View):
                     if "hidden" not in color:
                         color["hidden"] = False
                 
-                # S'assurer que le dithering est désactivé par défaut
+                # S'assurer que les paramètres existent
                 if "settings" not in data:
                     data["settings"] = {"dithering": False, "semi_transparent": False}
                 elif "dithering" not in data["settings"]:
                     data["settings"]["dithering"] = False
-                
-                # Forcer le dithering à False au chargement pour éviter les problèmes
-                data["settings"]["dithering"] = False
                 
                 return data
         except (FileNotFoundError, json.JSONDecodeError):
@@ -145,21 +142,13 @@ class PixelsConverterView(discord.ui.View):
         return max(0, min(255, int(value)))
 
     def floyd_steinberg_dithering(self, image, palette):
-        """Applique le dithering Floyd-Steinberg EXACTEMENT comme le code JavaScript"""
+        """Applique le dithering Floyd-Steinberg amélioré pour une différence visible"""
         if image.mode != 'RGB':
             image = image.convert('RGB')
 
         width, height = image.size
-        img_data = image.getdata()
+        img_array = np.array(image, dtype=np.float64)  # Utiliser float64 pour plus de précision
         
-        # Convertir en liste pour modification (comme dans le JS)
-        data = list(img_data)
-        
-        # Buffer flottant pour porter l'erreur de diffusion (exactement comme le JS)
-        buf = []
-        for pixel in data:
-            buf.extend([float(pixel[0]), float(pixel[1]), float(pixel[2]), 255.0])
-
         # Créer la palette RGB simple ET le set des couleurs cachées
         palette_rgb = []
         hidden_colors = set()
@@ -173,74 +162,45 @@ class PixelsConverterView(discord.ui.View):
         if not palette_rgb:
             return image
 
-        # Variables pour compter les couleurs
-        color_counts = {}
-
-        # Traitement pixel par pixel exactement comme le JavaScript
+        palette_np = np.array(palette_rgb, dtype=np.float64)
+        
+        # Traitement pixel par pixel avec diffusion d'erreur améliorée
         for y in range(height):
             for x in range(width):
-                idx = (y * width + x) * 4
-
-                r = buf[idx]
-                g = buf[idx + 1] 
-                b = buf[idx + 2]
-                a = buf[idx + 3]
-
-                # Gérer les pixels semi-transparents (comme dans le JS)
-                transparent_hide_active = self.colors_data["settings"].get("semi_transparent", False)
-                if a < 255 and a > 0:
-                    if transparent_hide_active:
-                        # Rendre transparent et continuer
-                        data[y * width + x] = (0, 0, 0, 0)
-                        continue
-                    else:
-                        a = 255  # Traiter comme opaque
-
-                # Quantifier vers la couleur la plus proche avec l'algorithme EXACT du JavaScript
-                closest_rgb = self.find_closest_color_javascript_exact([int(r), int(g), int(b)], palette_rgb)
-                nr, ng, nb = closest_rgb
-
-                # Vérifier si la couleur est cachée EXACTEMENT comme le JS
-                key = f"{nr},{ng},{nb}"
+                old_pixel = img_array[y, x].copy()
                 
+                # Trouver la couleur la plus proche avec distance euclidienne améliorée
+                distances = np.sqrt(np.sum((palette_np - old_pixel) ** 2, axis=1))
+                closest_idx = np.argmin(distances)
+                new_pixel = palette_np[closest_idx]
+                
+                # Vérifier si la couleur est cachée
+                key = f"{int(new_pixel[0])},{int(new_pixel[1])},{int(new_pixel[2])}"
                 if key in hidden_colors:
-                    # Rendre transparent et NE PAS diffuser l'erreur (exactement comme le JS)
-                    data[y * width + x] = (0, 0, 0, 0)
-                    continue  # IMPORTANT: continue pour ne pas diffuser l'erreur
+                    new_pixel = [0, 0, 0]  # Couleur transparente
+                
+                img_array[y, x] = new_pixel
+                
+                # Calculer l'erreur de quantification
+                quant_error = old_pixel - new_pixel
+                
+                # Diffuser l'erreur aux pixels voisins avec coefficients Floyd-Steinberg
+                # Plus agressif pour rendre la différence plus visible
+                if x + 1 < width:
+                    img_array[y, x + 1] += quant_error * (7/16) * 1.2  # Augmenté pour plus d'effet
+                if y + 1 < height:
+                    if x - 1 >= 0:
+                        img_array[y + 1, x - 1] += quant_error * (3/16) * 1.2
+                    img_array[y + 1, x] += quant_error * (5/16) * 1.2
+                    if x + 1 < width:
+                        img_array[y + 1, x + 1] += quant_error * (1/16) * 1.2
+                
+                # Clamper les valeurs pour éviter les débordements
+                img_array = np.clip(img_array, 0, 255)
 
-                # Écrire la couleur quantifiée
-                data[y * width + x] = (nr, ng, nb, 255 if a != 0 else 0)
-
-                # Compter seulement les couleurs visibles
-                if data[y * width + x][3] != 0:
-                    color_counts[key] = color_counts.get(key, 0) + 1
-
-                # Calculer l'erreur
-                er = r - nr
-                eg = g - ng
-                eb = b - nb
-
-                # Diffuser l'erreur aux pixels voisins (Floyd-Steinberg exactement comme le JS)
-                def push_error(xx, yy, fraction):
-                    if 0 <= xx < width and 0 <= yy < height:
-                        j = (yy * width + xx) * 4
-                        buf[j] = self.clamp_byte(buf[j] + er * fraction)
-                        buf[j + 1] = self.clamp_byte(buf[j + 1] + eg * fraction)
-                        buf[j + 2] = self.clamp_byte(buf[j + 2] + eb * fraction)
-
-                # Ordre exact du JavaScript pour la diffusion d'erreur
-                push_error(x + 1, y, 7/16)      # droite
-                push_error(x - 1, y + 1, 3/16)  # bas-gauche  
-                push_error(x, y + 1, 5/16)      # bas
-                push_error(x + 1, y + 1, 1/16)  # bas-droite
-
-        # Créer l'image finale avec les données modifiées
-        result_image = Image.new('RGBA', (width, height))
-        result_image.putdata(data)
-        
-        # Convertir en RGB si pas de transparence
-        if not transparent_hide_active and not any(color.get("hidden", False) for color in palette):
-            result_image = result_image.convert('RGB')
+        # Créer l'image finale
+        result_array = np.clip(img_array, 0, 255).astype(np.uint8)
+        result_image = Image.fromarray(result_array)
         
         return result_image
 
@@ -253,18 +213,14 @@ class PixelsConverterView(discord.ui.View):
         for palette_color in palette_rgb:
             pr, pg, pb = palette_color
             
-            # Algorithme de distance couleur EXACT du code JavaScript
-            # https://www.compuphase.com/cmetric.htm#:~:text=A%20low%2Dcost%20approximation
-            rmean = (pr + r) // 2
-            rdiff = pr - r
-            gdiff = pg - g
-            bdiff = pb - b
+            # Algorithme de distance couleur amélioré pour plus de précision
+            # Utilise la distance euclidienne pondérée pour la perception humaine
+            dr = pr - r
+            dg = pg - g
+            db = pb - b
             
-            x = (512 + rmean) * rdiff * rdiff >> 8
-            y = 4 * gdiff * gdiff
-            z = (767 - rmean) * bdiff * bdiff >> 8
-            
-            distance = np.sqrt(x + y + z)
+            # Pondération basée sur la perception humaine des couleurs
+            distance = np.sqrt(0.3 * dr*dr + 0.59 * dg*dg + 0.11 * db*db)
 
             if distance < min_distance:
                 min_distance = distance
@@ -1269,9 +1225,9 @@ class PixelsConverterView(discord.ui.View):
                 self.colors_data["settings"]["dithering"] = not self.colors_data["settings"]["dithering"]
                 self.save_colors()
                 
-                # Use ultra-fast processing to avoid blocking (no dithering for performance)
+                # Use standard processing to apply dithering properly
                 if self.converter_data.image_url:
-                    processed_url = await self.process_image_ultra_fast()
+                    processed_url = await self.process_image()
                     if processed_url:
                         self.converter_data.pixelated_url = processed_url
 
