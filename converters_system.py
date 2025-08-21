@@ -414,7 +414,7 @@ class PixelsConverterView(discord.ui.View):
 
     def get_main_embed(self, username):
         embed = discord.Embed(
-            title="<:CreateLOGO:1407071205026168853> Wplace Convertor",
+            title="<:WplacePantheonLOGO:1407152471226187776> Wplace Convertor",
             description=f"Welcome back {username}!\n\nConvert your images to Wplace-compatible pixel art with customizable color palettes and settings.",
             color=0x5865F2
         )
@@ -427,7 +427,7 @@ class PixelsConverterView(discord.ui.View):
 
     def get_add_image_embed(self):
         embed = discord.Embed(
-            title="<:CreateLOGO:1407071205026168853> Add Image",
+            title="<:UploadLOGO:1407072005567545478> Add Image",
             description="Choose how you want to add your image for conversion:",
             color=0x00D166
         )
@@ -454,7 +454,7 @@ class PixelsConverterView(discord.ui.View):
     def get_image_preview_embed(self):
         total_pixels = self.converter_data.image_width * self.converter_data.image_height
         embed = discord.Embed(
-            title="<:CreateLOGO:1407071205026168853> Wplace Convertor",
+            title="<:WplacePantheonLOGO:1407152471226187776> Wplace Convertor",
             description=f"**Width:** {self.converter_data.image_width}px\n**Height:** {self.converter_data.image_height}px\n**Total Pixels:** {total_pixels:,}px",
             color=0x5865F2
         )
