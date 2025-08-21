@@ -100,11 +100,11 @@ class PixelsConverterView(discord.ui.View):
             color1 = np.array(color1)
         if isinstance(color2, list):
             color2 = np.array(color2)
-            
+
         # Simple euclidean distance - plus fiable
         r1, g1, b1 = np.clip(color1, 0, 255).astype(float)
         r2, g2, b2 = np.clip(color2, 0, 255).astype(float)
-        
+
         # Distance euclidienne simple
         return np.sqrt((r1 - r2)**2 + (g1 - g2)**2 + (b1 - b2)**2)
 
@@ -166,7 +166,7 @@ class PixelsConverterView(discord.ui.View):
                         buf[yy, xx, 2] = self.clamp_byte(buf[yy, xx, 2] + eb * fraction)
 
                 push_error(x + 1, y, 7/16)      # droite
-                push_error(x - 1, y + 1, 3/16)  # bas-gauche  
+                push_error(x - 1, y + 1, 3/16)  # bas-gauche
                 push_error(x, y + 1, 5/16)      # bas
                 push_error(x + 1, y + 1, 1/16)  # bas-droite
 
@@ -200,8 +200,8 @@ class PixelsConverterView(discord.ui.View):
 
                 # Vérifier si la couleur est cachée
                 is_hidden = any(
-                    color.get("hidden", False) 
-                    for color in palette 
+                    color.get("hidden", False)
+                    for color in palette
                     if color["rgb"] == list(closest_color)
                 )
 
@@ -400,10 +400,10 @@ class PixelsConverterView(discord.ui.View):
                 futures = []
                 for chunk_idx, (chunk_data, start_row) in enumerate(chunks):
                     future = loop.run_in_executor(
-                        executor, 
-                        process_image_chunk_parallel, 
-                        chunk_data, 
-                        palette, 
+                        executor,
+                        process_image_chunk_parallel,
+                        chunk_data,
+                        palette,
                         chunk_idx
                     )
                     futures.append((future, start_row, chunk_data.shape[0]))
@@ -675,7 +675,7 @@ class PixelsConverterView(discord.ui.View):
         )
 
         embed.add_field(
-            name="📐 Height", 
+            name="📐 Height",
             value=f"{self.converter_data.image_height}px",
             inline=True
         )
@@ -981,24 +981,10 @@ class PixelsConverterView(discord.ui.View):
             )
 
             async def back_callback(interaction):
-                await interaction.response.defer()
                 self.current_mode = "image_preview"
-
-                # Retraiter l'image avec les paramètres actuels si une image est présente
-                if self.converter_data.image_url:
-                    if self.colors_data["settings"]["dithering"]:
-                        # Utiliser la méthode avancée avec dithering
-                        processed_url = await self.process_image()
-                    else:
-                        # Utiliser la méthode rapide sans dithering
-                        processed_url = await self.process_image_ultra_fast()
-
-                    if processed_url:
-                        self.converter_data.pixelated_url = processed_url
-
                 embed = self.get_image_preview_embed()
                 self.update_buttons()
-                await interaction.followup.edit_message(message_id=interaction.message.id, embed=embed, view=self)
+                await interaction.response.edit_message(embed=embed, view=self)
 
             back_button.callback = back_callback
 
@@ -1156,24 +1142,10 @@ class PixelsConverterView(discord.ui.View):
             )
 
             async def back_callback(interaction):
-                await interaction.response.defer()
                 self.current_mode = "image_preview"
-
-                # Retraiter l'image avec les paramètres actuels si une image est présente
-                if self.converter_data.image_url:
-                    if self.colors_data["settings"]["dithering"]:
-                        # Utiliser la méthode avancée avec dithering
-                        processed_url = await self.process_image()
-                    else:
-                        # Utiliser la méthode rapide sans dithering
-                        processed_url = await self.process_image_ultra_fast()
-
-                    if processed_url:
-                        self.converter_data.pixelated_url = processed_url
-
                 embed = self.get_image_preview_embed()
                 self.update_buttons()
-                await interaction.followup.edit_message(message_id=interaction.message.id, embed=embed, view=self)
+                await interaction.response.edit_message(embed=embed, view=self)
 
             back_button.callback = back_callback
 
@@ -1228,6 +1200,7 @@ class ImageURLModal(discord.ui.Modal):
                     else:
                         raise Exception("Image not found")
         except Exception as e:
+            print(f"Error processing image URL: {e}") # Added print for debugging
             error_embed = discord.Embed(
                 title="<:ErrorLOGO:1407071682031648850> Image Not Found",
                 description="The provided URL does not contain a valid image or is not accessible.",
@@ -1267,7 +1240,6 @@ class ConvertersCommand(commands.Cog):
                             # Delete local file after successful sync
                             try:
                                 os.remove(file_path)
-                                print(f"<:SucessLOGO:1407071637840592977> Fichier local supprimé: {file_path}")
                             except Exception as e:
                                 print(f"<:ErrorLOGO:1407071682031648850> Erreur lors de la suppression locale: {e}")
 
@@ -1327,7 +1299,7 @@ class ConvertersCommand(commands.Cog):
                             except Exception as e:
                                 print(f"Interaction error: {e}")
                                 return
-                            
+
                             # Get real image dimensions
                             try:
                                 async with aiohttp.ClientSession() as session:
@@ -1352,7 +1324,7 @@ class ConvertersCommand(commands.Cog):
 
                                             embed = manager.get_image_preview_embed()
                                             manager.update_buttons()
-                                            
+
                                             # Use followup if interaction already responded
                                             if interaction.response.is_done():
                                                 await interaction.followup.edit_message(message_id=interaction.message.id, embed=embed, view=manager)
@@ -1377,7 +1349,7 @@ class ConvertersCommand(commands.Cog):
 
                                 embed = manager.get_image_preview_embed()
                                 manager.update_buttons()
-                                
+
                                 # Use followup if interaction already responded
                                 if interaction.response.is_done():
                                     await interaction.followup.edit_message(message_id=interaction.message.id, embed=embed, view=manager)
