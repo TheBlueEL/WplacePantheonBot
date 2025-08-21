@@ -405,7 +405,7 @@
     }
   ],
   "settings": {
-    "dithering": false,
+    "dithering": true,
     "semi_transparent": false
   },
   "user_data": {}
