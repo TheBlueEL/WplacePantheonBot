@@ -1,3 +1,4 @@
+
 import discord
 from discord.ext import commands
 from discord import app_commands
@@ -77,24 +78,55 @@ class PixelsConverterView(discord.ui.View):
                     if "hidden" not in color:
                         color["hidden"] = False
                 
-                # S'assurer que les paramètres existent
+                # S'assurer que les paramètres globaux existent
                 if "settings" not in data:
-                    data["settings"] = {"dithering": False, "semi_transparent": False}
-                elif "dithering" not in data["settings"]:
-                    data["settings"]["dithering"] = False
+                    data["settings"] = {"semi_transparent": False}
+                elif "semi_transparent" not in data["settings"]:
+                    data["settings"]["semi_transparent"] = False
+                
+                # S'assurer que user_data existe
+                if "user_data" not in data:
+                    data["user_data"] = {}
+                
+                # Initialiser les données utilisateur si pas présentes
+                user_str = str(self.user_id)
+                if user_str not in data["user_data"]:
+                    data["user_data"][user_str] = {
+                        "dithering": False  # Par défaut désactivé
+                    }
+                elif "dithering" not in data["user_data"][user_str]:
+                    data["user_data"][user_str]["dithering"] = False
                 
                 return data
         except (FileNotFoundError, json.JSONDecodeError):
             # Return default data if file doesn't exist
             return {
                 "colors": [],
-                "settings": {"dithering": False, "semi_transparent": False},
-                "user_data": {}
+                "settings": {"semi_transparent": False},
+                "user_data": {
+                    str(self.user_id): {"dithering": False}
+                }
             }
 
     def save_colors(self):
         with open('converters_data.json', 'w') as f:
             json.dump(self.colors_data, f, indent=2)
+
+    def get_user_dithering_setting(self):
+        """Récupère le paramètre de dithering pour cet utilisateur"""
+        user_str = str(self.user_id)
+        return self.colors_data.get("user_data", {}).get(user_str, {}).get("dithering", False)
+
+    def set_user_dithering_setting(self, enabled):
+        """Définit le paramètre de dithering pour cet utilisateur"""
+        user_str = str(self.user_id)
+        if "user_data" not in self.colors_data:
+            self.colors_data["user_data"] = {}
+        if user_str not in self.colors_data["user_data"]:
+            self.colors_data["user_data"][user_str] = {}
+        
+        self.colors_data["user_data"][user_str]["dithering"] = enabled
+        self.save_colors()
 
     def get_active_colors(self):
         """Récupère les couleurs activées dans la palette"""
@@ -134,69 +166,57 @@ class PixelsConverterView(discord.ui.View):
         return closest_color
 
     def clamp_byte(self, value):
-        """Limite la valeur entre 0 et 255"""
-        return max(0, min(255, int(value)))
-
-    def clamp_byte(self, value):
         """Limite la valeur entre 0 et 255 - fonction exacte du JavaScript"""
         return max(0, min(255, int(value)))
 
-    def floyd_steinberg_dithering(self, image, palette):
-        """Applique le dithering Floyd-Steinberg amélioré pour une différence visible"""
+    def apply_dithering_javascript(self, image, palette):
+        """Applique le dithering exactement comme dans le code JavaScript fourni"""
         if image.mode != 'RGB':
             image = image.convert('RGB')
 
         width, height = image.size
-        img_array = np.array(image, dtype=np.float64)  # Utiliser float64 pour plus de précision
+        img_array = np.array(image, dtype=np.float64)
         
-        # Créer la palette RGB simple ET le set des couleurs cachées
-        palette_rgb = []
-        hidden_colors = set()
+        # Palette de couleurs du JavaScript
+        js_palette = [
+            [0,0,0],[60,60,60],[120,120,120],[170,170,170],[210,210,210],[255,255,255],
+            [96,0,24],[165,14,30],[237,28,36],[250,128,114],[228,92,26],[255,127,39],[246,170,9],
+            [249,221,59],[255,250,188],[156,132,49],[197,173,49],[232,212,95],[74,107,58],[90,148,74],[132,197,115],
+            [14,185,104],[19,230,123],[135,255,94],[12,129,110],[16,174,166],[19,225,190],[15,121,159],[96,247,242],
+            [187,250,242],[40,80,158],[64,147,228],[125,199,255],[77,49,184],[107,80,246],[153,177,251],
+            [74,66,132],[122,113,196],[181,174,241],[170,56,185],[224,159,249],
+            [203,0,122],[236,31,128],[243,141,169],[155,82,73],[209,128,120],[250,182,164],
+            [104,70,52],[149,104,42],[219,164,99],[123,99,82],[156,132,107],[214,181,148],
+            [209,128,81],[248,178,119],[255,197,165],[109,100,63],[148,140,107],[205,197,158],
+            [51,57,65],[109,117,141],[179,185,209]
+        ]
         
-        for color in palette:
-            palette_rgb.append(color["rgb"])
-            if color.get("hidden", False):
-                key = f"{color['rgb'][0]},{color['rgb'][1]},{color['rgb'][2]}"
-                hidden_colors.add(key)
+        palette_np = np.array(js_palette, dtype=np.float64)
         
-        if not palette_rgb:
-            return image
-
-        palette_np = np.array(palette_rgb, dtype=np.float64)
-        
-        # Traitement pixel par pixel avec diffusion d'erreur améliorée
+        # Algorithme Floyd-Steinberg comme dans le JavaScript
         for y in range(height):
             for x in range(width):
                 old_pixel = img_array[y, x].copy()
                 
-                # Trouver la couleur la plus proche avec distance euclidienne améliorée
+                # Trouver la couleur la plus proche
                 distances = np.sqrt(np.sum((palette_np - old_pixel) ** 2, axis=1))
                 closest_idx = np.argmin(distances)
                 new_pixel = palette_np[closest_idx]
-                
-                # Vérifier si la couleur est cachée
-                key = f"{int(new_pixel[0])},{int(new_pixel[1])},{int(new_pixel[2])}"
-                if key in hidden_colors:
-                    new_pixel = [0, 0, 0]  # Couleur transparente
                 
                 img_array[y, x] = new_pixel
                 
                 # Calculer l'erreur de quantification
                 quant_error = old_pixel - new_pixel
                 
-                # Diffuser l'erreur aux pixels voisins avec coefficients Floyd-Steinberg
-                # Plus agressif pour rendre la différence plus visible
+                # Diffuser l'erreur aux pixels voisins (Floyd-Steinberg)
                 if x + 1 < width:
-                    img_array[y, x + 1] += quant_error * (7/16) * 1.2  # Augmenté pour plus d'effet
+                    img_array[y, x + 1] = np.clip(img_array[y, x + 1] + quant_error * 7/16, 0, 255)
                 if y + 1 < height:
                     if x - 1 >= 0:
-                        img_array[y + 1, x - 1] += quant_error * (3/16) * 1.2
-                    img_array[y + 1, x] += quant_error * (5/16) * 1.2
+                        img_array[y + 1, x - 1] = np.clip(img_array[y + 1, x - 1] + quant_error * 3/16, 0, 255)
+                    img_array[y + 1, x] = np.clip(img_array[y + 1, x] + quant_error * 5/16, 0, 255)
                     if x + 1 < width:
-                        img_array[y + 1, x + 1] += quant_error * (1/16) * 1.2
-                
-                # Clamper les valeurs pour éviter les débordements
-                img_array = np.clip(img_array, 0, 255)
+                        img_array[y + 1, x + 1] = np.clip(img_array[y + 1, x + 1] + quant_error * 1/16, 0, 255)
 
         # Créer l'image finale
         result_array = np.clip(img_array, 0, 255).astype(np.uint8)
@@ -227,10 +247,6 @@ class PixelsConverterView(discord.ui.View):
                 closest_color = palette_color
 
         return closest_color
-
-    def find_closest_color_dithering(self, pixel_color, palette_rgb):
-        """Alias pour la compatibilité - utilise l'algorithme JavaScript exact"""
-        return self.find_closest_color_javascript_exact(pixel_color, palette_rgb)
 
     def quantize_colors_advanced(self, image, palette):
         """Réduit l'image aux couleurs de la palette définie EXACTEMENT comme le JavaScript (sans dithering)"""
@@ -689,10 +705,10 @@ class PixelsConverterView(discord.ui.View):
                 self.save_colors()
                 active_colors = self.get_active_colors()
 
-            # Appliquer la quantification avec ou sans dithering selon les paramètres
+            # Appliquer la quantification avec ou sans dithering selon les paramètres utilisateur
             if active_colors:
-                if self.colors_data["settings"]["dithering"]:
-                    processed = self.floyd_steinberg_dithering(image, active_colors)
+                if self.get_user_dithering_setting():
+                    processed = self.apply_dithering_javascript(image, active_colors)
                 else:
                     processed = self.quantize_colors_advanced(image, active_colors)
             else:
@@ -797,7 +813,7 @@ class PixelsConverterView(discord.ui.View):
 
         # Informations sur le traitement sur une nouvelle ligne
         active_colors = self.get_active_colors()
-        dithering_status = "ON" if self.colors_data["settings"]["dithering"] else "OFF"
+        dithering_status = "ON" if self.get_user_dithering_setting() else "OFF"
 
         embed.add_field(
             name="🎨 Active Colors",
@@ -855,7 +871,7 @@ class PixelsConverterView(discord.ui.View):
             color=discord.Color.orange()
         )
 
-        dithering_status = "ON" if self.colors_data["settings"]["dithering"] else "OFF"
+        dithering_status = "ON" if self.get_user_dithering_setting() else "OFF"
         semi_transparent_status = "ON" if self.colors_data["settings"]["semi_transparent"] else "OFF"
 
         embed.add_field(
@@ -866,7 +882,7 @@ class PixelsConverterView(discord.ui.View):
 
         embed.add_field(
             name="Dithering Info",
-            value="Adds noise to create gradient effects with limited colors (Floyd-Steinberg algorithm)",
+            value="Adds noise to create gradient effects with limited colors (Floyd-Steinberg algorithm from JavaScript)",
             inline=False
         )
 
@@ -1025,32 +1041,6 @@ class PixelsConverterView(discord.ui.View):
 
             enlarge_button.callback = enlarge_callback
 
-            # Process button REMOVED as per user request
-            # process_button = discord.ui.Button(
-            #     label="Process Image",
-            #     style=discord.ButtonStyle.success,
-            #     emoji="⚡"
-            # )
-
-            # async def process_callback(interaction):
-            #     await interaction.response.defer()
-
-            #     # Traiter l'image
-            #     processed_url = await self.process_image()
-
-            #     if processed_url:
-            #         embed = self.get_image_preview_embed()
-            #         await interaction.followup.edit_message(message_id=interaction.message.id, embed=embed, view=self)
-            #     else:
-            #         error_embed = discord.Embed(
-            #             title="<:ErrorLOGO:1407071682031648850> Processing Failed",
-            #             description="Failed to process the image. Please try again.",
-            #             color=discord.Color.red()
-            #         )
-            #         await interaction.followup.send(embed=error_embed, ephemeral=True)
-
-            # process_button.callback = process_callback
-
             # Color button
             color_button = discord.ui.Button(
                 label="Colors",
@@ -1099,7 +1089,6 @@ class PixelsConverterView(discord.ui.View):
 
             self.add_item(shrink_button)
             self.add_item(enlarge_button)
-            # self.add_item(process_button) # Removed
             self.add_item(color_button)
             self.add_item(settings_button)
             self.add_item(back_button)
@@ -1211,21 +1200,22 @@ class PixelsConverterView(discord.ui.View):
                 self.add_item(button)
 
         elif self.current_mode == "settings":
-            # Dithering button (default OFF/red)
+            # Dithering button (default OFF/red) - Par utilisateur
+            user_dithering = self.get_user_dithering_setting()
             dithering_button = discord.ui.Button(
                 label="Dithering",
-                style=discord.ButtonStyle.success if self.colors_data["settings"]["dithering"] else discord.ButtonStyle.danger,
-                emoji="<:ONLOGO:1391530620366094440>" if self.colors_data["settings"]["dithering"] else "<:OFFLOGO:1391535388065271859>"
+                style=discord.ButtonStyle.success if user_dithering else discord.ButtonStyle.danger,
+                emoji="<:ONLOGO:1391530620366094440>" if user_dithering else "<:OFFLOGO:1391535388065271859>"
             )
 
             async def dithering_callback(interaction):
                 await interaction.response.defer()
                 
-                # Toggle dithering
-                self.colors_data["settings"]["dithering"] = not self.colors_data["settings"]["dithering"]
-                self.save_colors()
+                # Toggle dithering pour cet utilisateur
+                new_dithering_state = not self.get_user_dithering_setting()
+                self.set_user_dithering_setting(new_dithering_state)
                 
-                # Use standard processing to apply dithering properly
+                # Reprocesser l'image en arrière-plan avec le nouveau paramètre
                 if self.converter_data.image_url:
                     processed_url = await self.process_image()
                     if processed_url:
