@@ -59,6 +59,12 @@ async def on_ready():
     except Exception as e:
         print(f'Failed to load autorank_system: {e}')
 
+    try:
+        await client.load_extension('converters_system')
+        print('Converters system loaded!')
+    except Exception as e:
+        print(f'Failed to load converters_system: {e}')
+
     # Setup du système de tickets
     try:
         from ticket_bot import setup_ticket_system, setup_persistent_views
