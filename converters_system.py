@@ -99,24 +99,27 @@ class PixelsConverterView(discord.ui.View):
         return Image.fromarray(np.clip(img_array, 0, 255).astype(np.uint8))
 
     def quantize_colors(self, image, palette):
-        """Réduit l'image aux couleurs de la palette"""
+        """Réduit l'image aux couleurs de la palette définie"""
         if not palette:
             return image
+            
+        # Convertir l'image en mode RGB si nécessaire
+        if image.mode != 'RGB':
+            image = image.convert('RGB')
             
         img_array = np.array(image)
         height, width, channels = img_array.shape
         
+        # Créer une nouvelle image avec les couleurs quantifiées
+        quantized_array = np.zeros_like(img_array)
+        
         for y in range(height):
             for x in range(width):
-                if channels == 4:  # RGBA
-                    pixel_color = img_array[y, x][:3]  # Ignore alpha
-                else:
-                    pixel_color = img_array[y, x]
-                
+                pixel_color = img_array[y, x]
                 closest_color = self.find_closest_color(pixel_color, palette)
-                img_array[y, x][:3] = closest_color
+                quantized_array[y, x] = closest_color
         
-        return Image.fromarray(img_array)
+        return Image.fromarray(quantized_array.astype(np.uint8))
 
     def pixelate_image(self, image, pixel_size):
         """Pixelise l'image en réduisant puis agrandissant"""
@@ -160,27 +163,38 @@ class PixelsConverterView(discord.ui.View):
                     background = Image.new('RGB', image.size, (255, 255, 255))
                     if image.mode == 'P':
                         image = image.convert('RGBA')
-                    background.paste(image, mask=image.split()[-1] if image.mode == 'RGBA' else None)
+                    if image.mode == 'RGBA':
+                        background.paste(image, mask=image.split()[-1])
+                    else:
+                        background.paste(image)
                     image = background
                 else:
                     image = image.convert('RGBA')
             else:
                 image = image.convert('RGB')
             
-            # Pixeliser l'image
-            pixelated = self.pixelate_image(image, self.converter_data.pixel_scale)
-            
             # Obtenir la palette de couleurs actives
             active_colors = self.get_active_colors()
             
+            # Si aucune couleur n'est activée, utiliser toutes les couleurs gratuites par défaut
+            if not active_colors:
+                for color in self.colors_data["colors"]:
+                    if not color["premium"]:
+                        color["enabled"] = True
+                self.save_colors()
+                active_colors = self.get_active_colors()
+            
+            # Appliquer d'abord la quantification des couleurs à l'image originale
             if active_colors:
-                # Appliquer la quantification des couleurs
                 if self.colors_data["settings"]["dithering"]:
-                    processed = self.floyd_steinberg_dithering(pixelated, active_colors)
+                    color_quantized = self.floyd_steinberg_dithering(image, active_colors)
                 else:
-                    processed = self.quantize_colors(pixelated, active_colors)
+                    color_quantized = self.quantize_colors(image, active_colors)
             else:
-                processed = pixelated
+                color_quantized = image
+            
+            # Puis pixeliser l'image avec les couleurs quantifiées
+            processed = self.pixelate_image(color_quantized, self.converter_data.pixel_scale)
             
             # Sauvegarder l'image traitée
             os.makedirs('images', exist_ok=True)
