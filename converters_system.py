@@ -676,7 +676,7 @@ class ConvertersCommand(commands.Cog):
 
         self.active_managers[interaction.user.id] = view
 
-        await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
+        await interaction.response.send_message(embed=embed, view=view, ephemeral=False)
 
 async def setup(bot):
     await bot.add_cog(ConvertersCommand(bot))
