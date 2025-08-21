@@ -249,6 +249,30 @@ class PixelsConverterView(discord.ui.View):
 
         return closest_color
 
+    def process_image_vectorized_fast(self, image_array, palette):
+        """Version vectorisée ultra-rapide utilisant des opérations numpy optimisées"""
+        try:
+            height, width, channels = image_array.shape
+            reshaped = image_array.reshape(-1, 3).astype(np.float32)
+            palette_np = np.array(palette, dtype=np.float32)
+
+            # Calcul vectorisé des distances pour tous les pixels à la fois
+            # Utilise broadcasting pour calculer les distances entre chaque pixel et chaque couleur
+            distances = np.sqrt(np.sum((reshaped[:, np.newaxis, :] - palette_np[np.newaxis, :, :]) ** 2, axis=2))
+
+            # Trouve l'index de la couleur la plus proche pour chaque pixel
+            closest_indices = np.argmin(distances, axis=1)
+
+            # Applique les couleurs correspondantes
+            processed = palette_np[closest_indices]
+
+            return processed.reshape(height, width, channels).astype(np.uint8)
+
+        except Exception as e:
+            print(f"Erreur vectorisation: {e}")
+            # Fallback vers la méthode chunk
+            return None
+
     async def process_image_ultra_fast(self):
         """Version ultra rapide du traitement d'image avec traitement parallèle par chunks"""
         if not self.converter_data.image_url:
@@ -288,17 +312,15 @@ class PixelsConverterView(discord.ui.View):
             palette = self.create_default_palette()
             img_array = np.array(image, dtype=np.uint8)
 
-            # Appliquer le dithering si activé
-            if self.colors_data["settings"].get("dithering", False):
-                processed_image = self.floyd_steinberg_dithering(Image.fromarray(img_array), palette)
-            else:
-                # Essayer d'abord la méthode vectorisée ultra-rapide
-                processed_array = process_image_vectorized_fast(img_array, palette)
+            # Essayer d'abord la méthode vectorisée ultra-rapide
+            processed_array = self.process_image_vectorized_fast(img_array, palette)
 
-                if processed_array is None:
-                    # Fallback vers le traitement parallèle par chunks
-                    processed_array = await self.process_image_parallel_chunks(img_array, palette)
-                processed_image = Image.fromarray(processed_array.astype(np.uint8))
+            if processed_array is None:
+                # Fallback vers le traitement parallèle par chunks
+                processed_array = await self.process_image_parallel_chunks(img_array, palette)
+
+            # Créer l'image finale
+            processed_image = Image.fromarray(processed_array.astype(np.uint8))
 
             # Sauvegarder et synchroniser
             os.makedirs('images', exist_ok=True)
@@ -327,60 +349,6 @@ class PixelsConverterView(discord.ui.View):
             print(f"Erreur lors du traitement ultra rapide de l'image: {e}")
             return None
 
-    def process_image_chunk_parallel(self, chunk_data, palette, chunk_index):
-        """Traite un chunk d'image en parallèle - fonction globale pour multiprocessing"""
-        try:
-            chunk_pixels = chunk_data.reshape(-1, 3)
-            processed_chunk = np.zeros_like(chunk_pixels)
-
-            palette_np = np.array(palette, dtype=np.int32)
-
-            for i, pixel in enumerate(chunk_pixels):
-                pixel_safe = np.clip(pixel, 0, 255).astype(np.int32)
-                min_distance = float('inf')
-                closest_color = palette_np[0]
-
-                for palette_color in palette_np:
-                    # Distance euclidienne simple mais rapide
-                    diff = pixel_safe - palette_color
-                    distance = np.sqrt(np.sum(diff * diff))
-
-                    if distance < min_distance:
-                        min_distance = distance
-                        closest_color = palette_color
-
-                processed_chunk[i] = closest_color
-
-            return chunk_index, processed_chunk.reshape(chunk_data.shape)
-
-        except Exception as e:
-            print(f"Erreur dans le chunk {chunk_index}: {e}")
-            return chunk_index, chunk_data  # Retourne le chunk original en cas d'erreur
-
-    def process_image_vectorized_fast(image_array, palette):
-        """Version vectorisée ultra-rapide utilisant des opérations numpy optimisées"""
-        try:
-            height, width, channels = image_array.shape
-            reshaped = image_array.reshape(-1, 3).astype(np.float32)
-            palette_np = np.array(palette, dtype=np.float32)
-
-            # Calcul vectorisé des distances pour tous les pixels à la fois
-            # Utilise broadcasting pour calculer les distances entre chaque pixel et chaque couleur
-            distances = np.sqrt(np.sum((reshaped[:, np.newaxis, :] - palette_np[np.newaxis, :, :]) ** 2, axis=2))
-
-            # Trouve l'index de la couleur la plus proche pour chaque pixel
-            closest_indices = np.argmin(distances, axis=1)
-
-            # Applique les couleurs correspondantes
-            processed = palette_np[closest_indices]
-
-            return processed.reshape(height, width, channels).astype(np.uint8)
-
-        except Exception as e:
-            print(f"Erreur vectorisation: {e}")
-            # Fallback vers la méthode chunk
-            return None
-
     async def process_image_parallel_chunks(self, img_array, palette):
         """Traite l'image en parallèle par chunks pour une vitesse maximale"""
         try:
@@ -406,7 +374,7 @@ class PixelsConverterView(discord.ui.View):
                 for chunk_idx, (chunk_data, start_row) in enumerate(chunks):
                     future = loop.run_in_executor(
                         executor, 
-                        self.process_image_chunk_parallel, 
+                        process_image_chunk_parallel, 
                         chunk_data, 
                         palette, 
                         chunk_idx
@@ -987,13 +955,20 @@ class PixelsConverterView(discord.ui.View):
 
             async def back_callback(interaction):
                 await interaction.response.defer()
-
-                # Reprocesser l'image avec les nouveaux paramètres
-                processed_url = await self.process_image_ultra_fast()
-                if processed_url:
-                    self.converter_data.pixelated_url = processed_url
-
                 self.current_mode = "image_preview"
+
+                # Retraiter l'image avec les paramètres actuels si une image est présente
+                if self.converter_data.image_url:
+                    if self.colors_data["settings"]["dithering"]:
+                        # Utiliser la méthode avancée avec dithering
+                        processed_url = await self.process_image()
+                    else:
+                        # Utiliser la méthode rapide sans dithering
+                        processed_url = await self.process_image_ultra_fast()
+
+                    if processed_url:
+                        self.converter_data.pixelated_url = processed_url
+
                 embed = self.get_image_preview_embed()
                 self.update_buttons()
                 await interaction.followup.edit_message(message_id=interaction.message.id, embed=embed, view=self)
@@ -1155,13 +1130,20 @@ class PixelsConverterView(discord.ui.View):
 
             async def back_callback(interaction):
                 await interaction.response.defer()
-
-                # Reprocesser l'image avec les nouveaux paramètres
-                processed_url = await self.process_image_ultra_fast()
-                if processed_url:
-                    self.converter_data.pixelated_url = processed_url
-
                 self.current_mode = "image_preview"
+
+                # Retraiter l'image avec les paramètres actuels si une image est présente
+                if self.converter_data.image_url:
+                    if self.colors_data["settings"]["dithering"]:
+                        # Utiliser la méthode avancée avec dithering
+                        processed_url = await self.process_image()
+                    else:
+                        # Utiliser la méthode rapide sans dithering
+                        processed_url = await self.process_image_ultra_fast()
+
+                    if processed_url:
+                        self.converter_data.pixelated_url = processed_url
+
                 embed = self.get_image_preview_embed()
                 self.update_buttons()
                 await interaction.followup.edit_message(message_id=interaction.message.id, embed=embed, view=self)
@@ -1263,7 +1245,6 @@ class ConvertersCommand(commands.Cog):
                                 print(f"<:ErrorLOGO:1407071682031648850> Erreur lors de la suppression locale: {e}")
 
                             # Return GitHub raw URL from public pictures repo
-                            filename = os.path.basename(file_path)
                             github_url = f"https://raw.githubusercontent.com/TheBlueEL/pictures/main/{filename}"
                             return github_url
                         else:
