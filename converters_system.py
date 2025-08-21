@@ -303,6 +303,229 @@ def process_image_vectorized_fast(image_array, palette):
         # Fallback vers la méthode chunk
         return None
 
+class PixelsConverterView(discord.ui.View):
+    def __init__(self, bot, user_id):
+        super().__init__(timeout=300)
+        self.bot = bot
+        self.user_id = user_id
+        self.converter_data = ConverterData()
+        self.colors_data = self.load_colors()
+        self.current_mode = "main"  # main, add_image, waiting_for_image, image_preview, color_selection, settings
+        self.waiting_for_image = False
+        self.color_page = 0
+        self.colors_per_page = 8  # 2 rows of 4
+
+    def load_colors(self):
+        try:
+            with open('converters_data.json', 'r') as f:
+                data = json.load(f)
+                # Ajouter le support des couleurs cachées si pas présent
+                for color in data.get("colors", []):
+                    if "hidden" not in color:
+                        color["hidden"] = False
+                return data
+        except (FileNotFoundError, json.JSONDecodeError):
+            # Return default data if file doesn't exist
+            return {
+                "colors": [],
+                "settings": {"dithering": False, "semi_transparent": False},
+                "user_data": {}
+            }
+
+    def save_colors(self):
+        with open('converters_data.json', 'w') as f:
+            json.dump(self.colors_data, f, indent=2)
+
+    def get_active_colors(self):
+        """Récupère les couleurs activées dans la palette"""
+        return [c for c in self.colors_data["colors"] if c.get("enabled", False)]
+
+    def rgb_distance_advanced(self, color1, color2):
+        """Calcule la distance entre deux couleurs RGB avec l'algorithme optimisé et sécurisé"""
+        r1, g1, b1 = np.clip(color1, 0, 255).astype(np.int32)
+        r2, g2, b2 = np.clip(color2, 0, 255).astype(np.int32)
+
+        # Algorithme de distance couleur optimisé avec protection contre overflow
+        rmean = (r1 + r2) // 2
+        rdiff = r1 - r2
+        gdiff = g1 - g2
+        bdiff = b1 - b2
+
+        # Calculs sécurisés avec limitation des valeurs
+        x = np.clip(((512 + rmean) * rdiff * rdiff) >> 8, 0, 2**31-1)
+        y = np.clip(4 * gdiff * gdiff, 0, 2**31-1)
+        z = np.clip(((767 - rmean) * bdiff * bdiff) >> 8, 0, 2**31-1)
+
+        return np.sqrt(np.clip(x + y + z, 0, 2**63-1))
+
+    def find_closest_color(self, pixel_color, palette):
+        """Trouve la couleur la plus proche dans la palette"""
+        min_distance = float('inf')
+        closest_color = palette[0]["rgb"]
+
+        for color in palette:
+            # Ignorer les couleurs cachées
+            color_key = f"{color['rgb'][0]},{color['rgb'][1]},{color['rgb'][2]}"
+            if color.get("hidden", False):
+                continue
+
+            distance = self.rgb_distance_advanced(pixel_color, color["rgb"])
+            if distance < min_distance:
+                min_distance = distance
+                closest_color = color["rgb"]
+
+        return closest_color
+
+    def clamp_byte(self, value):
+        """Limite la valeur entre 0 et 255"""
+        return max(0, min(255, int(value)))
+
+    def floyd_steinberg_dithering(self, image, palette):
+        """Applique le dithering Floyd-Steinberg avancé basé sur le script JS"""
+        if image.mode != 'RGB':
+            image = image.convert('RGB')
+
+        width, height = image.size
+        img_array = np.array(image, dtype=float)
+
+        # Buffer flottant pour porter l'erreur de diffusion
+        buf = img_array.copy()
+
+        for y in range(height):
+            for x in range(width):
+                # Pixel actuel
+                r, g, b = buf[y, x]
+
+                # Quantifier vers la couleur la plus proche de la palette
+                closest_rgb = self.find_closest_color([int(r), int(g), int(b)], palette)
+                nr, ng, nb = closest_rgb
+
+                # Écrire la couleur quantifiée
+                img_array[y, x] = [nr, ng, nb]
+
+                # Calculer l'erreur
+                er = r - nr
+                eg = g - ng
+                eb = b - nb
+
+                # Diffuser l'erreur aux pixels voisins (Floyd-Steinberg)
+                def push_error(xx, yy, fraction):
+                    if 0 <= xx < width and 0 <= yy < height:
+                        buf[yy, xx, 0] = self.clamp_byte(buf[yy, xx, 0] + er * fraction)
+                        buf[yy, xx, 1] = self.clamp_byte(buf[yy, xx, 1] + eg * fraction)
+                        buf[yy, xx, 2] = self.clamp_byte(buf[yy, xx, 2] + eb * fraction)
+
+                push_error(x + 1, y, 7/16)      # droite
+                push_error(x - 1, y + 1, 3/16)  # bas-gauche  
+                push_error(x, y + 1, 5/16)      # bas
+                push_error(x + 1, y + 1, 1/16)  # bas-droite
+
+        return Image.fromarray(np.clip(img_array, 0, 255).astype(np.uint8))
+
+    def quantize_colors_advanced(self, image, palette):
+        """Réduit l'image aux couleurs de la palette définie avec l'algorithme avancé"""
+        if not palette:
+            return image
+
+        # Convertir l'image en mode RGB si nécessaire
+        if image.mode != 'RGB':
+            image = image.convert('RGB')
+
+        img_array = np.array(image)
+        height, width, channels = img_array.shape
+
+        # Créer une nouvelle image avec les couleurs quantifiées
+        quantized_array = np.zeros_like(img_array)
+
+        # Gérer la transparence
+        transparent_hide_active = self.colors_data["settings"].get("semi_transparent", False)
+
+        for y in range(height):
+            for x in range(width):
+                pixel_color = img_array[y, x]
+
+                # Trouver la couleur la plus proche
+                closest_color = self.find_closest_color(pixel_color, palette)
+                color_key = f"{closest_color[0]},{closest_color[1]},{closest_color[2]}"
+
+                # Vérifier si la couleur est cachée
+                is_hidden = any(
+                    color.get("hidden", False) 
+                    for color in palette 
+                    if color["rgb"] == list(closest_color)
+                )
+
+                if is_hidden:
+                    # Rendre transparent si caché
+                    quantized_array[y, x] = [0, 0, 0]  # Sera rendu transparent plus tard
+                else:
+                    quantized_array[y, x] = closest_color
+
+        return Image.fromarray(quantized_array.astype(np.uint8))
+
+    def pixelate_image(self, image, pixel_size):
+        """Pixelise l'image en réduisant puis agrandissant"""
+        # Obtenir la taille originale
+        original_size = image.size
+
+        # Réduire l'image
+        small_size = (original_size[0] // pixel_size, original_size[1] // pixel_size)
+        if small_size[0] < 1:
+            small_size = (1, small_size[1])
+        if small_size[1] < 1:
+            small_size = (small_size[0], 1)
+
+        small_image = image.resize(small_size, Image.Resampling.NEAREST)
+
+        # Agrandir l'image avec des pixels nets
+        pixelated = small_image.resize(original_size, Image.Resampling.NEAREST)
+
+        return pixelated
+
+    def create_default_palette(self):
+        """Crée la palette par défaut à partir du JSON"""
+        default_palette = [
+            [0,0,0], [60,60,60], [120,120,120], [170,170,170], [210,210,210], [255,255,255],
+            [96,0,24], [165,14,30], [237,28,36], [250,128,114], [228,92,26], [255,127,39], [246,170,9],
+            [249,221,59], [255,250,188], [156,132,49], [197,173,49], [232,212,95], [74,107,58], [90,148,74], [132,197,115],
+            [14,185,104], [19,230,123], [135,255,94], [12,129,110], [16,174,166], [19,225,190], [15,121,159], [96,247,242],
+            [187,250,242], [40,80,158], [64,147,228], [125,199,255], [77,49,184], [107,80,246], [153,177,251],
+            [74,66,132], [122,113,196], [181,174,241], [170,56,185], [224,159,249],
+            [203,0,122], [236,31,128], [243,141,169], [155,82,73], [209,128,120], [250,182,164],
+            [104,70,52], [149,104,42], [219,164,99], [123,99,82], [156,132,107], [214,181,148],
+            [209,128,81], [248,178,119], [255,197,165], [109,100,63], [148,140,107], [205,197,158],
+            [51,57,65], [109,117,141], [179,185,209]
+        ]
+        return default_palette
+
+    def find_closest_color_fast(self, pixel_rgb, palette):
+        """Version rapide et sécurisée de la recherche de couleur la plus proche"""
+        min_distance = float('inf')
+        closest_color = [0, 0, 0]
+
+        r, g, b = np.clip(pixel_rgb, 0, 255).astype(np.int32)
+
+        for palette_color in palette:
+            pr, pg, pb = np.clip(palette_color, 0, 255).astype(np.int32)
+
+            # Algorithme optimisé de distance couleur avec protection overflow
+            rmean = (r + pr) // 2
+            rdiff = r - pr
+            gdiff = g - pg
+            bdiff = b - pb
+
+            x = np.clip(((512 + rmean) * rdiff * rdiff) >> 8, 0, 2**31-1)
+            y = np.clip(4 * gdiff * gdiff, 0, 2**31-1)
+            z = np.clip(((767 - rmean) * bdiff * bdiff) >> 8, 0, 2**31-1)
+
+            distance = np.sqrt(np.clip(x + y + z, 0, 2**63-1))
+
+            if distance < min_distance:
+                min_distance = distance
+                closest_color = palette_color
+
+        return closest_color
+
     async def process_image_ultra_fast(self):
         """Version ultra rapide du traitement d'image avec traitement parallèle par chunks"""
         if not self.converter_data.image_url:
