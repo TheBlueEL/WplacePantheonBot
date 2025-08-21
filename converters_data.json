@@ -408,5 +408,9 @@
     "dithering": false,
     "semi_transparent": false
   },
-  "user_data": {}
+  "user_data": {
+    "723144097015136296": {
+      "dithering": true
+    }
+  }
 }
