@@ -300,10 +300,27 @@ class PixelsConverterView(discord.ui.View):
 
             settings_button.callback = settings_callback
 
+            # Back button
+            back_button = discord.ui.Button(
+                label="Back",
+                style=discord.ButtonStyle.gray,
+                emoji="<:BackLOGO:1391511633431494666>"
+            )
+
+            async def back_callback(interaction):
+                self.current_mode = "main"
+                username = f"@{interaction.user.display_name}"
+                embed = self.get_main_embed(username)
+                self.update_buttons()
+                await interaction.response.edit_message(embed=embed, view=self)
+
+            back_button.callback = back_callback
+
             self.add_item(shrink_button)
             self.add_item(enlarge_button)
             self.add_item(color_button)
             self.add_item(settings_button)
+            self.add_item(back_button)
 
         elif self.current_mode == "color_selection":
             # Navigation row
@@ -511,12 +528,16 @@ class ConvertersCommand(commands.Cog):
         self.active_managers = {}
 
     async def download_image(self, image_url):
-        """Download image from URL and simulate processing"""
+        """Download image from URL, save locally, sync to GitHub, then delete locally"""
         try:
+            # Create images directory if it doesn't exist
             os.makedirs('images', exist_ok=True)
+
+            # Generate unique filename
             filename = f"{uuid.uuid4()}.png"
             file_path = os.path.join('images', filename)
 
+            # Download the image
             async with aiohttp.ClientSession() as session:
                 async with session.get(image_url) as response:
                     if response.status == 200:
@@ -524,17 +545,26 @@ class ConvertersCommand(commands.Cog):
                             async for chunk in response.content.iter_chunked(8192):
                                 f.write(chunk)
 
-                        # Simulate uploading to GitHub (you'd implement actual GitHub sync)
-                        # For now, return a placeholder URL
-                        github_url = f"https://raw.githubusercontent.com/user/repo/main/{filename}"
-                        
-                        # Clean up local file
-                        try:
-                            os.remove(file_path)
-                        except:
-                            pass
+                        # Synchronize with GitHub
+                        from github_sync import GitHubSync
+                        github_sync = GitHubSync()
+                        sync_success = await github_sync.sync_image_to_pictures_repo(file_path)
 
-                        return github_url
+                        if sync_success:
+                            # Delete local file after successful sync
+                            try:
+                                os.remove(file_path)
+                                print(f"<:SucessLOGO:1407071637840592977> Fichier local supprimé: {file_path}")
+                            except Exception as e:
+                                print(f"<:ErrorLOGO:1407071682031648850> Erreur lors de la suppression locale: {e}")
+
+                            # Return GitHub raw URL from public pictures repo
+                            filename = os.path.basename(file_path)
+                            github_url = f"https://raw.githubusercontent.com/TheBlueEL/pictures/main/{filename}"
+                            return github_url
+                        else:
+                            print("<:ErrorLOGO:1407071682031648850> Échec de la synchronisation, fichier local conservé")
+                            return None
             return None
         except Exception as e:
             print(f"Error downloading image: {e}")
@@ -560,15 +590,55 @@ class ConvertersCommand(commands.Cog):
                         except:
                             pass
 
-                        # Set image data
-                        manager.converter_data.image_url = local_file
-                        manager.converter_data.image_width = 800  # Simulated
-                        manager.converter_data.image_height = 600  # Simulated
-                        manager.current_mode = "image_preview"
-                        manager.waiting_for_image = False
+                        # Create confirmation embed showing the uploaded image
+                        success_embed = discord.Embed(
+                            title="<:SucessLOGO:1407071637840592977> Image Successfully Uploaded",
+                            description="Your image has been uploaded and synchronized with GitHub!\n\nClick **Continue** to proceed with the conversion.",
+                            color=discord.Color.green()
+                        )
+                        success_embed.set_image(url=local_file)
 
-                        embed = manager.get_image_preview_embed()
-                        manager.update_buttons()
+                        # Create continue button
+                        continue_button = discord.ui.Button(
+                            label="Continue",
+                            style=discord.ButtonStyle.success,
+                            emoji="<:SucessLOGO:1407071637840592977>"
+                        )
+
+                        async def continue_callback(interaction):
+                            # Set image data
+                            manager.converter_data.image_url = local_file
+                            manager.converter_data.image_width = 800  # Simulated
+                            manager.converter_data.image_height = 600  # Simulated
+                            manager.current_mode = "image_preview"
+                            manager.waiting_for_image = False
+
+                            embed = manager.get_image_preview_embed()
+                            manager.update_buttons()
+                            await interaction.response.edit_message(embed=embed, view=manager)
+
+                        continue_button.callback = continue_callback
+
+                        # Create a temporary view with the continue button
+                        temp_view = discord.ui.View(timeout=300)
+                        temp_view.add_item(continue_button)
+
+                        # Add back button
+                        back_button = discord.ui.Button(
+                            label="Back",
+                            style=discord.ButtonStyle.gray,
+                            emoji="<:BackLOGO:1391511633431494666>"
+                        )
+
+                        async def back_callback(interaction):
+                            manager.waiting_for_image = False
+                            manager.current_mode = "add_image"
+                            embed = manager.get_add_image_embed()
+                            manager.update_buttons()
+                            await interaction.response.edit_message(embed=embed, view=manager)
+
+                        back_button.callback = back_callback
+                        temp_view.add_item(back_button)
 
                         # Update the message
                         try:
@@ -576,7 +646,7 @@ class ConvertersCommand(commands.Cog):
                             async for msg in channel.history(limit=50):
                                 if msg.author == self.bot.user and msg.embeds:
                                     if "Upload Image" in msg.embeds[0].title:
-                                        await msg.edit(embed=embed, view=manager)
+                                        await msg.edit(embed=success_embed, view=temp_view)
                                         break
                         except Exception as e:
                             print(f"Error updating message: {e}")
