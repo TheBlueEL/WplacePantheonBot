@@ -10,6 +10,10 @@ import time
 from PIL import Image, ImageDraw
 import numpy as np
 import io
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
+from multiprocessing import cpu_count
+import asyncio
+from functools import partial
 
 def get_bot_name(bot):
     """Récupère le nom d'affichage du bot"""
@@ -60,22 +64,22 @@ class PixelsConverterView(discord.ui.View):
         return [c for c in self.colors_data["colors"] if c.get("enabled", False)]
 
     def rgb_distance_advanced(self, color1, color2):
-        """Calcule la distance entre deux couleurs RGB avec l'algorithme optimisé du script JS"""
-        r1, g1, b1 = color1
-        r2, g2, b2 = color2
+        """Calcule la distance entre deux couleurs RGB avec l'algorithme optimisé et sécurisé"""
+        r1, g1, b1 = np.clip(color1, 0, 255).astype(np.int32)
+        r2, g2, b2 = np.clip(color2, 0, 255).astype(np.int32)
 
-        # Algorithme de distance couleur optimisé (basé sur https://www.compuphase.com/cmetric.htm)
-        rmean = (r1 + r2) / 2
+        # Algorithme de distance couleur optimisé avec protection contre overflow
+        rmean = (r1 + r2) // 2
         rdiff = r1 - r2
         gdiff = g1 - g2
         bdiff = b1 - b2
 
-        # Utilisation d'entiers pour éviter l'erreur de bit shift sur float
-        x = int((512 + rmean) * rdiff * rdiff) >> 8
-        y = 4 * gdiff * gdiff
-        z = int((767 - rmean) * bdiff * bdiff) >> 8
+        # Calculs sécurisés avec limitation des valeurs
+        x = np.clip(((512 + rmean) * rdiff * rdiff) >> 8, 0, 2**31-1)
+        y = np.clip(4 * gdiff * gdiff, 0, 2**31-1)
+        z = np.clip(((767 - rmean) * bdiff * bdiff) >> 8, 0, 2**31-1)
 
-        return (x + y + z) ** 0.5
+        return np.sqrt(np.clip(x + y + z, 0, 2**63-1))
 
     def find_closest_color(self, pixel_color, palette):
         """Trouve la couleur la plus proche dans la palette"""
@@ -218,35 +222,89 @@ class PixelsConverterView(discord.ui.View):
         return default_palette
 
     def find_closest_color_fast(self, pixel_rgb, palette):
-        """Version rapide de la recherche de couleur la plus proche"""
+        """Version rapide et sécurisée de la recherche de couleur la plus proche"""
         min_distance = float('inf')
         closest_color = [0, 0, 0]
 
-        r, g, b = pixel_rgb
+        r, g, b = np.clip(pixel_rgb, 0, 255).astype(np.int32)
 
         for palette_color in palette:
-            pr, pg, pb = palette_color
+            pr, pg, pb = np.clip(palette_color, 0, 255).astype(np.int32)
 
-            # Algorithme optimisé de distance couleur
-            rmean = (r + pr) / 2
+            # Algorithme optimisé de distance couleur avec protection overflow
+            rmean = (r + pr) // 2
             rdiff = r - pr
             gdiff = g - pg
             bdiff = b - pb
 
-            x = int((512 + rmean) * rdiff * rdiff) >> 8
-            y = 4 * gdiff * gdiff
-            z = int((767 - rmean) * bdiff * bdiff) >> 8
+            x = np.clip(((512 + rmean) * rdiff * rdiff) >> 8, 0, 2**31-1)
+            y = np.clip(4 * gdiff * gdiff, 0, 2**31-1)
+            z = np.clip(((767 - rmean) * bdiff * bdiff) >> 8, 0, 2**31-1)
 
-            distance = (x + y + z) ** 0.5
+            distance = np.sqrt(np.clip(x + y + z, 0, 2**63-1))
 
             if distance < min_distance:
                 min_distance = distance
                 closest_color = palette_color
 
         return closest_color
+
+def process_image_chunk_parallel(chunk_data, palette, chunk_index):
+    """Traite un chunk d'image en parallèle - fonction globale pour multiprocessing"""
+    try:
+        chunk_pixels = chunk_data.reshape(-1, 3)
+        processed_chunk = np.zeros_like(chunk_pixels)
+        
+        palette_np = np.array(palette, dtype=np.int32)
+        
+        for i, pixel in enumerate(chunk_pixels):
+            pixel_safe = np.clip(pixel, 0, 255).astype(np.int32)
+            min_distance = float('inf')
+            closest_color = palette_np[0]
+            
+            for palette_color in palette_np:
+                # Distance euclidienne simple mais rapide
+                diff = pixel_safe - palette_color
+                distance = np.sqrt(np.sum(diff * diff))
+                
+                if distance < min_distance:
+                    min_distance = distance
+                    closest_color = palette_color
+            
+            processed_chunk[i] = closest_color
+        
+        return chunk_index, processed_chunk.reshape(chunk_data.shape)
+        
+    except Exception as e:
+        print(f"Erreur dans le chunk {chunk_index}: {e}")
+        return chunk_index, chunk_data  # Retourne le chunk original en cas d'erreur
+
+def process_image_vectorized_fast(image_array, palette):
+    """Version vectorisée ultra-rapide utilisant des opérations numpy optimisées"""
+    try:
+        height, width, channels = image_array.shape
+        reshaped = image_array.reshape(-1, 3).astype(np.float32)
+        palette_np = np.array(palette, dtype=np.float32)
+        
+        # Calcul vectorisé des distances pour tous les pixels à la fois
+        # Utilise broadcasting pour calculer les distances entre chaque pixel et chaque couleur
+        distances = np.sqrt(np.sum((reshaped[:, np.newaxis, :] - palette_np[np.newaxis, :, :]) ** 2, axis=2))
+        
+        # Trouve l'index de la couleur la plus proche pour chaque pixel
+        closest_indices = np.argmin(distances, axis=1)
+        
+        # Applique les couleurs correspondantes
+        processed = palette_np[closest_indices]
+        
+        return processed.reshape(height, width, channels).astype(np.uint8)
+        
+    except Exception as e:
+        print(f"Erreur vectorisation: {e}")
+        # Fallback vers la méthode chunk
+        return None
     
     async def process_image_ultra_fast(self):
-        """Version ultra rapide du traitement d'image pour une génération quasi instantanée"""
+        """Version ultra rapide du traitement d'image avec traitement parallèle par chunks"""
         if not self.converter_data.image_url:
             return None
 
@@ -264,12 +322,11 @@ class PixelsConverterView(discord.ui.View):
             # Redimensionner l'image selon les dimensions spécifiées
             target_size = (self.converter_data.image_width, self.converter_data.image_height)
             if image.size != target_size:
-                image = image.resize(target_size, Image.Resampling.NEAREST) # Using NEAREST for speed
+                image = image.resize(target_size, Image.Resampling.NEAREST)
 
-            # Convertir en RGB
+            # Convertir en RGB avec optimisation
             if image.mode != 'RGB':
                 if image.mode in ('RGBA', 'LA', 'P'):
-                    # Créer un fond blanc pour les images transparentes
                     background = Image.new('RGB', image.size, (255, 255, 255))
                     if image.mode == 'P':
                         image = image.convert('RGBA')
@@ -283,81 +340,19 @@ class PixelsConverterView(discord.ui.View):
 
             # Utiliser la palette par défaut
             palette = self.create_default_palette()
+            img_array = np.array(image, dtype=np.uint8)
 
-            # Traitement pixel par pixel super rapide via numpy vectorization
-            img_array = np.array(image)
-            height, width, _ = img_array.shape
-
-            # Vectorisation pour plus de rapidité
-            reshaped = img_array.reshape(-1, 3)
-            processed = np.zeros_like(reshaped)
-
-            # Convertir la palette en array numpy pour une recherche plus rapide
-            palette_np = np.array(palette)
-
-            # Calculer la distance de chaque pixel à chaque couleur de la palette
-            # Cette étape peut être coûteuse, optimisons davantage
-            # Une approche plus rapide serait d'utiliser des structures de données optimisées
-            # pour la recherche du plus proche voisin (ex: KD-tree), mais pour une génération
-            # quasi instantanée, on va rester sur une version optimisée en numpy.
-
-            # Pour une performance maximale, on va utiliser une astuce:
-            # transformer les couleurs en entiers sur 24 bits pour des comparaisons plus rapides
-            # ou utiliser une lookup table si la palette est fixe.
-            # Ici, nous allons simplement utiliser la version numpy qui est déjà rapide.
-
-            # Utiliser la fonction find_closest_color_fast avec numpy
-            # Note: find_closest_color_fast itère sur la palette, ce qui peut être lent.
-            # Une meilleure approche serait de vectoriser find_closest_color_fast.
-
-            # Vectorisation de find_closest_color_fast (conceptuel, peut nécessiter des ajustements)
-            # Pour simplifier et garantir la rapidité, on va se baser sur l'idée que
-            # la fonction est appelée pour chaque pixel et qu'elle est déjà optimisée
-            # en Python/Numpy pour ce qu'elle fait.
-
-            # Si nous avions besoin de plus de vitesse, nous utiliserions des bibliothèques
-            # comme `scipy.spatial.KDTree` ou `sklearn.neighbors.NearestNeighbors`
-            # pour trouver le voisin le plus proche.
-
-            # Pour l'instant, nous gardons l'implémentation actuelle mais en nous assurant
-            # que la fonction elle-même est aussi rapide que possible.
+            # Essayer d'abord la méthode vectorisée ultra-rapide
+            processed_array = process_image_vectorized_fast(img_array, palette)
             
-            # Création d'une fonction vectorisée pour la recherche de couleur
-            def find_closest_color_vectorized(pixel_rgbs, palette_np):
-                num_pixels = pixel_rgbs.shape[0]
-                num_colors = palette_np.shape[0]
-                
-                # Calculer les distances entre chaque pixel et chaque couleur de la palette
-                # Utilisation de broadcasting pour calculer les différences
-                diff = pixel_rgbs[:, np.newaxis, :] - palette_np[np.newaxis, :, :]
-                
-                # Calculer la distance euclidienne (simplifiée pour la comparaison)
-                # Utiliser des entiers pour les calculs de distance afin d'éviter les problèmes de flottants
-                # L'algorithme original de distance couleur est complexe à vectoriser directement.
-                # On va utiliser une approximation simple ou la méthode originale si possible.
-                
-                # Approximation rapide: distance RGB simple
-                # dist_sq = np.sum(diff**2, axis=2)
-                # closest_indices = np.argmin(dist_sq, axis=1)
+            if processed_array is None:
+                # Fallback vers le traitement parallèle par chunks
+                processed_array = await self.process_image_parallel_chunks(img_array, palette)
 
-                # Utilisation de la logique de distance avancée appliquée pixel par pixel pour plus de précision
-                # Ceci est moins vectorisé, mais plus fidèle à l'algorithme original.
-                # Pour une vitesse maximale, on pourrait se passer de `find_closest_color_fast` et utiliser
-                # une approche plus directe si la palette est petite et fixe.
-                
-                # Appel de la fonction rapide pour chaque pixel (peut être lent)
-                # Pour une performance optimale, cette partie devrait être entièrement vectorisée.
-                
-                closest_colors = np.array([self.find_closest_color_fast(pixel, palette) for pixel in pixel_rgbs])
-                return closest_colors
-
-            processed = find_closest_color_vectorized(reshaped, palette_np)
-
-            # Reconstruire l'image
-            processed_array = processed.reshape(height, width, 3)
+            # Créer l'image finale
             processed_image = Image.fromarray(processed_array.astype(np.uint8))
 
-            # Sauvegarder l'image traitée
+            # Sauvegarder et synchroniser
             os.makedirs('images', exist_ok=True)
             filename = f"processed_{uuid.uuid4()}.png"
             file_path = os.path.join('images', filename)
@@ -383,6 +378,76 @@ class PixelsConverterView(discord.ui.View):
         except Exception as e:
             print(f"Erreur lors du traitement ultra rapide de l'image: {e}")
             return None
+
+    async def process_image_parallel_chunks(self, img_array, palette):
+        """Traite l'image en parallèle par chunks pour une vitesse maximale"""
+        try:
+            height, width, channels = img_array.shape
+            
+            # Calculer le nombre optimal de chunks basé sur les CPU disponibles
+            num_cores = min(cpu_count(), 8)  # Limiter à 8 pour éviter trop de overhead
+            chunk_size = max(1, height // num_cores)
+            
+            # Diviser l'image en chunks horizontaux
+            chunks = []
+            for i in range(0, height, chunk_size):
+                end_i = min(i + chunk_size, height)
+                chunk = img_array[i:end_i, :, :]
+                chunks.append((chunk, i))  # (chunk_data, start_row)
+            
+            # Traitement parallèle avec ThreadPoolExecutor (plus rapide pour I/O bound)
+            loop = asyncio.get_event_loop()
+            
+            with ThreadPoolExecutor(max_workers=num_cores) as executor:
+                # Créer les tâches pour chaque chunk
+                futures = []
+                for chunk_idx, (chunk_data, start_row) in enumerate(chunks):
+                    future = loop.run_in_executor(
+                        executor, 
+                        process_image_chunk_parallel, 
+                        chunk_data, 
+                        palette, 
+                        chunk_idx
+                    )
+                    futures.append((future, start_row, chunk_data.shape[0]))
+                
+                # Attendre tous les résultats
+                processed_chunks = {}
+                for future, start_row, chunk_height in futures:
+                    chunk_idx, processed_chunk = await future
+                    processed_chunks[start_row] = processed_chunk
+            
+            # Réassembler l'image
+            processed_array = np.zeros_like(img_array)
+            for start_row in sorted(processed_chunks.keys()):
+                chunk = processed_chunks[start_row]
+                end_row = start_row + chunk.shape[0]
+                processed_array[start_row:end_row, :, :] = chunk
+            
+            return processed_array
+            
+        except Exception as e:
+            print(f"Erreur lors du traitement parallèle: {e}")
+            # Fallback vers traitement séquentiel simple
+            return self.process_image_sequential_fallback(img_array, palette)
+    
+    def process_image_sequential_fallback(self, img_array, palette):
+        """Traitement séquentiel simple en cas d'échec du parallélisme"""
+        try:
+            height, width, channels = img_array.shape
+            processed = np.zeros_like(img_array)
+            
+            for y in range(height):
+                for x in range(width):
+                    pixel = img_array[y, x]
+                    closest = self.find_closest_color_fast(pixel, palette)
+                    processed[y, x] = closest
+            
+            return processed
+            
+        except Exception as e:
+            print(f"Erreur fallback: {e}")
+            return img_array  # Retourne l'image originale en dernier recours
 
     async def process_image_fast(self):
         """Version rapide du traitement d'image inspirée du code JavaScript"""
