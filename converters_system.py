@@ -15,6 +15,36 @@ from multiprocessing import cpu_count
 import asyncio
 from functools import partial
 
+def process_image_chunk_parallel(chunk_data, palette, chunk_index):
+    """Traite un chunk d'image en parallèle - fonction globale pour multiprocessing"""
+    try:
+        chunk_pixels = chunk_data.reshape(-1, 3)
+        processed_chunk = np.zeros_like(chunk_pixels)
+
+        palette_np = np.array(palette, dtype=np.int32)
+
+        for i, pixel in enumerate(chunk_pixels):
+            pixel_safe = np.clip(pixel, 0, 255).astype(np.int32)
+            min_distance = float('inf')
+            closest_color = palette_np[0]
+
+            for palette_color in palette_np:
+                # Distance euclidienne simple mais rapide
+                diff = pixel_safe - palette_color
+                distance = np.sqrt(np.sum(diff * diff))
+
+                if distance < min_distance:
+                    min_distance = distance
+                    closest_color = palette_color
+
+            processed_chunk[i] = closest_color
+
+        return chunk_index, processed_chunk.reshape(chunk_data.shape)
+
+    except Exception as e:
+        print(f"Erreur dans le chunk {chunk_index}: {e}")
+        return chunk_index, chunk_data  # Retourne le chunk original en cas d'erreur
+
 def get_bot_name(bot):
     """Récupère le nom d'affichage du bot"""
     return bot.user.display_name if bot.user else "Bot"
