@@ -95,6 +95,12 @@ class PixelsConverterView(discord.ui.View):
 
     def rgb_distance_advanced(self, color1, color2):
         """Calcule la distance entre deux couleurs RGB avec l'algorithme optimisé et sécurisé"""
+        # Convert to numpy arrays if they're lists
+        if isinstance(color1, list):
+            color1 = np.array(color1)
+        if isinstance(color2, list):
+            color2 = np.array(color2)
+            
         r1, g1, b1 = np.clip(color1, 0, 255).astype(np.int32)
         r2, g2, b2 = np.clip(color2, 0, 255).astype(np.int32)
 
