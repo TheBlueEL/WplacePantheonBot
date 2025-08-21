@@ -160,11 +160,15 @@ class PixelsConverterView(discord.ui.View):
         for pixel in data:
             buf.extend([float(pixel[0]), float(pixel[1]), float(pixel[2]), 255.0])
 
-        # Créer la palette RGB simple
+        # Créer la palette RGB simple ET le set des couleurs cachées
         palette_rgb = []
+        hidden_colors = set()
+        
         for color in palette:
-            if not color.get("hidden", False):
-                palette_rgb.append(color["rgb"])
+            palette_rgb.append(color["rgb"])
+            if color.get("hidden", False):
+                key = f"{color['rgb'][0]},{color['rgb'][1]},{color['rgb'][2]}"
+                hidden_colors.add(key)
         
         if not palette_rgb:
             return image
@@ -196,23 +200,18 @@ class PixelsConverterView(discord.ui.View):
                 closest_rgb = self.find_closest_color_javascript_exact([int(r), int(g), int(b)], palette_rgb)
                 nr, ng, nb = closest_rgb
 
-                # Vérifier si la couleur est cachée
+                # Vérifier si la couleur est cachée EXACTEMENT comme le JS
                 key = f"{nr},{ng},{nb}"
-                is_hidden = any(
-                    color.get("hidden", False)
-                    for color in palette
-                    if color["rgb"] == [nr, ng, nb]
-                )
-
-                if is_hidden:
-                    # Rendre transparent et ne pas diffuser l'erreur
+                
+                if key in hidden_colors:
+                    # Rendre transparent et NE PAS diffuser l'erreur (exactement comme le JS)
                     data[y * width + x] = (0, 0, 0, 0)
-                    continue
+                    continue  # IMPORTANT: continue pour ne pas diffuser l'erreur
 
                 # Écrire la couleur quantifiée
                 data[y * width + x] = (nr, ng, nb, 255 if a != 0 else 0)
 
-                # Compter les couleurs visibles
+                # Compter seulement les couleurs visibles
                 if data[y * width + x][3] != 0:
                     color_counts[key] = color_counts.get(key, 0) + 1
 
@@ -229,8 +228,9 @@ class PixelsConverterView(discord.ui.View):
                         buf[j + 1] = self.clamp_byte(buf[j + 1] + eg * fraction)
                         buf[j + 2] = self.clamp_byte(buf[j + 2] + eb * fraction)
 
+                # Ordre exact du JavaScript pour la diffusion d'erreur
                 push_error(x + 1, y, 7/16)      # droite
-                push_error(x - 1, y + 1, 3/16)  # bas-gauche
+                push_error(x - 1, y + 1, 3/16)  # bas-gauche  
                 push_error(x, y + 1, 5/16)      # bas
                 push_error(x + 1, y + 1, 1/16)  # bas-droite
 
