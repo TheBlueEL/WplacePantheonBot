@@ -21,7 +21,6 @@ class ConverterData:
         self.image_width = 0
         self.image_height = 0
         self.pixelated_url = ""
-        self.pixel_scale = 8  # Taille des pixels (plus grand = plus pixelisé)
 
 class PixelsConverterView(discord.ui.View):
     def __init__(self, bot, user_id):
@@ -38,7 +37,12 @@ class PixelsConverterView(discord.ui.View):
     def load_colors(self):
         try:
             with open('converters_data.json', 'r') as f:
-                return json.load(f)
+                data = json.load(f)
+                # Ajouter le support des couleurs cachées si pas présent
+                for color in data.get("colors", []):
+                    if "hidden" not in color:
+                        color["hidden"] = False
+                return data
         except (FileNotFoundError, json.JSONDecodeError):
             # Return default data if file doesn't exist
             return {
@@ -55,9 +59,22 @@ class PixelsConverterView(discord.ui.View):
         """Récupère les couleurs activées dans la palette"""
         return [c for c in self.colors_data["colors"] if c.get("enabled", False)]
 
-    def rgb_distance(self, color1, color2):
-        """Calcule la distance entre deux couleurs RGB"""
-        return sum((a - b) ** 2 for a, b in zip(color1, color2)) ** 0.5
+    def rgb_distance_advanced(self, color1, color2):
+        """Calcule la distance entre deux couleurs RGB avec l'algorithme optimisé du script JS"""
+        r1, g1, b1 = color1
+        r2, g2, b2 = color2
+        
+        # Algorithme de distance couleur optimisé (basé sur https://www.compuphase.com/cmetric.htm)
+        rmean = (r1 + r2) / 2
+        rdiff = r1 - r2
+        gdiff = g1 - g2
+        bdiff = b1 - b2
+        
+        x = (512 + rmean) * rdiff * rdiff >> 8
+        y = 4 * gdiff * gdiff
+        z = (767 - rmean) * bdiff * bdiff >> 8
+        
+        return (x + y + z) ** 0.5
 
     def find_closest_color(self, pixel_color, palette):
         """Trouve la couleur la plus proche dans la palette"""
@@ -65,40 +82,66 @@ class PixelsConverterView(discord.ui.View):
         closest_color = palette[0]["rgb"]
 
         for color in palette:
-            distance = self.rgb_distance(pixel_color, color["rgb"])
+            # Ignorer les couleurs cachées
+            color_key = f"{color['rgb'][0]},{color['rgb'][1]},{color['rgb'][2]}"
+            if color.get("hidden", False):
+                continue
+                
+            distance = self.rgb_distance_advanced(pixel_color, color["rgb"])
             if distance < min_distance:
                 min_distance = distance
                 closest_color = color["rgb"]
 
         return closest_color
 
-    def floyd_steinberg_dithering(self, image, palette):
-        """Applique le dithering Floyd-Steinberg"""
-        img_array = np.array(image, dtype=float)
-        height, width, channels = img_array.shape
+    def clamp_byte(self, value):
+        """Limite la valeur entre 0 et 255"""
+        return max(0, min(255, int(value)))
 
+    def floyd_steinberg_dithering(self, image, palette):
+        """Applique le dithering Floyd-Steinberg avancé basé sur le script JS"""
+        if image.mode != 'RGB':
+            image = image.convert('RGB')
+            
+        width, height = image.size
+        img_array = np.array(image, dtype=float)
+        
+        # Buffer flottant pour porter l'erreur de diffusion
+        buf = img_array.copy()
+        
         for y in range(height):
             for x in range(width):
-                old_pixel = img_array[y, x]
-                new_pixel = self.find_closest_color(old_pixel, palette)
-                img_array[y, x] = new_pixel
-
-                quant_error = old_pixel - new_pixel
-
-                # Distribuer l'erreur aux pixels adjacents
-                if x + 1 < width:
-                    img_array[y, x + 1] += quant_error * 7/16
-                if y + 1 < height and x > 0:
-                    img_array[y + 1, x - 1] += quant_error * 3/16
-                if y + 1 < height:
-                    img_array[y + 1, x] += quant_error * 5/16
-                if y + 1 < height and x + 1 < width:
-                    img_array[y + 1, x + 1] += quant_error * 1/16
+                # Pixel actuel
+                r, g, b = buf[y, x]
+                
+                # Quantifier vers la couleur la plus proche de la palette
+                closest_rgb = self.find_closest_color([int(r), int(g), int(b)], palette)
+                nr, ng, nb = closest_rgb
+                
+                # Écrire la couleur quantifiée
+                img_array[y, x] = [nr, ng, nb]
+                
+                # Calculer l'erreur
+                er = r - nr
+                eg = g - ng
+                eb = b - nb
+                
+                # Diffuser l'erreur aux pixels voisins (Floyd-Steinberg)
+                def push_error(xx, yy, fraction):
+                    if 0 <= xx < width and 0 <= yy < height:
+                        buf[yy, xx, 0] = self.clamp_byte(buf[yy, xx, 0] + er * fraction)
+                        buf[yy, xx, 1] = self.clamp_byte(buf[yy, xx, 1] + eg * fraction)
+                        buf[yy, xx, 2] = self.clamp_byte(buf[yy, xx, 2] + eb * fraction)
+                
+                push_error(x + 1, y, 7/16)      # droite
+                push_error(x - 1, y + 1, 3/16)  # bas-gauche  
+                push_error(x, y + 1, 5/16)      # bas
+                push_error(x + 1, y + 1, 1/16)  # bas-droite
 
         return Image.fromarray(np.clip(img_array, 0, 255).astype(np.uint8))
 
-    def quantize_colors(self, image, palette):
-        """Réduit l'image aux couleurs de la palette définie"""
+    def quantize_colors_advanced(self, image, palette):
+        """Réduit l'image aux couleurs de la palette définie avec l'algorithme avancé"""
         if not palette:
             return image
 
@@ -111,12 +154,30 @@ class PixelsConverterView(discord.ui.View):
 
         # Créer une nouvelle image avec les couleurs quantifiées
         quantized_array = np.zeros_like(img_array)
+        
+        # Gérer la transparence
+        transparent_hide_active = self.colors_data["settings"].get("semi_transparent", False)
 
         for y in range(height):
             for x in range(width):
                 pixel_color = img_array[y, x]
+                
+                # Trouver la couleur la plus proche
                 closest_color = self.find_closest_color(pixel_color, palette)
-                quantized_array[y, x] = closest_color
+                color_key = f"{closest_color[0]},{closest_color[1]},{closest_color[2]}"
+                
+                # Vérifier si la couleur est cachée
+                is_hidden = any(
+                    color.get("hidden", False) 
+                    for color in palette 
+                    if color["rgb"] == list(closest_color)
+                )
+                
+                if is_hidden:
+                    # Rendre transparent si caché
+                    quantized_array[y, x] = [0, 0, 0]  # Sera rendu transparent plus tard
+                else:
+                    quantized_array[y, x] = closest_color
 
         return Image.fromarray(quantized_array.astype(np.uint8))
 
@@ -140,7 +201,7 @@ class PixelsConverterView(discord.ui.View):
         return pixelated
 
     async def process_image(self):
-        """Traite l'image selon les paramètres sélectionnés"""
+        """Traite l'image selon les paramètres sélectionnés avec l'algorithme avancé"""
         if not self.converter_data.image_url:
             return None
 
@@ -154,6 +215,11 @@ class PixelsConverterView(discord.ui.View):
 
             # Ouvrir l'image avec PIL
             image = Image.open(io.BytesIO(image_data))
+
+            # Redimensionner l'image selon les dimensions spécifiées
+            target_size = (self.converter_data.image_width, self.converter_data.image_height)
+            if image.size != target_size:
+                image = image.resize(target_size, Image.Resampling.LANCZOS)
 
             # Convertir en RGB si nécessaire
             if image.mode in ('RGBA', 'LA', 'P'):
@@ -183,17 +249,14 @@ class PixelsConverterView(discord.ui.View):
                 self.save_colors()
                 active_colors = self.get_active_colors()
 
-            # Appliquer d'abord la quantification des couleurs à l'image originale
+            # Appliquer la quantification des couleurs avec l'algorithme avancé
             if active_colors:
                 if self.colors_data["settings"]["dithering"]:
-                    color_quantized = self.floyd_steinberg_dithering(image, active_colors)
+                    processed = self.floyd_steinberg_dithering(image, active_colors)
                 else:
-                    color_quantized = self.quantize_colors(image, active_colors)
+                    processed = self.quantize_colors_advanced(image, active_colors)
             else:
-                color_quantized = image
-
-            # Puis pixeliser l'image avec les couleurs quantifiées
-            processed = self.pixelate_image(color_quantized, self.converter_data.pixel_scale)
+                processed = image
 
             # Sauvegarder l'image traitée
             os.makedirs('images', exist_ok=True)
@@ -262,9 +325,10 @@ class PixelsConverterView(discord.ui.View):
         return embed
 
     def get_image_preview_embed(self):
+        total_pixels = self.converter_data.image_width * self.converter_data.image_height
         embed = discord.Embed(
             title="<:CreateLOGO:1407071205026168853> Wplace Convertor",
-            description=f"**Width:** {self.converter_data.image_width}px\n**Height:** {self.converter_data.image_height}px\n**Pixel Size:** {self.converter_data.pixel_scale}px",
+            description=f"**Width:** {self.converter_data.image_width}px\n**Height:** {self.converter_data.image_height}px\n**Total Pixels:** {total_pixels:,}px",
             color=0x5865F2
         )
 
@@ -425,30 +489,62 @@ class PixelsConverterView(discord.ui.View):
             self.add_item(back_button)
 
         elif self.current_mode == "image_preview":
-            # Pixel scale buttons
+            # Dimension control buttons
             shrink_button = discord.ui.Button(
-                label="More Pixels",
+                label="Less",
                 style=discord.ButtonStyle.secondary,
                 emoji="🔽"
             )
 
             async def shrink_callback(interaction):
-                if self.converter_data.pixel_scale > 2:
-                    self.converter_data.pixel_scale -= 2
+                # Réduire proportionnellement width et height
+                scale_factor = 0.9  # Réduction de 10%
+                new_width = max(10, int(self.converter_data.image_width * scale_factor))
+                new_height = max(10, int(self.converter_data.image_height * scale_factor))
+                
+                self.converter_data.image_width = new_width
+                self.converter_data.image_height = new_height
+                
+                # Reprocesser l'image avec les nouvelles dimensions
+                processed_url = await self.process_image()
+                if processed_url:
+                    self.converter_data.pixelated_url = processed_url
+                
                 embed = self.get_image_preview_embed()
                 await interaction.response.edit_message(embed=embed, view=self)
 
             shrink_button.callback = shrink_callback
 
             enlarge_button = discord.ui.Button(
-                label="Less Pixels",
+                label="More",
                 style=discord.ButtonStyle.secondary,
                 emoji="🔼"
             )
 
             async def enlarge_callback(interaction):
-                if self.converter_data.pixel_scale < 50:
-                    self.converter_data.pixel_scale += 2
+                # Agrandir proportionnellement width et height
+                scale_factor = 1.1  # Augmentation de 10%
+                new_width = int(self.converter_data.image_width * scale_factor)
+                new_height = int(self.converter_data.image_height * scale_factor)
+                
+                # Limiter à une taille maximale raisonnable
+                max_size = 2000
+                if new_width > max_size or new_height > max_size:
+                    if new_width > new_height:
+                        new_height = int(new_height * (max_size / new_width))
+                        new_width = max_size
+                    else:
+                        new_width = int(new_width * (max_size / new_height))
+                        new_height = max_size
+                
+                self.converter_data.image_width = new_width
+                self.converter_data.image_height = new_height
+                
+                # Reprocesser l'image avec les nouvelles dimensions
+                processed_url = await self.process_image()
+                if processed_url:
+                    self.converter_data.pixelated_url = processed_url
+                
                 embed = self.get_image_preview_embed()
                 await interaction.response.edit_message(embed=embed, view=self)
 
