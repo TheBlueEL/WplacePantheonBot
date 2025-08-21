@@ -1318,6 +1318,16 @@ class ConvertersCommand(commands.Cog):
                         )
 
                         async def continue_callback(interaction):
+                            # Check if interaction is still valid
+                            try:
+                                await interaction.response.defer()
+                            except discord.InteractionResponded:
+                                # Interaction already responded to, use followup instead
+                                pass
+                            except Exception as e:
+                                print(f"Interaction error: {e}")
+                                return
+                            
                             # Get real image dimensions
                             try:
                                 async with aiohttp.ClientSession() as session:
@@ -1342,7 +1352,14 @@ class ConvertersCommand(commands.Cog):
 
                                             embed = manager.get_image_preview_embed()
                                             manager.update_buttons()
-                                            await interaction.response.edit_message(embed=embed, view=manager)
+                                            
+                                            # Use followup if interaction already responded
+                                            if interaction.response.is_done():
+                                                await interaction.followup.edit_message(message_id=interaction.message.id, embed=embed, view=manager)
+                                            else:
+                                                await interaction.response.edit_message(embed=embed, view=manager)
+                                        else:
+                                            raise Exception("Image not accessible")
                             except Exception as e:
                                 print(f"Error getting image dimensions: {e}")
                                 # Fallback to default dimensions
@@ -1360,7 +1377,12 @@ class ConvertersCommand(commands.Cog):
 
                                 embed = manager.get_image_preview_embed()
                                 manager.update_buttons()
-                                await interaction.response.edit_message(embed=embed, view=manager)
+                                
+                                # Use followup if interaction already responded
+                                if interaction.response.is_done():
+                                    await interaction.followup.edit_message(message_id=interaction.message.id, embed=embed, view=manager)
+                                else:
+                                    await interaction.response.edit_message(embed=embed, view=manager)
 
                         continue_button.callback = continue_callback
 
@@ -1376,11 +1398,17 @@ class ConvertersCommand(commands.Cog):
                         )
 
                         async def back_callback(interaction):
-                            manager.waiting_for_image = False
-                            manager.current_mode = "add_image"
-                            embed = manager.get_add_image_embed()
-                            manager.update_buttons()
-                            await interaction.response.edit_message(embed=embed, view=manager)
+                            try:
+                                manager.waiting_for_image = False
+                                manager.current_mode = "add_image"
+                                embed = manager.get_add_image_embed()
+                                manager.update_buttons()
+                                await interaction.response.edit_message(embed=embed, view=manager)
+                            except discord.InteractionResponded:
+                                # Interaction already responded to, use followup instead
+                                await interaction.followup.edit_message(message_id=interaction.message.id, embed=embed, view=manager)
+                            except Exception as e:
+                                print(f"Back button error: {e}")
 
                         back_button.callback = back_callback
                         temp_view.add_item(back_button)
