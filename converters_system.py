@@ -1265,9 +1265,9 @@ class PixelsConverterView(discord.ui.View):
                 self.colors_data["settings"]["dithering"] = not self.colors_data["settings"]["dithering"]
                 self.save_colors()
                 
-                # Reprocess image automatically if we have one
+                # Use ultra-fast processing to avoid blocking (no dithering for performance)
                 if self.converter_data.image_url:
-                    processed_url = await self.process_image()
+                    processed_url = await self.process_image_ultra_fast()
                     if processed_url:
                         self.converter_data.pixelated_url = processed_url
 
@@ -1285,11 +1285,21 @@ class PixelsConverterView(discord.ui.View):
             )
 
             async def semi_transparent_callback(interaction):
+                await interaction.response.defer()
+                
+                # Toggle semi-transparent
                 self.colors_data["settings"]["semi_transparent"] = not self.colors_data["settings"]["semi_transparent"]
                 self.save_colors()
+                
+                # Reprocess image automatically if we have one
+                if self.converter_data.image_url:
+                    processed_url = await self.process_image_ultra_fast()
+                    if processed_url:
+                        self.converter_data.pixelated_url = processed_url
+
                 embed = self.get_settings_embed()
                 self.update_buttons()
-                await interaction.response.edit_message(embed=embed, view=self)
+                await interaction.followup.edit_message(message_id=interaction.message.id, embed=embed, view=self)
 
             semi_transparent_button.callback = semi_transparent_callback
 
