@@ -90,9 +90,20 @@ class WelcomeSystem(commands.Cog):
             if not avatar_data:
                 return None
             
+            # Télécharger la décoration de profil si activée
+            decoration_data = None
+            if self.config.get("profile_decoration", {}).get("enabled", False):
+                decoration_url = self.config["profile_decoration"]["url"]
+                decoration_data = await self.download_image(decoration_url)
+            
             # Ouvrir les images
             template = Image.open(io.BytesIO(template_data)).convert("RGBA")
             avatar = Image.open(io.BytesIO(avatar_data)).convert("RGBA")
+            
+            # Ouvrir la décoration si disponible
+            decoration = None
+            if decoration_data:
+                decoration = Image.open(io.BytesIO(decoration_data)).convert("RGBA")
             
             # Configuration de l'avatar depuis JSON
             avatar_config = self.config["avatar_position"]
@@ -111,7 +122,16 @@ class WelcomeSystem(commands.Cog):
             avatar_circle.paste(avatar, (0, 0))
             avatar_circle.putalpha(mask)
             
-            # Coller l'avatar circulaire sur le template
+            # Ajouter la décoration de profil derrière l'avatar si disponible
+            if decoration and self.config.get("profile_decoration", {}).get("enabled", False):
+                decoration_config = self.config["profile_decoration"]
+                decoration_x = decoration_config["x"]
+                decoration_y = decoration_config["y"]
+                
+                # Coller la décoration à sa taille d'origine (derrière l'avatar)
+                template.paste(decoration, (decoration_x, decoration_y), decoration)
+            
+            # Coller l'avatar circulaire sur le template (devant la décoration)
             template.paste(avatar_circle, (circle_x, circle_y), avatar_circle)
             
             # Ajouter le texte
