@@ -11,13 +11,13 @@
       "welcome_text": {
         "x_offset": 50,
         "y_offset": 50,
-        "font_size": 105,
+        "font_size": 84,
         "font_path": "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
       },
       "server_text": {
         "x_offset": 50,
         "y_offset": 100,
-        "font_size": 90,
+        "font_size": 72,
         "font_path": "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
         "text": "To the Server!"
       },
