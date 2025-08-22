@@ -397,7 +397,7 @@
   },
   "user_data": {
     "723144097015136296": {
-      "dithering": false
+      "dithering": true
     }
   }
 }
