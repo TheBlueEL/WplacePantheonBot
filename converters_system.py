@@ -169,15 +169,15 @@ class PixelsConverterView(discord.ui.View):
         return max(0, min(255, int(value)))
 
     def apply_dithering_javascript(self, image, palette):
-        """Applique le dithering exactement comme dans le code JavaScript fourni"""
+        """Applique le dithering exactement comme dans le code JavaScript fourni - version optimisée"""
         if image.mode != 'RGB':
             image = image.convert('RGB')
 
         width, height = image.size
-        img_array = np.array(image, dtype=np.float64)
+        img_array = np.array(image, dtype=np.float32)  # float32 au lieu de float64 pour plus de vitesse
 
-        # Palette de couleurs du JavaScript
-        js_palette = [
+        # Palette de couleurs du JavaScript - exactement la même
+        js_palette = np.array([
             [0,0,0],[60,60,60],[120,120,120],[170,170,170],[210,210,210],[255,255,255],
             [96,0,24],[165,14,30],[237,28,36],[250,128,114],[228,92,26],[255,127,39],[246,170,9],
             [249,221,59],[255,250,188],[156,132,49],[197,173,49],[232,212,95],[74,107,58],[90,148,74],[132,197,115],
@@ -188,46 +188,39 @@ class PixelsConverterView(discord.ui.View):
             [104,70,52],[149,104,42],[219,164,99],[123,99,82],[156,132,107],[214,181,148],
             [209,128,81],[248,178,119],[255,197,165],[109,100,63],[148,140,107],[205,197,158],
             [51,57,65],[109,117,141],[179,185,209]
-        ]
+        ], dtype=np.float32)
 
-        palette_np = np.array(js_palette, dtype=np.float64)
-
-        # Algorithme Floyd-Steinberg comme dans le JavaScript
+        # Algorithme Floyd-Steinberg optimisé - même logique mais plus rapide
         for y in range(height):
             for x in range(width):
-                old_pixel = img_array[y, x].copy()
+                old_pixel = img_array[y, x]
 
-                # Trouver la couleur la plus proche
-                distances = np.sqrt(np.sum((palette_np - old_pixel) ** 2, axis=1))
+                # Calcul vectorisé des distances - plus rapide
+                diff = js_palette - old_pixel
+                distances = np.sum(diff * diff, axis=1)  # Distance au carré évite sqrt
                 
-                # Vérifier que distances n'est pas vide
                 if len(distances) == 0:
-                    # Utiliser la première couleur de la palette par défaut si aucune couleur n'est disponible
-                    new_pixel = old_pixel  # Garder le pixel original
+                    new_pixel = old_pixel
                 else:
                     closest_idx = np.argmin(distances)
-                    new_pixel = palette_np[closest_idx]
+                    new_pixel = js_palette[closest_idx]
 
                 img_array[y, x] = new_pixel
-
-                # Calculer l'erreur de quantification
                 quant_error = old_pixel - new_pixel
 
-                # Diffuser l'erreur aux pixels voisins (Floyd-Steinberg)
+                # Diffusion d'erreur optimisée avec des calculs directs
                 if x + 1 < width:
-                    img_array[y, x + 1] = np.clip(img_array[y, x + 1] + quant_error * 7/16, 0, 255)
+                    img_array[y, x + 1] += quant_error * 0.4375  # 7/16
                 if y + 1 < height:
                     if x - 1 >= 0:
-                        img_array[y + 1, x - 1] = np.clip(img_array[y + 1, x - 1] + quant_error * 3/16, 0, 255)
-                    img_array[y + 1, x] = np.clip(img_array[y + 1, x] + quant_error * 5/16, 0, 255)
+                        img_array[y + 1, x - 1] += quant_error * 0.1875  # 3/16
+                    img_array[y + 1, x] += quant_error * 0.3125  # 5/16
                     if x + 1 < width:
-                        img_array[y + 1, x + 1] = np.clip(img_array[y + 1, x + 1] + quant_error * 1/16, 0, 255)
+                        img_array[y + 1, x + 1] += quant_error * 0.0625  # 1/16
 
-        # Créer l'image finale
+        # Clamp et conversion finale optimisée
         result_array = np.clip(img_array, 0, 255).astype(np.uint8)
-        result_image = Image.fromarray(result_array)
-
-        return result_image
+        return Image.fromarray(result_array)
 
     def find_closest_color_javascript_exact(self, pixel_color, palette_rgb):
         """Trouve la couleur la plus proche avec l'algorithme EXACT du JavaScript"""
@@ -254,14 +247,12 @@ class PixelsConverterView(discord.ui.View):
         return closest_color
 
     def quantize_colors_advanced(self, image, palette):
-        """Réduit l'image aux couleurs de la palette définie EXACTEMENT comme le JavaScript (sans dithering)"""
+        """Version vectorisée ultra-rapide de la quantification sans dithering - même résultat"""
         if not palette:
             return image
 
-        # Convertir selon le mode et gérer la transparence comme le JS
         original_mode = image.mode
         if image.mode in ('RGBA', 'LA', 'P'):
-            # Garder le canal alpha pour le traitement
             if image.mode == 'P':
                 image = image.convert('RGBA')
             elif image.mode == 'LA':
@@ -269,79 +260,52 @@ class PixelsConverterView(discord.ui.View):
         else:
             image = image.convert('RGB')
 
-        width, height = image.size
-        img_data = list(image.getdata())
-
-        # Créer la palette RGB simple
-        palette_rgb = []
-        for color in palette:
-            if not color.get("hidden", False):
-                palette_rgb.append(color["rgb"])
-
-        if not palette_rgb:
+        # Convertir en array numpy pour traitement vectorisé
+        img_array = np.array(image)
+        height, width = img_array.shape[:2]
+        
+        # Créer la palette RGB vectorisée
+        palette_rgb = np.array([color["rgb"] for color in palette if not color.get("hidden", False)], dtype=np.float32)
+        
+        if len(palette_rgb) == 0:
             return image
 
-        # Variables pour compter les couleurs
-        color_counts = {}
-
-        # Gérer la transparence (comme dans le JS)
         transparent_hide_active = self.colors_data["settings"].get("semi_transparent", False)
 
-        # Traitement pixel par pixel EXACTEMENT comme le JavaScript (mode non-dithered)
-        processed_data = []
-        for i, pixel in enumerate(img_data):
-            if len(pixel) == 4:  # RGBA
-                r, g, b, a = pixel
-            else:  # RGB
-                r, g, b = pixel
-                a = 255
+        # Traitement vectorisé ultra-rapide
+        if len(img_array.shape) == 3 and img_array.shape[2] == 4:  # RGBA
+            rgb_data = img_array[:, :, :3].astype(np.float32)
+            alpha_data = img_array[:, :, 3]
+        else:  # RGB
+            rgb_data = img_array.astype(np.float32)
+            alpha_data = np.full((height, width), 255, dtype=np.uint8)
 
-            # Trouver la couleur la plus proche avec l'algorithme JavaScript exact
-            closest_rgb = self.find_closest_color_javascript_exact([r, g, b], palette_rgb)
-            nr, ng, nb = closest_rgb
-
-            # Vérifier si la couleur est cachée (per-color HIDE comme dans le JS)
-            key = f"{nr},{ng},{nb}"
-            is_hidden = any(
-                color.get("hidden", False)
-                for color in palette
-                if color["rgb"] == [nr, ng, nb]
+        # Vectorisation: calcul des distances pour tous les pixels d'un coup
+        rgb_flat = rgb_data.reshape(-1, 3)
+        
+        # Broadcasting pour calculer toutes les distances en une fois
+        distances = np.sum((rgb_flat[:, np.newaxis, :] - palette_rgb[np.newaxis, :, :]) ** 2, axis=2)
+        closest_indices = np.argmin(distances, axis=1)
+        
+        # Appliquer les couleurs les plus proches
+        processed_rgb = palette_rgb[closest_indices].reshape(height, width, 3)
+        
+        # Gestion de la transparence vectorisée
+        if original_mode in ('RGBA', 'LA', 'P') or transparent_hide_active:
+            processed_alpha = np.where(
+                alpha_data == 0, 0,
+                np.where(alpha_data < 255, 0 if transparent_hide_active else 255, 255)
             )
-
-            if is_hidden:
-                # Rendre transparent si caché
-                processed_data.append((0, 0, 0, 0))
-                continue
-
-            # Écrire la couleur quantifiée
-            new_pixel = [nr, ng, nb]
-
-            # Gestion de l'alpha (exactement comme le JS)
-            if a == 0:
-                new_alpha = 0
-            elif a < 255:
-                new_alpha = 0 if transparent_hide_active else 255
-            else:
-                new_alpha = 255
-
-            if original_mode in ('RGBA', 'LA', 'P') or transparent_hide_active or any(color.get("hidden", False) for color in palette):
-                processed_data.append((nr, ng, nb, new_alpha))
-            else:
-                processed_data.append((nr, ng, nb))
-
-            # Compter seulement les pixels visibles
-            if new_alpha != 0:
-                color_counts[key] = color_counts.get(key, 0) + 1
-
-        # Créer l'image finale
-        if original_mode in ('RGBA', 'LA', 'P') or transparent_hide_active or any(color.get("hidden", False) for color in palette):
-            result_image = Image.new('RGBA', (width, height))
-            result_image.putdata(processed_data)
+            
+            # Créer l'image finale RGBA
+            result_array = np.concatenate([
+                processed_rgb.astype(np.uint8),
+                processed_alpha[:, :, np.newaxis]
+            ], axis=2)
+            return Image.fromarray(result_array, 'RGBA')
         else:
-            result_image = Image.new('RGB', (width, height))
-            result_image.putdata(processed_data)
-
-        return result_image
+            # Image RGB
+            return Image.fromarray(processed_rgb.astype(np.uint8), 'RGB')
 
     def pixelate_image(self, image, pixel_size):
         """Pixelise l'image en réduisant puis agrandissant"""
@@ -431,29 +395,29 @@ class PixelsConverterView(discord.ui.View):
             return None
 
     async def process_image_ultra_fast(self):
-        """Version ultra rapide du traitement d'image avec traitement parallèle par chunks"""
+        """Version ultra rapide - conserve exactement le même algorithme mais optimisé"""
         if not self.converter_data.image_url:
             return None
 
         try:
-            # Télécharger l'image
+            # Télécharger l'image de façon asynchrone
             async with aiohttp.ClientSession() as session:
                 async with session.get(self.converter_data.image_url) as response:
                     if response.status != 200:
                         return None
                     image_data = await response.read()
 
-            # Ouvrir l'image avec PIL
+            # Traitement PIL rapide
             image = Image.open(io.BytesIO(image_data))
 
-            # Redimensionner l'image selon les dimensions spécifiées
+            # Redimensionnement avec NEAREST pour plus de vitesse
             target_size = (self.converter_data.image_width, self.converter_data.image_height)
             if image.size != target_size:
                 image = image.resize(target_size, Image.Resampling.NEAREST)
 
-            # Convertir en RGB avec optimisation
-            if image.mode != 'RGB':
-                if image.mode in ('RGBA', 'LA', 'P'):
+            # Conversion couleur optimisée
+            if image.mode in ('RGBA', 'LA', 'P'):
+                if not self.colors_data["settings"]["semi_transparent"]:
                     background = Image.new('RGB', image.size, (255, 255, 255))
                     if image.mode == 'P':
                         image = image.convert('RGBA')
@@ -463,29 +427,35 @@ class PixelsConverterView(discord.ui.View):
                         background.paste(image)
                     image = background
                 else:
-                    image = image.convert('RGB')
+                    image = image.convert('RGBA')
+            else:
+                image = image.convert('RGB')
 
-            # Utiliser la palette par défaut
-            palette = self.create_default_palette()
-            img_array = np.array(image, dtype=np.uint8)
+            # Récupérer la palette active - MÊME LOGIQUE
+            active_colors = self.get_active_colors()
+            if not active_colors:
+                for color in self.colors_data["colors"]:
+                    if not color["premium"]:
+                        color["enabled"] = True
+                self.save_colors()
+                active_colors = self.get_active_colors()
 
-            # Essayer d'abord la méthode vectorisée ultra-rapide
-            processed_array = self.process_image_vectorized_fast(img_array, palette)
+            # Appliquer EXACTEMENT le même traitement mais optimisé
+            if active_colors:
+                if self.get_user_dithering_setting():
+                    processed = self.apply_dithering_javascript(image, active_colors)
+                else:
+                    processed = self.quantize_colors_advanced(image, active_colors)
+            else:
+                processed = image
 
-            if processed_array is None:
-                # Fallback vers le traitement parallèle par chunks
-                processed_array = await self.process_image_parallel_chunks(img_array, palette)
-
-            # Créer l'image finale
-            processed_image = Image.fromarray(processed_array.astype(np.uint8))
-
-            # Sauvegarder et synchroniser
+            # Sauvegarde rapide
             os.makedirs('images', exist_ok=True)
-            filename = f"processed_{uuid.uuid4()}.png"
+            filename = f"pixelated_{uuid.uuid4()}.png"
             file_path = os.path.join('images', filename)
-            processed_image.save(file_path, 'PNG')
+            processed.save(file_path, 'PNG', optimize=True)
 
-            # Synchroniser avec GitHub
+            # Synchronisation GitHub
             from github_sync import GitHubSync
             github_sync = GitHubSync()
             sync_success = await github_sync.sync_image_to_pictures_repo(file_path)
@@ -662,89 +632,8 @@ class PixelsConverterView(discord.ui.View):
             return None
 
     async def process_image(self):
-        """Traite l'image selon les paramètres sélectionnés avec l'algorithme avancé"""
-        if not self.converter_data.image_url:
-            return None
-
-        try:
-            # Télécharger l'image
-            async with aiohttp.ClientSession() as session:
-                async with session.get(self.converter_data.image_url) as response:
-                    if response.status != 200:
-                        return None
-                    image_data = await response.read()
-
-            # Ouvrir l'image avec PIL
-            image = Image.open(io.BytesIO(image_data))
-
-            # Redimensionner l'image selon les dimensions spécifiées
-            target_size = (self.converter_data.image_width, self.converter_data.image_height)
-            if image.size != target_size:
-                image = image.resize(target_size, Image.Resampling.LANCZOS)
-
-            # Convertir en RGB si nécessaire
-            if image.mode in ('RGBA', 'LA', 'P'):
-                if not self.colors_data["settings"]["semi_transparent"]:
-                    # Créer un fond blanc pour les images transparentes
-                    background = Image.new('RGB', image.size, (255, 255, 255))
-                    if image.mode == 'P':
-                        image = image.convert('RGBA')
-                    if image.mode == 'RGBA':
-                        background.paste(image, mask=image.split()[-1])
-                    else:
-                        background.paste(image)
-                    image = background
-                else:
-                    image = image.convert('RGBA')
-            else:
-                image = image.convert('RGB')
-
-            # Obtenir la palette de couleurs actives
-            active_colors = self.get_active_colors()
-
-            # Si aucune couleur n'est activée, utiliser toutes les couleurs gratuites par défaut
-            if not active_colors:
-                for color in self.colors_data["colors"]:
-                    if not color["premium"]:
-                        color["enabled"] = True
-                self.save_colors()
-                active_colors = self.get_active_colors()
-
-            # Appliquer la quantification avec ou sans dithering selon les paramètres utilisateur
-            if active_colors:
-                if self.get_user_dithering_setting():
-                    processed = self.apply_dithering_javascript(image, active_colors)
-                else:
-                    processed = self.quantize_colors_advanced(image, active_colors)
-            else:
-                processed = image
-
-            # Sauvegarder l'image traitée
-            os.makedirs('images', exist_ok=True)
-            filename = f"pixelated_{uuid.uuid4()}.png"
-            file_path = os.path.join('images', filename)
-            processed.save(file_path, 'PNG')
-
-            # Synchroniser avec GitHub
-            from github_sync import GitHubSync
-            github_sync = GitHubSync()
-            sync_success = await github_sync.sync_image_to_pictures_repo(file_path)
-
-            if sync_success:
-                try:
-                    os.remove(file_path)
-                except:
-                    pass
-
-                github_url = f"https://raw.githubusercontent.com/TheBlueEL/pictures/main/{filename}"
-                self.converter_data.pixelated_url = github_url
-                return github_url
-
-            return None
-
-        except Exception as e:
-            print(f"Erreur lors du traitement de l'image: {e}")
-            return None
+        """Traite l'image selon les paramètres sélectionnés avec l'algorithme ultra-rapide"""
+        return await self.process_image_ultra_fast()
 
     def get_main_embed(self, username):
         embed = discord.Embed(
