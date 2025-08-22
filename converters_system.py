@@ -174,7 +174,7 @@ class PixelsConverterView(discord.ui.View):
             image = image.convert('RGB')
 
         width, height = image.size
-        
+
         # Pas de réduction de résolution - traiter à la taille originale pour la qualité maximale
         original_size = (width, height)
         new_width, new_height = width, height
@@ -184,7 +184,7 @@ class PixelsConverterView(discord.ui.View):
 
         # Utiliser la palette active de l'utilisateur pour un meilleur rendu
         palette_rgb = np.array([color["rgb"] for color in palette if not color.get("hidden", False)], dtype=np.float32)
-        
+
         if len(palette_rgb) == 0:
             # Fallback vers palette par défaut si aucune couleur active
             palette_rgb = np.array([
@@ -204,16 +204,16 @@ class PixelsConverterView(discord.ui.View):
         for y in range(new_height):
             for x in range(new_width):
                 old_pixel = img_array[y, x]
-                
+
                 # Calcul vectorisé ultra-rapide de la couleur la plus proche
                 diff = palette_rgb - old_pixel
                 distances = np.sum(diff * diff, axis=1)
                 closest_idx = np.argmin(distances)
                 new_pixel = palette_rgb[closest_idx]
-                
+
                 img_array[y, x] = new_pixel
                 quant_error = old_pixel - new_pixel
-                
+
                 # Diffusion d'erreur Floyd-Steinberg optimisée
                 if x + 1 < new_width:
                     img_array[y, x + 1] += quant_error * (7.0 / 16.0)
@@ -227,7 +227,7 @@ class PixelsConverterView(discord.ui.View):
         # Clamp et conversion avec qualité maximale
         result_array = np.clip(img_array, 0, 255).astype(np.uint8)
         processed_image = Image.fromarray(result_array)
-        
+
         return processed_image
 
     def find_closest_color_javascript_exact(self, pixel_color, palette_rgb):
@@ -271,10 +271,10 @@ class PixelsConverterView(discord.ui.View):
         # Convertir en array numpy optimisé
         img_array = np.array(image)
         height, width = img_array.shape[:2]
-        
+
         # Palette RGB ultra-optimisée
         palette_rgb = np.array([color["rgb"] for color in palette if not color.get("hidden", False)], dtype=np.float32)
-        
+
         if len(palette_rgb) == 0:
             return image
 
@@ -290,22 +290,22 @@ class PixelsConverterView(discord.ui.View):
 
         # Traitement vectorisé ultra-optimisé avec qualité maximale
         rgb_flat = rgb_data.reshape(-1, 3)
-        
+
         # Calcul vectorisé des distances avec algorithme de distance perceptuelle amélioré
         # Utilise la pondération perceptuelle pour des couleurs plus naturelles
         r_weight = 0.299
-        g_weight = 0.587  
+        g_weight = 0.587
         b_weight = 0.114
-        
+
         weights = np.array([r_weight, g_weight, b_weight], dtype=np.float32)
-        
+
         # Broadcasting ultra-optimisé pour tous les pixels à la fois
         diff = rgb_flat[:, np.newaxis, :] - palette_rgb[np.newaxis, :, :]
-        
+
         # Distance perceptuelle pondérée pour de meilleurs résultats visuels
         weighted_diff = diff * weights
         distances = np.sum(weighted_diff * weighted_diff, axis=2)
-        
+
         closest_indices = np.argmin(distances, axis=1)
         processed_flat = palette_rgb[closest_indices]
         processed_rgb = processed_flat.reshape(rgb_data.shape)
@@ -316,7 +316,7 @@ class PixelsConverterView(discord.ui.View):
                 alpha_data == 0, 0,
                 np.where(alpha_data < 255, 0 if transparent_hide_active else 255, 255)
             )
-            
+
             result_array = np.concatenate([
                 processed_rgb.astype(np.uint8),
                 processed_alpha[:, :, np.newaxis]
@@ -428,11 +428,11 @@ class PixelsConverterView(discord.ui.View):
 
             # Traitement PIL ultra-optimisé
             image = Image.open(io.BytesIO(image_data))
-            
+
             # Optimisation selon la taille de l'image
             target_size = (self.converter_data.image_width, self.converter_data.image_height)
             total_pixels = target_size[0] * target_size[1]
-            
+
             # Redimensionnement intelligent selon la taille
             if image.size != target_size:
                 if total_pixels > 2073600:  # Plus de 1920x1080 (Full HD)
@@ -476,7 +476,7 @@ class PixelsConverterView(discord.ui.View):
             if active_colors:
                 user_dithering = self.get_user_dithering_setting()
                 print(f"Dithering actif pour utilisateur {self.user_id}: {user_dithering}")
-                
+
                 if user_dithering:
                     # Dithering optimisé pour grandes images
                     print("Application du dithering...")
@@ -493,7 +493,7 @@ class PixelsConverterView(discord.ui.View):
             os.makedirs('images', exist_ok=True)
             filename = f"pixelated_{uuid.uuid4()}.png"
             file_path = os.path.join('images', filename)
-            
+
             # Optimisations de sauvegarde selon la taille
             if total_pixels > 8294400:  # Plus de 4K (3840x2160)
                 processed.save(file_path, 'PNG', optimize=True, compress_level=6)
@@ -591,7 +591,7 @@ class PixelsConverterView(discord.ui.View):
             print(f"Erreur fallback: {e}")
             return img_array  # Retourne l'image originale en dernier recours
 
-    async def process_image_fast(self):
+    def process_image_fast(self):
         """Version rapide du traitement d'image inspirée du code JavaScript"""
         # NOTE: This function is now deprecated and replaced by process_image_ultra_fast
         # for near-instantaneous processing. It's kept here for reference if needed,
@@ -1038,10 +1038,27 @@ class PixelsConverterView(discord.ui.View):
             )
 
             async def back_callback(interaction):
-                self.current_mode = "image_preview"
-                embed = self.get_image_preview_embed()
-                self.update_buttons()
-                await interaction.response.edit_message(embed=embed, view=self)
+                try:
+                    self.current_mode = "image_preview"
+                    embed = self.get_image_preview_embed()
+                    self.update_buttons()
+
+                    # Vérifier si l'interaction est encore valide
+                    if not interaction.response.is_done():
+                        await interaction.response.edit_message(embed=embed, view=self)
+                    else:
+                        await interaction.followup.edit_message(message_id=interaction.message.id, embed=embed, view=self)
+                except discord.NotFound:
+                    # L'interaction a expiré, ne rien faire
+                    pass
+                except discord.InteractionResponded:
+                    # L'interaction a déjà été traitée
+                    try:
+                        await interaction.followup.edit_message(message_id=interaction.message.id, embed=embed, view=self)
+                    except:
+                        pass
+                except Exception as e:
+                    print(f"Erreur back_callback: {e}")
 
             back_button.callback = back_callback
 
@@ -1168,13 +1185,13 @@ class PixelsConverterView(discord.ui.View):
                                 if color_index < len(self.colors_data["colors"]):
                                     self.colors_data["colors"][color_index]["enabled"] = not self.colors_data["colors"][color_index]["enabled"]
                                     self.save_colors()
-                                    
+
                                     # Reprocesser l'image si on en a une
                                     if self.converter_data.image_url:
                                         processed_url = await self.process_image()
                                         if processed_url:
                                             self.converter_data.pixelated_url = processed_url
-                                    
+
                                     embed = self.get_color_selection_embed()
                                     self.update_buttons()
                                     await interaction.response.edit_message(embed=embed, view=self)
