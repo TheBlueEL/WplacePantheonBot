@@ -23,7 +23,7 @@
       },
       "text_color": [255, 255, 255, 255],
       "shadow_color": [0, 0, 0, 128],
-      "shadow_offset": 10
+      "shadow_offset": 5
     }
   }
 }
