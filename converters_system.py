@@ -805,7 +805,7 @@ class PixelsConverterView(discord.ui.View):
         )
 
         embed.add_field(
-            name="🖼️ Total Pixels",
+            name="<:TotalLOGO:1408245313755545752> Total Pixels",
             value=f"{total_pixels:,}px",
             inline=True
         )
@@ -815,7 +815,7 @@ class PixelsConverterView(discord.ui.View):
         dithering_status = "ON" if self.get_user_dithering_setting() else "OFF"
 
         embed.add_field(
-            name="🎨 Active Colors",
+            name="<:PixelLOGO:1408244581971263620> Active Colors",
             value=f"{len(active_colors)}",
             inline=True
         )
@@ -1060,7 +1060,7 @@ class PixelsConverterView(discord.ui.View):
             color_button = discord.ui.Button(
                 label="Colors",
                 style=discord.ButtonStyle.primary,
-                emoji="🎨",
+                emoji="<:PixelLOGO:1408244581971263620>",
                 row=1
             )
 
@@ -1118,7 +1118,7 @@ class PixelsConverterView(discord.ui.View):
 
             # Left arrow
             left_arrow = discord.ui.Button(
-                label="◀",
+                emoji="<:LeftArrowLOGO:1408246340957245450>",
                 style=discord.ButtonStyle.gray if self.color_page == 0 else discord.ButtonStyle.primary,
                 disabled=self.color_page == 0,
                 row=0
@@ -1171,7 +1171,7 @@ class PixelsConverterView(discord.ui.View):
 
             # Right arrow
             right_arrow = discord.ui.Button(
-                label="▶",
+                emoji="<:RightArrowLOGO:1408246262406578206>",
                 style=discord.ButtonStyle.gray if self.color_page >= total_pages - 1 else discord.ButtonStyle.primary,
                 disabled=self.color_page >= total_pages - 1,
                 row=0
@@ -1293,12 +1293,12 @@ class PixelsConverterView(discord.ui.View):
 
 class SizeModal(discord.ui.Modal):
     def __init__(self, converter_data, parent_view):
-        super().__init__(title='📏 Set Image Size')
+        super().__init__(title='Set Image Size')
         self.converter_data = converter_data
         self.parent_view = parent_view
 
         self.width_input = discord.ui.TextInput(
-            label='Width (pixels)',
+            label='Width (Px)',
             placeholder='Enter width...',
             required=True,
             default=str(converter_data.image_width),
@@ -1306,7 +1306,7 @@ class SizeModal(discord.ui.Modal):
         )
 
         self.height_input = discord.ui.TextInput(
-            label='Height (pixels)',
+            label='Height (Px)',
             placeholder='Enter height...',
             required=True,
             default=str(converter_data.image_height),
