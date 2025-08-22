@@ -430,6 +430,9 @@ class WelcomeSystemManagerView(discord.ui.View):
         self.current_image_type = None
         
     def get_main_embed(self):
+        # Recharger la configuration pour avoir les dernières modifications
+        self.config = load_welcome_data()["template_config"]
+        
         embed = discord.Embed(
             title="<:SettingLOGO:1407071854593839239> Welcome System Manager",
             description="Configure your welcome card design and settings",
@@ -458,12 +461,15 @@ class WelcomeSystemManagerView(discord.ui.View):
         )
         
         bot_name = get_bot_name(self.bot)
-        embed.set_thumbnail(url=self.bot.user.display_avatar.url)
+        embed.set_image(url=self.config["template_url"])
         embed.set_footer(text=f"{bot_name} | Welcome System", icon_url=self.bot.user.display_avatar.url)
         
         return embed
         
     def get_background_embed(self):
+        # Recharger la configuration pour avoir les dernières modifications
+        self.config = load_welcome_data()["template_config"]
+        
         embed = discord.Embed(
             title="🎨 Background Settings",
             description="Configure the background of your welcome card",
@@ -492,12 +498,15 @@ class WelcomeSystemManagerView(discord.ui.View):
             )
             
         bot_name = get_bot_name(self.bot)
-        embed.set_thumbnail(url=self.bot.user.display_avatar.url)
+        embed.set_image(url=self.config["template_url"])
         embed.set_footer(text=f"{bot_name} | Background Settings", icon_url=self.bot.user.display_avatar.url)
         
         return embed
         
     def get_background_color_embed(self):
+        # Recharger la configuration pour avoir les dernières modifications
+        self.config = load_welcome_data()["template_config"]
+        
         embed = discord.Embed(
             title="🎨 Background Color",
             description="Choose how to set your background color",
@@ -519,12 +528,15 @@ class WelcomeSystemManagerView(discord.ui.View):
             )
             
         bot_name = get_bot_name(self.bot)
-        embed.set_thumbnail(url=self.bot.user.display_avatar.url)
+        embed.set_image(url=self.config["template_url"])
         embed.set_footer(text=f"{bot_name} | Background Color", icon_url=self.bot.user.display_avatar.url)
         
         return embed
         
     def get_background_image_embed(self):
+        # Recharger la configuration pour avoir les dernières modifications
+        self.config = load_welcome_data()["template_config"]
+        
         embed = discord.Embed(
             title="🖼️ Background Image",
             description="Set a custom background image for your welcome card",
@@ -545,12 +557,15 @@ class WelcomeSystemManagerView(discord.ui.View):
             )
             
         bot_name = get_bot_name(self.bot)
-        embed.set_thumbnail(url=self.bot.user.display_avatar.url)
+        embed.set_image(url=self.config["template_url"])
         embed.set_footer(text=f"{bot_name} | Background Image", icon_url=self.bot.user.display_avatar.url)
         
         return embed
         
     def get_profile_outline_embed(self):
+        # Recharger la configuration pour avoir les dernières modifications
+        self.config = load_welcome_data()["template_config"]
+        
         embed = discord.Embed(
             title="🖼️ Profile Outline Settings",
             description="Configure the profile decoration outline",
@@ -588,12 +603,15 @@ class WelcomeSystemManagerView(discord.ui.View):
             )
             
         bot_name = get_bot_name(self.bot)
-        embed.set_thumbnail(url=self.bot.user.display_avatar.url)
+        embed.set_image(url=self.config["template_url"])
         embed.set_footer(text=f"{bot_name} | Profile Outline", icon_url=self.bot.user.display_avatar.url)
         
         return embed
         
     def get_waiting_image_embed(self):
+        # Recharger la configuration pour avoir les dernières modifications
+        self.config = load_welcome_data()["template_config"]
+        
         embed = discord.Embed(
             title="<:UploadLOGO:1407072005567545478> Upload Image",
             description="Please send an image file in this channel.\n\n**Only you can upload the image for security reasons.**",
@@ -601,7 +619,7 @@ class WelcomeSystemManagerView(discord.ui.View):
         )
         
         bot_name = get_bot_name(self.bot)
-        embed.set_thumbnail(url=self.bot.user.display_avatar.url)
+        embed.set_image(url=self.config["template_url"])
         embed.set_footer(text=f"{bot_name} | Upload Image", icon_url=self.bot.user.display_avatar.url)
         
         return embed
