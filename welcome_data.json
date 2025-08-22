@@ -9,8 +9,8 @@
     },
     "profile_decoration": {
       "url": "https://raw.githubusercontent.com/TheBlueEL/pictures/refs/heads/main/ProfileDecoration.png",
-      "x": 50,
-      "y": 25,
+      "x": 65,
+      "y": 35,
       "enabled": true
     },
     "text_config": {
