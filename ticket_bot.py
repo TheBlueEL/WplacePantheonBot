@@ -4156,7 +4156,7 @@ def setup_persistent_views(bot):
         bot.add_view(TicketCloseView())
         bot.add_view(TicketClosedActionsView())
 
-        print("<:SucessLOGO:1407071637840592977> Ticket system persistent views loaded successfully")
+        print("Ticket system persistent views loaded successfully")
     except Exception as e:
         print(f"<:ErrorLOGO:1407071682031648850> Error setting up ticket persistent views: {e}")
         # Initialize with empty data if there's an error
