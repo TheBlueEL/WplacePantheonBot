@@ -22,9 +22,7 @@ client = commands.Bot(command_prefix='!', intents=intents)
 
 @client.event
 async def on_ready():
-    print(f'{client.user} is connected!')
     print(f'Bot connected as {client.user.name}')
-    print(f'Bot ID: {client.user.id}')
 
     # Charger les extensions
     try:
@@ -83,7 +81,6 @@ async def on_ready():
         print(f'Failed to sync commands: {e}')
 
     # Synchroniser avec GitHub après les commandes
-    print("Synchronisation avec GitHub...")
     github_sync = GitHubSync()
     await github_sync.sync_all_files_to_github()
 
