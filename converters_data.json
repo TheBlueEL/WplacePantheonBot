@@ -1,19 +1,6 @@
 {
   "colors": [
     {
-      "id": 0,
-      "premium": false,
-      "name": "Transparent",
-      "rgb": [
-        0,
-        0,
-        0
-      ],
-      "emoji": "<:Green:1407884777012461648>",
-      "enabled": true,
-      "hidden": false
-    },
-    {
       "id": 1,
       "premium": false,
       "name": "Black",
@@ -22,7 +9,7 @@
         0,
         0
       ],
-      "emoji": "<:Green:1407884777012461648>",
+      "emoji": "<:Black:1407884777012461648>",
       "enabled": true,
       "hidden": false
     },
@@ -35,7 +22,7 @@
         60,
         60
       ],
-      "emoji": "<:Grey:1407882703243710635>",
+      "emoji": "<:Dark Gray:1407882703243710635>",
       "enabled": true,
       "hidden": false
     },
@@ -48,7 +35,7 @@
         120,
         120
       ],
-      "emoji": "<:Grey:1407882703243710635>",
+      "emoji": "<:Gray:1407882703243710635>",
       "enabled": true,
       "hidden": false
     },
@@ -61,7 +48,7 @@
         210,
         210
       ],
-      "emoji": "<:LightGrey:1407882744184176813>",
+      "emoji": "<:LightGray:1407882744184176813>",
       "enabled": true,
       "hidden": false
     },
@@ -243,7 +230,7 @@
         80,
         158
       ],
-      "emoji": "<:Indigo:1407882718284615851>",
+      "emoji": "<:DarkBlue:1407882718284615851>",
       "enabled": true,
       "hidden": false
     },
@@ -256,7 +243,7 @@
         147,
         228
       ],
-      "emoji": "<:Indigo:1407882718284615851>",
+      "emoji": "<:Blue:1407882718284615851>",
       "enabled": true,
       "hidden": false
     },
@@ -269,7 +256,7 @@
         247,
         242
       ],
-      "emoji": "<:Teal:1407882874962706442>",
+      "emoji": "<:Cyan:1407882874962706442>",
       "enabled": true,
       "hidden": false
     },
@@ -399,7 +386,7 @@
         104,
         42
       ],
-      "emoji": "<:DarkBrown:1407882473659961534>",
+      "emoji": "<:Brown:1407882473659961534>",
       "enabled": true,
       "hidden": false
     }
