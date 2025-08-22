@@ -769,7 +769,7 @@ class PixelsConverterView(discord.ui.View):
     def get_waiting_image_embed(self):
         embed = discord.Embed(
             title="<:UploadLOGO:1407072005567545478> Upload Image",
-            description="Please send an image file in this channel.\n\n**Only you can upload the image for security reasons.**",
+            description="Please send an image file in this channel.\n\n**Only you can upload the image.**",
             color=discord.Color.blue()
         )
 
@@ -793,13 +793,13 @@ class PixelsConverterView(discord.ui.View):
 
         # Utiliser des champs inline pour afficher les informations sur la même ligne
         embed.add_field(
-            name="📏 Width",
+            name="<:WidthLOGO:1408238690156675282> Width",
             value=f"{self.converter_data.image_width}px",
             inline=True
         )
 
         embed.add_field(
-            name="📐 Height",
+            name="<:HeightLOGO:1408238471981826208> Height",
             value=f"{self.converter_data.image_height}px",
             inline=True
         )
@@ -881,7 +881,7 @@ class PixelsConverterView(discord.ui.View):
 
         embed.add_field(
             name="Dithering Info",
-            value="Adds noise to create gradient effects with limited colors (Floyd-Steinberg algorithm from JavaScript)",
+            value="Adds noise to create gradient effects!",
             inline=False
         )
 
@@ -979,7 +979,7 @@ class PixelsConverterView(discord.ui.View):
             shrink_button = discord.ui.Button(
                 label="Less",
                 style=discord.ButtonStyle.secondary,
-                emoji="🔽",
+                emoji="<:RemoveLOGO:1408238304041767022>",
                 row=0
             )
 
@@ -1008,7 +1008,7 @@ class PixelsConverterView(discord.ui.View):
             size_button = discord.ui.Button(
                 label="Size",
                 style=discord.ButtonStyle.primary,
-                emoji="📏",
+                emoji="<:SizeLOGO:1408238410040082552>",
                 row=0
             )
 
@@ -1021,7 +1021,7 @@ class PixelsConverterView(discord.ui.View):
             enlarge_button = discord.ui.Button(
                 label="More",
                 style=discord.ButtonStyle.secondary,
-                emoji="🔼",
+                emoji="<:CreateLOGO:1407071205026168853>",
                 row=0
             )
 
