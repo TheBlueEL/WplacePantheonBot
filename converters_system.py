@@ -223,15 +223,15 @@ class PixelsConverterView(discord.ui.View):
                 for x in range(new_width):
                     old_pixel = row[x]
                     
-                    # Distance vectorisée ultra-rapide
+                    # Distance vectorisée ultra-rapide avec sécurité
                     diff = js_palette - old_pixel
                     distances = np.sum(diff * diff, axis=1)
                     
-                    if len(distances) > 0:
+                    if len(distances) > 0 and len(js_palette) > 0:
                         closest_idx = np.argmin(distances)
                         new_pixel = js_palette[closest_idx]
                     else:
-                        new_pixel = old_pixel
+                        new_pixel = old_pixel.copy()
                     
                     row[x] = new_pixel
                     quant_error = old_pixel - new_pixel
@@ -507,13 +507,19 @@ class PixelsConverterView(discord.ui.View):
 
             # Traitement image avec détection automatique de la meilleure méthode
             if active_colors:
-                if self.get_user_dithering_setting():
+                user_dithering = self.get_user_dithering_setting()
+                print(f"Dithering actif pour utilisateur {self.user_id}: {user_dithering}")
+                
+                if user_dithering:
                     # Dithering optimisé pour grandes images
+                    print("Application du dithering...")
                     processed = self.apply_dithering_javascript(image, active_colors)
                 else:
                     # Quantification vectorisée ultra-rapide
+                    print("Application de la quantification simple...")
                     processed = self.quantize_colors_advanced(image, active_colors)
             else:
+                print("Aucune couleur active, image non modifiée")
                 processed = image
 
             # Sauvegarde ultra-optimisée avec compression
@@ -1158,32 +1164,56 @@ class PixelsConverterView(discord.ui.View):
             self.add_item(back_button)
             self.add_item(right_arrow)
 
-            # Color buttons (2 rows of 4)
+            # Color buttons (2 rows of 4) with error handling
             start_idx = self.color_page * self.colors_per_page
             end_idx = min(start_idx + self.colors_per_page, len(self.colors_data["colors"]))
 
             for i, color_idx in enumerate(range(start_idx, end_idx)):
-                color = self.colors_data["colors"][color_idx]
-                row = 1 + (i // 4)  # Start from row 1
+                try:
+                    color = self.colors_data["colors"][color_idx]
+                    row = 1 + (i // 4)  # Start from row 1
 
-                button = discord.ui.Button(
-                    label=color["name"][:15],  # Truncate long names
-                    style=discord.ButtonStyle.success if color["enabled"] else discord.ButtonStyle.danger,
-                    emoji=color["emoji"],
-                    row=row
-                )
+                    # Vérification de sécurité pour les données de couleur
+                    color_name = color.get("name", "Unknown")[:15]
+                    color_emoji = color.get("emoji", "🎨")
+                    color_enabled = color.get("enabled", False)
 
-                def create_color_callback(color_index):
-                    async def color_callback(interaction):
-                        self.colors_data["colors"][color_index]["enabled"] = not self.colors_data["colors"][color_index]["enabled"]
-                        self.save_colors()
-                        embed = self.get_color_selection_embed()
-                        self.update_buttons()
-                        await interaction.response.edit_message(embed=embed, view=self)
-                    return color_callback
+                    button = discord.ui.Button(
+                        label=color_name,
+                        style=discord.ButtonStyle.success if color_enabled else discord.ButtonStyle.danger,
+                        emoji=color_emoji,
+                        row=row
+                    )
 
-                button.callback = create_color_callback(color_idx)
-                self.add_item(button)
+                    def create_color_callback(color_index):
+                        async def color_callback(interaction):
+                            try:
+                                # Vérification de sécurité avant de modifier
+                                if color_index < len(self.colors_data["colors"]):
+                                    self.colors_data["colors"][color_index]["enabled"] = not self.colors_data["colors"][color_index]["enabled"]
+                                    self.save_colors()
+                                    
+                                    # Reprocesser l'image si on en a une
+                                    if self.converter_data.image_url:
+                                        processed_url = await self.process_image()
+                                        if processed_url:
+                                            self.converter_data.pixelated_url = processed_url
+                                    
+                                    embed = self.get_color_selection_embed()
+                                    self.update_buttons()
+                                    await interaction.response.edit_message(embed=embed, view=self)
+                                else:
+                                    await interaction.response.send_message("Erreur: Couleur introuvable", ephemeral=True)
+                            except Exception as e:
+                                print(f"Erreur callback couleur: {e}")
+                                await interaction.response.send_message(f"Erreur: {str(e)}", ephemeral=True)
+                        return color_callback
+
+                    button.callback = create_color_callback(color_idx)
+                    self.add_item(button)
+                except Exception as e:
+                    print(f"Erreur création bouton couleur {i}: {e}")
+                    continue
 
         elif self.current_mode == "settings":
             # Dithering button (default OFF/red) - Par utilisateur
