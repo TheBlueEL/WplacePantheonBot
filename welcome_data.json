@@ -10,16 +10,23 @@
     "text_config": {
       "welcome_text": {
         "x_offset": 50,
-        "y_offset": 250,
+        "y_offset": 200,
+        "font_size": 72,
+        "font_path": "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+        "text": "WELCOME,"
+      },
+      "username_text": {
+        "x_offset": 50,
+        "y_offset": 280,
         "font_size": 84,
         "font_path": "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
       },
       "server_text": {
         "x_offset": 50,
-        "y_offset": 150,
+        "y_offset": 370,
         "font_size": 72,
         "font_path": "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
-        "text": "To the Server!"
+        "text": "TO THE SERVER"
       },
       "text_color": [255, 255, 255, 255],
       "shadow_color": [0, 0, 0, 128],
