@@ -500,23 +500,6 @@ class WelcomeSystemManagerView(discord.ui.View):
         )
         
         bot_name = get_bot_name(self.bot)
-        # Créer une carte de bienvenue temporaire pour l'affichage
-        if hasattr(self, 'guild') and self.guild:
-            # Utiliser le premier membre du serveur pour l'aperçu
-            sample_member = self.guild.me if self.guild.me else self.bot.user
-            if sample_member:
-                try:
-                    welcome_system = WelcomeSystem(self.bot)
-                    preview_image = await welcome_system.create_welcome_card(sample_member)
-                    if preview_image:
-                        # Sauvegarder temporairement l'image pour l'affichage
-                        import uuid
-                        temp_filename = f"temp_preview_{uuid.uuid4()}.png"
-                        with open(temp_filename, 'wb') as f:
-                            f.write(preview_image.getvalue())
-                        # Note: En production, il faudrait uploader cette image et utiliser l'URL
-                except:
-                    pass
         embed.set_footer(text=f"{bot_name} | Welcome System", icon_url=self.bot.user.display_avatar.url)
         
         return embed
