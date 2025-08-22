@@ -7,15 +7,52 @@ import io
 from PIL import Image, ImageDraw, ImageFont
 import requests
 import os
+import json
 
 def get_bot_name(bot):
     """Récupère le nom d'affichage du bot"""
     return bot.user.display_name if bot.user else "Bot"
 
+def load_welcome_data():
+    """Load welcome data from JSON file"""
+    try:
+        with open('welcome_data.json', 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except FileNotFoundError:
+        # Return default configuration if file doesn't exist
+        return {
+            "template_config": {
+                "template_url": "https://raw.githubusercontent.com/TheBlueEL/pictures/refs/heads/main/WelcomeCard.png",
+                "avatar_position": {
+                    "x": 55,
+                    "y": 50,
+                    "diameter": 120
+                },
+                "text_config": {
+                    "welcome_text": {
+                        "x_offset": 20,
+                        "y_offset": 20,
+                        "font_size": 28,
+                        "font_path": "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
+                    },
+                    "server_text": {
+                        "x_offset": 20,
+                        "y_offset": 40,
+                        "font_size": 24,
+                        "font_path": "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+                        "text": "To the Server!"
+                    },
+                    "text_color": [255, 255, 255, 255],
+                    "shadow_color": [0, 0, 0, 128],
+                    "shadow_offset": 2
+                }
+            }
+        }
+
 class WelcomeSystem(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.welcome_template_url = "https://raw.githubusercontent.com/TheBlueEL/pictures/refs/heads/main/WelcomeCard.png"
+        self.config = load_welcome_data()["template_config"]
         
     async def download_image(self, url):
         """Télécharge une image depuis une URL"""
@@ -39,8 +76,11 @@ class WelcomeSystem(commands.Cog):
     async def create_welcome_card(self, user):
         """Crée la carte de bienvenue personnalisée"""
         try:
+            # Recharger la configuration pour les modifications en temps réel
+            self.config = load_welcome_data()["template_config"]
+            
             # Télécharger l'image template
-            template_data = await self.download_image(self.welcome_template_url)
+            template_data = await self.download_image(self.config["template_url"])
             if not template_data:
                 return None
             
@@ -54,13 +94,11 @@ class WelcomeSystem(commands.Cog):
             template = Image.open(io.BytesIO(template_data)).convert("RGBA")
             avatar = Image.open(io.BytesIO(avatar_data)).convert("RGBA")
             
-            # Dimensions du template
-            template_width, template_height = template.size
-            
-            # Position et taille du cercle (ajustez selon votre template)
-            circle_x = 55  # Position X du cercle
-            circle_y = 50  # Position Y du cercle
-            circle_diameter = 120  # Diamètre du cercle
+            # Configuration de l'avatar depuis JSON
+            avatar_config = self.config["avatar_position"]
+            circle_x = avatar_config["x"]
+            circle_y = avatar_config["y"]
+            circle_diameter = avatar_config["diameter"]
             
             # Redimensionner l'avatar pour qu'il rentre dans le cercle
             avatar = avatar.resize((circle_diameter, circle_diameter), Image.Resampling.LANCZOS)
@@ -79,28 +117,29 @@ class WelcomeSystem(commands.Cog):
             # Ajouter le texte
             draw = ImageDraw.Draw(template)
             
-            # Essayer de charger une police personnalisée, sinon utiliser la police par défaut
+            # Configuration du texte depuis JSON
+            text_config = self.config["text_config"]
+            welcome_config = text_config["welcome_text"]
+            server_config = text_config["server_text"]
+            
+            # Essayer de charger les polices personnalisées
             try:
-                # Police pour "Welcome [Username]"
-                font_welcome = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 28)
-                # Police pour "To the Server!"
-                font_server = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 24)
+                font_welcome = ImageFont.truetype(welcome_config["font_path"], welcome_config["font_size"])
+                font_server = ImageFont.truetype(server_config["font_path"], server_config["font_size"])
             except:
                 # Police par défaut si pas de police système
                 font_welcome = ImageFont.load_default()
                 font_server = ImageFont.load_default()
             
             # Position du texte (à droite de l'avatar)
-            text_x = circle_x + circle_diameter + 20
-            text_y_welcome = circle_y + 20
-            text_y_server = text_y_welcome + 40
+            text_x = circle_x + circle_diameter + welcome_config["x_offset"]
+            text_y_welcome = circle_y + welcome_config["y_offset"]
+            text_y_server = text_y_welcome + server_config["y_offset"]
             
-            # Couleur du texte (blanc)
-            text_color = (255, 255, 255, 255)
-            
-            # Ajouter les textes avec un effet d'ombre pour plus de style
-            shadow_offset = 2
-            shadow_color = (0, 0, 0, 128)
+            # Couleurs depuis la configuration
+            text_color = tuple(text_config["text_color"])
+            shadow_color = tuple(text_config["shadow_color"])
+            shadow_offset = text_config["shadow_offset"]
             
             # Ombre pour "Welcome [Username]"
             draw.text((text_x + shadow_offset, text_y_welcome + shadow_offset), 
@@ -109,12 +148,12 @@ class WelcomeSystem(commands.Cog):
             draw.text((text_x, text_y_welcome), 
                      f"Welcome {user.display_name}", font=font_welcome, fill=text_color)
             
-            # Ombre pour "To the Server!"
+            # Ombre pour le texte du serveur
             draw.text((text_x + shadow_offset, text_y_server + shadow_offset), 
-                     "To the Server!", font=font_server, fill=shadow_color)
-            # Texte principal "To the Server!"
+                     server_config["text"], font=font_server, fill=shadow_color)
+            # Texte principal du serveur
             draw.text((text_x, text_y_server), 
-                     "To the Server!", font=font_server, fill=text_color)
+                     server_config["text"], font=font_server, fill=text_color)
             
             # Convertir en bytes pour l'envoi Discord
             output = io.BytesIO()
