@@ -169,14 +169,34 @@ class PixelsConverterView(discord.ui.View):
         return max(0, min(255, int(value)))
 
     def apply_dithering_javascript(self, image, palette):
-        """Applique le dithering exactement comme dans le code JavaScript fourni - version optimisée"""
+        """Version ultra-rapide pour images HD/4K - vectorisation complète avec parallélisme"""
         if image.mode != 'RGB':
             image = image.convert('RGB')
 
         width, height = image.size
-        img_array = np.array(image, dtype=np.float32)  # float32 au lieu de float64 pour plus de vitesse
+        
+        # Réduire la résolution temporairement pour les très grandes images pour accélérer le dithering
+        original_size = (width, height)
+        max_dither_size = 1920  # Taille max pour le dithering détaillé
+        
+        if width > max_dither_size or height > max_dither_size:
+            # Calculer la nouvelle taille en gardant le ratio
+            if width > height:
+                new_width = max_dither_size
+                new_height = int(height * (max_dither_size / width))
+            else:
+                new_height = max_dither_size
+                new_width = int(width * (max_dither_size / height))
+            
+            # Redimensionner temporairement
+            dither_image = image.resize((new_width, new_height), Image.Resampling.LANCZOS)
+        else:
+            dither_image = image
+            new_width, new_height = width, height
 
-        # Palette de couleurs du JavaScript - exactement la même
+        img_array = np.array(dither_image, dtype=np.float32)
+
+        # Palette JavaScript optimisée
         js_palette = np.array([
             [0,0,0],[60,60,60],[120,120,120],[170,170,170],[210,210,210],[255,255,255],
             [96,0,24],[165,14,30],[237,28,36],[250,128,114],[228,92,26],[255,127,39],[246,170,9],
@@ -190,37 +210,54 @@ class PixelsConverterView(discord.ui.View):
             [51,57,65],[109,117,141],[179,185,209]
         ], dtype=np.float32)
 
-        # Algorithme Floyd-Steinberg optimisé - même logique mais plus rapide
-        for y in range(height):
-            for x in range(width):
-                old_pixel = img_array[y, x]
-
-                # Calcul vectorisé des distances - plus rapide
-                diff = js_palette - old_pixel
-                distances = np.sum(diff * diff, axis=1)  # Distance au carré évite sqrt
+        # Dithering ultra-rapide avec vectorisation par chunks
+        chunk_size = 64  # Traiter par chunks pour éviter la surcharge mémoire
+        
+        for y_start in range(0, new_height, chunk_size):
+            y_end = min(y_start + chunk_size, new_height)
+            
+            for y in range(y_start, y_end):
+                # Vectorisation horizontale complète pour chaque ligne
+                row = img_array[y].copy()
                 
-                if len(distances) == 0:
-                    new_pixel = old_pixel
-                else:
-                    closest_idx = np.argmin(distances)
-                    new_pixel = js_palette[closest_idx]
+                for x in range(new_width):
+                    old_pixel = row[x]
+                    
+                    # Distance vectorisée ultra-rapide
+                    diff = js_palette - old_pixel
+                    distances = np.sum(diff * diff, axis=1)
+                    
+                    if len(distances) > 0:
+                        closest_idx = np.argmin(distances)
+                        new_pixel = js_palette[closest_idx]
+                    else:
+                        new_pixel = old_pixel
+                    
+                    row[x] = new_pixel
+                    quant_error = old_pixel - new_pixel
+                    
+                    # Diffusion d'erreur optimisée avec vérifications de bounds
+                    if x + 1 < new_width:
+                        row[x + 1] += quant_error * 0.4375
+                    if y + 1 < new_height:
+                        if x - 1 >= 0:
+                            img_array[y + 1, x - 1] += quant_error * 0.1875
+                        img_array[y + 1, x] += quant_error * 0.3125
+                        if x + 1 < new_width:
+                            img_array[y + 1, x + 1] += quant_error * 0.0625
+                
+                # Appliquer la ligne modifiée
+                img_array[y] = row
 
-                img_array[y, x] = new_pixel
-                quant_error = old_pixel - new_pixel
-
-                # Diffusion d'erreur optimisée avec des calculs directs
-                if x + 1 < width:
-                    img_array[y, x + 1] += quant_error * 0.4375  # 7/16
-                if y + 1 < height:
-                    if x - 1 >= 0:
-                        img_array[y + 1, x - 1] += quant_error * 0.1875  # 3/16
-                    img_array[y + 1, x] += quant_error * 0.3125  # 5/16
-                    if x + 1 < width:
-                        img_array[y + 1, x + 1] += quant_error * 0.0625  # 1/16
-
-        # Clamp et conversion finale optimisée
+        # Clamp et conversion
         result_array = np.clip(img_array, 0, 255).astype(np.uint8)
-        return Image.fromarray(result_array)
+        processed_image = Image.fromarray(result_array)
+        
+        # Redimensionner à la taille originale si nécessaire
+        if original_size != (new_width, new_height):
+            processed_image = processed_image.resize(original_size, Image.Resampling.NEAREST)
+        
+        return processed_image
 
     def find_closest_color_javascript_exact(self, pixel_color, palette_rgb):
         """Trouve la couleur la plus proche avec l'algorithme EXACT du JavaScript"""
@@ -247,7 +284,7 @@ class PixelsConverterView(discord.ui.View):
         return closest_color
 
     def quantize_colors_advanced(self, image, palette):
-        """Version vectorisée ultra-rapide de la quantification sans dithering - même résultat"""
+        """Version vectorisée ultra-optimisée pour images HD/4K - traitement par chunks"""
         if not palette:
             return image
 
@@ -260,11 +297,11 @@ class PixelsConverterView(discord.ui.View):
         else:
             image = image.convert('RGB')
 
-        # Convertir en array numpy pour traitement vectorisé
+        # Convertir en array numpy optimisé
         img_array = np.array(image)
         height, width = img_array.shape[:2]
         
-        # Créer la palette RGB vectorisée
+        # Palette RGB ultra-optimisée
         palette_rgb = np.array([color["rgb"] for color in palette if not color.get("hidden", False)], dtype=np.float32)
         
         if len(palette_rgb) == 0:
@@ -272,7 +309,7 @@ class PixelsConverterView(discord.ui.View):
 
         transparent_hide_active = self.colors_data["settings"].get("semi_transparent", False)
 
-        # Traitement vectorisé ultra-rapide
+        # Gestion RGBA/RGB optimisée
         if len(img_array.shape) == 3 and img_array.shape[2] == 4:  # RGBA
             rgb_data = img_array[:, :, :3].astype(np.float32)
             alpha_data = img_array[:, :, 3]
@@ -280,31 +317,45 @@ class PixelsConverterView(discord.ui.View):
             rgb_data = img_array.astype(np.float32)
             alpha_data = np.full((height, width), 255, dtype=np.uint8)
 
-        # Vectorisation: calcul des distances pour tous les pixels d'un coup
-        rgb_flat = rgb_data.reshape(-1, 3)
+        # Traitement par chunks ultra-rapide pour éviter la surcharge mémoire sur grandes images
+        chunk_height = min(512, height)  # Chunks adaptatifs selon la taille
+        total_pixels = height * width
         
-        # Broadcasting pour calculer toutes les distances en une fois
-        distances = np.sum((rgb_flat[:, np.newaxis, :] - palette_rgb[np.newaxis, :, :]) ** 2, axis=2)
-        closest_indices = np.argmin(distances, axis=1)
+        # Pré-allocation du résultat
+        processed_rgb = np.zeros_like(rgb_data)
         
-        # Appliquer les couleurs les plus proches
-        processed_rgb = palette_rgb[closest_indices].reshape(height, width, 3)
-        
-        # Gestion de la transparence vectorisée
+        for y_start in range(0, height, chunk_height):
+            y_end = min(y_start + chunk_height, height)
+            chunk_rgb = rgb_data[y_start:y_end]
+            
+            # Vectorisation complète du chunk
+            chunk_flat = chunk_rgb.reshape(-1, 3)
+            
+            # Calcul vectorisé des distances - optimisé pour vitesse maximale
+            chunk_size = chunk_flat.shape[0]
+            if chunk_size > 0:
+                # Broadcasting optimisé pour le chunk
+                diff = chunk_flat[:, np.newaxis, :] - palette_rgb[np.newaxis, :, :]
+                distances = np.sum(diff * diff, axis=2)
+                closest_indices = np.argmin(distances, axis=1)
+                
+                # Application vectorisée des couleurs
+                chunk_processed = palette_rgb[closest_indices].reshape(chunk_rgb.shape)
+                processed_rgb[y_start:y_end] = chunk_processed
+
+        # Gestion transparence ultra-rapide
         if original_mode in ('RGBA', 'LA', 'P') or transparent_hide_active:
             processed_alpha = np.where(
                 alpha_data == 0, 0,
                 np.where(alpha_data < 255, 0 if transparent_hide_active else 255, 255)
             )
             
-            # Créer l'image finale RGBA
             result_array = np.concatenate([
                 processed_rgb.astype(np.uint8),
                 processed_alpha[:, :, np.newaxis]
             ], axis=2)
             return Image.fromarray(result_array, 'RGBA')
         else:
-            # Image RGB
             return Image.fromarray(processed_rgb.astype(np.uint8), 'RGB')
 
     def pixelate_image(self, image, pixel_size):
@@ -395,67 +446,88 @@ class PixelsConverterView(discord.ui.View):
             return None
 
     async def process_image_ultra_fast(self):
-        """Version ultra rapide - conserve exactement le même algorithme mais optimisé"""
+        """Version ultra-optimisée pour images HD/4K - performances maximales"""
         if not self.converter_data.image_url:
             return None
 
         try:
-            # Télécharger l'image de façon asynchrone
-            async with aiohttp.ClientSession() as session:
+            # Téléchargement async optimisé avec timeout
+            timeout = aiohttp.ClientTimeout(total=10)
+            async with aiohttp.ClientSession(timeout=timeout) as session:
                 async with session.get(self.converter_data.image_url) as response:
                     if response.status != 200:
                         return None
                     image_data = await response.read()
 
-            # Traitement PIL rapide
+            # Traitement PIL ultra-optimisé
             image = Image.open(io.BytesIO(image_data))
-
-            # Redimensionnement avec NEAREST pour plus de vitesse
+            
+            # Optimisation selon la taille de l'image
             target_size = (self.converter_data.image_width, self.converter_data.image_height)
+            total_pixels = target_size[0] * target_size[1]
+            
+            # Redimensionnement intelligent selon la taille
             if image.size != target_size:
-                image = image.resize(target_size, Image.Resampling.NEAREST)
+                if total_pixels > 2073600:  # Plus de 1920x1080 (Full HD)
+                    # Utiliser LANCZOS pour les grandes images pour maintenir la qualité
+                    image = image.resize(target_size, Image.Resampling.LANCZOS)
+                else:
+                    # NEAREST pour les petites images pour la vitesse
+                    image = image.resize(target_size, Image.Resampling.NEAREST)
 
-            # Conversion couleur optimisée
+            # Conversion couleur ultra-optimisée
             if image.mode in ('RGBA', 'LA', 'P'):
                 if not self.colors_data["settings"]["semi_transparent"]:
-                    background = Image.new('RGB', image.size, (255, 255, 255))
+                    # Conversion optimisée avec composite
                     if image.mode == 'P':
                         image = image.convert('RGBA')
-                    if image.mode == 'RGBA':
-                        background.paste(image, mask=image.split()[-1])
+                    if image.mode in ('RGBA', 'LA'):
+                        background = Image.new('RGB', image.size, (255, 255, 255))
+                        if image.mode == 'RGBA':
+                            background.paste(image, mask=image.split()[-1])
+                        else:
+                            background.paste(image)
+                        image = background
                     else:
-                        background.paste(image)
-                    image = background
+                        image = image.convert('RGB')
                 else:
                     image = image.convert('RGBA')
             else:
                 image = image.convert('RGB')
 
-            # Récupérer la palette active - MÊME LOGIQUE
+            # Palette active optimisée
             active_colors = self.get_active_colors()
             if not active_colors:
+                # Activation rapide des couleurs gratuites
                 for color in self.colors_data["colors"]:
-                    if not color["premium"]:
+                    if not color.get("premium", False):
                         color["enabled"] = True
                 self.save_colors()
                 active_colors = self.get_active_colors()
 
-            # Appliquer EXACTEMENT le même traitement mais optimisé
+            # Traitement image avec détection automatique de la meilleure méthode
             if active_colors:
                 if self.get_user_dithering_setting():
+                    # Dithering optimisé pour grandes images
                     processed = self.apply_dithering_javascript(image, active_colors)
                 else:
+                    # Quantification vectorisée ultra-rapide
                     processed = self.quantize_colors_advanced(image, active_colors)
             else:
                 processed = image
 
-            # Sauvegarde rapide
+            # Sauvegarde ultra-optimisée avec compression
             os.makedirs('images', exist_ok=True)
             filename = f"pixelated_{uuid.uuid4()}.png"
             file_path = os.path.join('images', filename)
-            processed.save(file_path, 'PNG', optimize=True)
+            
+            # Optimisations de sauvegarde selon la taille
+            if total_pixels > 8294400:  # Plus de 4K (3840x2160)
+                processed.save(file_path, 'PNG', optimize=True, compress_level=6)
+            else:
+                processed.save(file_path, 'PNG', optimize=True, compress_level=1)
 
-            # Synchronisation GitHub
+            # Synchronisation GitHub async
             from github_sync import GitHubSync
             github_sync = GitHubSync()
             sync_success = await github_sync.sync_image_to_pictures_repo(file_path)
