@@ -120,38 +120,46 @@ class WelcomeSystem(commands.Cog):
             # Configuration du texte depuis JSON
             text_config = self.config["text_config"]
             welcome_config = text_config["welcome_text"]
+            username_config = text_config["username_text"]
             server_config = text_config["server_text"]
             
             # Essayer de charger les polices personnalisées
             try:
                 font_welcome = ImageFont.truetype(welcome_config["font_path"], welcome_config["font_size"])
+                font_username = ImageFont.truetype(username_config["font_path"], username_config["font_size"])
                 font_server = ImageFont.truetype(server_config["font_path"], server_config["font_size"])
             except:
                 # Police par défaut si pas de police système
                 font_welcome = ImageFont.load_default()
+                font_username = ImageFont.load_default()
                 font_server = ImageFont.load_default()
             
             # Position du texte (à droite de l'avatar)
             text_x = circle_x + circle_diameter + welcome_config["x_offset"]
             text_y_welcome = circle_y + welcome_config["y_offset"]
-            text_y_server = text_y_welcome + server_config["y_offset"]
+            text_y_username = circle_y + username_config["y_offset"]
+            text_y_server = circle_y + server_config["y_offset"]
             
             # Couleurs depuis la configuration
             text_color = tuple(text_config["text_color"])
             shadow_color = tuple(text_config["shadow_color"])
             shadow_offset = text_config["shadow_offset"]
             
-            # Ombre pour "Welcome [Username]"
+            # Première zone: "WELCOME,"
             draw.text((text_x + shadow_offset, text_y_welcome + shadow_offset), 
-                     f"Welcome {user.display_name}", font=font_welcome, fill=shadow_color)
-            # Texte principal "Welcome [Username]"
+                     welcome_config["text"], font=font_welcome, fill=shadow_color)
             draw.text((text_x, text_y_welcome), 
-                     f"Welcome {user.display_name}", font=font_welcome, fill=text_color)
+                     welcome_config["text"], font=font_welcome, fill=text_color)
             
-            # Ombre pour le texte du serveur
+            # Deuxième zone: "[USERNAME]"
+            draw.text((text_x + shadow_offset, text_y_username + shadow_offset), 
+                     user.display_name.upper(), font=font_username, fill=shadow_color)
+            draw.text((text_x, text_y_username), 
+                     user.display_name.upper(), font=font_username, fill=text_color)
+            
+            # Troisième zone: "TO THE SERVER"
             draw.text((text_x + shadow_offset, text_y_server + shadow_offset), 
                      server_config["text"], font=font_server, fill=shadow_color)
-            # Texte principal du serveur
             draw.text((text_x, text_y_server), 
                      server_config["text"], font=font_server, fill=text_color)
             
