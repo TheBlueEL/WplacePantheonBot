@@ -13,20 +13,15 @@
         "y_offset": 200,
         "font_size": 72,
         "font_path": "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
-        "text": "WELCOME,"
+        "text": "WELCOME, TO THE SERVER"
       },
       "username_text": {
         "x_offset": 50,
-        "y_offset": 280,
-        "font_size": 84,
-        "font_path": "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
-      },
-      "server_text": {
-        "x_offset": 50,
-        "y_offset": 370,
-        "font_size": 72,
+        "y_offset": 300,
+        "font_size_max": 100,
+        "font_size_min": 50,
         "font_path": "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
-        "text": "TO THE SERVER"
+        "margin_right": 25
       },
       "text_color": [255, 255, 255, 255],
       "shadow_color": [0, 0, 0, 128],
