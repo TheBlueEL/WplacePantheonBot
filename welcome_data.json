@@ -18,7 +18,7 @@
       "username_text": {
         "x_offset": 50,
         "y_offset": 300,
-        "font_size_max": 100,
+        "font_size_max": 150,
         "font_size_min": 50,
         "font_path": "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
         "margin_right": 25
