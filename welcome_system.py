@@ -81,10 +81,16 @@ class WelcomeSystem(commands.Cog):
             # Recharger la configuration pour les modifications en temps réel
             self.config = load_welcome_data()["template_config"]
             
-            # Télécharger l'image template
-            template_data = await self.download_image(self.config["template_url"])
-            if not template_data:
-                return None
+            # Créer un template avec couleur de fond ou image personnalisée
+            if self.config.get("background_image"):
+                template_data = await self.download_image(self.config["background_image"])
+                if not template_data:
+                    return None
+                template = Image.open(io.BytesIO(template_data)).convert("RGBA")
+            else:
+                # Créer une image avec couleur de fond
+                bg_color = self.config.get("background_color", [255, 255, 255])
+                template = Image.new("RGBA", (1920, 1080), tuple(bg_color + [255]))
             
             # Télécharger l'avatar de l'utilisateur
             avatar_url = user.display_avatar.url
@@ -92,15 +98,25 @@ class WelcomeSystem(commands.Cog):
             if not avatar_data:
                 return None
             
+            # Télécharger DefaultProfile si activée
+            default_profile_data = None
+            if self.config.get("default_profile", {}).get("enabled", False):
+                default_profile_url = self.config["default_profile"]["url"]
+                default_profile_data = await self.download_image(default_profile_url)
+            
             # Télécharger la décoration de profil si activée
             decoration_data = None
             if self.config.get("profile_decoration", {}).get("enabled", False):
                 decoration_url = self.config["profile_decoration"]["url"]
                 decoration_data = await self.download_image(decoration_url)
             
-            # Ouvrir les images
-            template = Image.open(io.BytesIO(template_data)).convert("RGBA")
+            # Ouvrir l'avatar
             avatar = Image.open(io.BytesIO(avatar_data)).convert("RGBA")
+            
+            # Ouvrir DefaultProfile si disponible
+            default_profile = None
+            if default_profile_data:
+                default_profile = Image.open(io.BytesIO(default_profile_data)).convert("RGBA")
             
             # Ouvrir la décoration si disponible
             decoration = None
@@ -124,17 +140,40 @@ class WelcomeSystem(commands.Cog):
             avatar_circle.paste(avatar, (0, 0))
             avatar_circle.putalpha(mask)
             
-            # Ajouter la décoration de profil derrière l'avatar si disponible
+            # Ajouter DefaultProfile derrière l'avatar si disponible
+            if default_profile and self.config.get("default_profile", {}).get("enabled", False):
+                default_profile_config = self.config["default_profile"]
+                default_profile_x = default_profile_config["x"]
+                default_profile_y = default_profile_config["y"]
+                
+                # Coller DefaultProfile à sa taille d'origine (derrière l'avatar)
+                template.paste(default_profile, (default_profile_x, default_profile_y), default_profile)
+            
+            # Coller l'avatar circulaire sur le template (par-dessus DefaultProfile)
+            template.paste(avatar_circle, (circle_x, circle_y), avatar_circle)
+            
+            # Ajouter la décoration de profil par-dessus l'avatar si disponible
             if decoration and self.config.get("profile_decoration", {}).get("enabled", False):
                 decoration_config = self.config["profile_decoration"]
                 decoration_x = decoration_config["x"]
                 decoration_y = decoration_config["y"]
                 
-                # Coller la décoration à sa taille d'origine (derrière l'avatar)
+                # Appliquer le changement de couleur si défini
+                if decoration_config.get("color_override"):
+                    color_override = decoration_config["color_override"]
+                    # Créer une nouvelle image avec la couleur de remplacement
+                    colored_decoration = Image.new("RGBA", decoration.size, tuple(color_override + [255]))
+                    # Utiliser le canal alpha de l'image originale
+                    colored_decoration.putalpha(decoration.split()[-1])
+                    decoration = colored_decoration
+                elif decoration_config.get("custom_image"):
+                    # Si une image personnalisée est définie, la télécharger
+                    custom_decoration_data = await self.download_image(decoration_config["custom_image"])
+                    if custom_decoration_data:
+                        decoration = Image.open(io.BytesIO(custom_decoration_data)).convert("RGBA")
+                
+                # Coller la décoration à sa taille d'origine (par-dessus l'avatar)
                 template.paste(decoration, (decoration_x, decoration_y), decoration)
-            
-            # Coller l'avatar circulaire sur le template (devant la décoration)
-            template.paste(avatar_circle, (circle_x, circle_y), avatar_circle)
             
             # Ajouter le texte
             draw = ImageDraw.Draw(template)
@@ -461,7 +500,24 @@ class WelcomeSystemManagerView(discord.ui.View):
         )
         
         bot_name = get_bot_name(self.bot)
-        embed.set_image(url=self.config["template_url"])
+        # Créer une carte de bienvenue temporaire pour l'affichage
+        if hasattr(self, 'guild') and self.guild:
+            # Utiliser le premier membre du serveur pour l'aperçu
+            sample_member = self.guild.me if self.guild.me else self.bot.user
+            if sample_member:
+                try:
+                    from . import WelcomeSystem
+                    welcome_system = WelcomeSystem(self.bot)
+                    preview_image = await welcome_system.create_welcome_card(sample_member)
+                    if preview_image:
+                        # Sauvegarder temporairement l'image pour l'affichage
+                        import uuid
+                        temp_filename = f"temp_preview_{uuid.uuid4()}.png"
+                        with open(temp_filename, 'wb') as f:
+                            f.write(preview_image.getvalue())
+                        # Note: En production, il faudrait uploader cette image et utiliser l'URL
+                except:
+                    pass
         embed.set_footer(text=f"{bot_name} | Welcome System", icon_url=self.bot.user.display_avatar.url)
         
         return embed
@@ -498,7 +554,6 @@ class WelcomeSystemManagerView(discord.ui.View):
             )
             
         bot_name = get_bot_name(self.bot)
-        embed.set_image(url=self.config["template_url"])
         embed.set_footer(text=f"{bot_name} | Background Settings", icon_url=self.bot.user.display_avatar.url)
         
         return embed
@@ -528,7 +583,6 @@ class WelcomeSystemManagerView(discord.ui.View):
             )
             
         bot_name = get_bot_name(self.bot)
-        embed.set_image(url=self.config["template_url"])
         embed.set_footer(text=f"{bot_name} | Background Color", icon_url=self.bot.user.display_avatar.url)
         
         return embed
@@ -557,7 +611,6 @@ class WelcomeSystemManagerView(discord.ui.View):
             )
             
         bot_name = get_bot_name(self.bot)
-        embed.set_image(url=self.config["template_url"])
         embed.set_footer(text=f"{bot_name} | Background Image", icon_url=self.bot.user.display_avatar.url)
         
         return embed
@@ -603,7 +656,6 @@ class WelcomeSystemManagerView(discord.ui.View):
             )
             
         bot_name = get_bot_name(self.bot)
-        embed.set_image(url=self.config["template_url"])
         embed.set_footer(text=f"{bot_name} | Profile Outline", icon_url=self.bot.user.display_avatar.url)
         
         return embed
@@ -619,7 +671,6 @@ class WelcomeSystemManagerView(discord.ui.View):
         )
         
         bot_name = get_bot_name(self.bot)
-        embed.set_image(url=self.config["template_url"])
         embed.set_footer(text=f"{bot_name} | Upload Image", icon_url=self.bot.user.display_avatar.url)
         
         return embed
