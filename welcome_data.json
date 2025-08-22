@@ -12,18 +12,18 @@
         "x_offset": 50,
         "y_offset": 50,
         "font_size": 70,
-        "font_path": "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
+        "font_path": "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf"
       },
       "server_text": {
         "x_offset": 50,
         "y_offset": 100,
         "font_size": 60,
-        "font_path": "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+        "font_path": "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
         "text": "To the Server!"
       },
       "text_color": [255, 255, 255, 255],
-      "shadow_color": [0, 0, 0, 128],
-      "shadow_offset": 20
+      "shadow_color": [0, 0, 0, 200],
+      "shadow_offset": 8
     }
   }
 }
