@@ -3,27 +3,27 @@
   "template_config": {
     "template_url": "https://raw.githubusercontent.com/TheBlueEL/pictures/refs/heads/main/WelcomeCard.png",
     "avatar_position": {
-      "x": 55,
-      "y": 50,
-      "diameter": 120
+      "x": 550,
+      "y": 500,
+      "diameter": 1200
     },
     "text_config": {
       "welcome_text": {
-        "x_offset": 20,
-        "y_offset": 20,
-        "font_size": 28,
+        "x_offset": 200,
+        "y_offset": 200,
+        "font_size": 280,
         "font_path": "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
       },
       "server_text": {
-        "x_offset": 20,
-        "y_offset": 40,
-        "font_size": 24,
+        "x_offset": 200,
+        "y_offset": 400,
+        "font_size": 240,
         "font_path": "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
         "text": "To the Server!"
       },
       "text_color": [255, 255, 255, 255],
       "shadow_color": [0, 0, 0, 128],
-      "shadow_offset": 2
+      "shadow_offset": 20
     }
   }
 }
