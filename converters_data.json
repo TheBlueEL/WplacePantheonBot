@@ -393,7 +393,7 @@
   ],
   "settings": {
     "dithering": false,
-    "semi_transparent": false
+    "semi_transparent": true
   },
   "user_data": {
     "723144097015136296": {
