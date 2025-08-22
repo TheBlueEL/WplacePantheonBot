@@ -1523,9 +1523,6 @@ def update_existing_emoji_data():
         
         if updated:
             save_autorank_data(data)
-            print("🔄 Configuration des emojis mise à jour automatiquement")
-        else:
-            print("ℹ️ Aucune mise à jour d'emoji nécessaire")
             
     except Exception as e:
         print(f"❌ Erreur mise à jour emojis: {e}")
