@@ -4150,15 +4150,13 @@ def setup_persistent_views(bot):
                     view = PublishedTicketView(panel_id)
                     bot.add_view(view)
                 except Exception as e:
-                    print(f"<:ErrorLOGO:1407071682031648850> Error adding view for panel {panel_id}: {e}")
+                    print(f"Error adding view for panel {panel_id}: {e}")
 
         # Add ticket close views
         bot.add_view(TicketCloseView())
         bot.add_view(TicketClosedActionsView())
-
-        print("Ticket system persistent views loaded successfully")
     except Exception as e:
-        print(f"<:ErrorLOGO:1407071682031648850> Error setting up ticket persistent views: {e}")
+        print(f"Error setting up ticket persistent views: {e}")
         # Initialize with empty data if there's an error
         try:
             empty_data = {
