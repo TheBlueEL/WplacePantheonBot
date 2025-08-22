@@ -3,9 +3,9 @@
   "template_config": {
     "template_url": "https://raw.githubusercontent.com/TheBlueEL/pictures/refs/heads/main/WelcomeCard.png",
     "avatar_position": {
-      "x": 110,
+      "x": 105,
       "y": 75,
-      "diameter": 700
+      "diameter": 705
     },
     "text_config": {
       "welcome_text": {
