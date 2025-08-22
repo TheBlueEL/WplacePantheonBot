@@ -1272,14 +1272,10 @@ async def restore_autorank_buttons(bot):
                                 # Ajouter la réaction si elle n'existe pas
                                 if not reaction_exists:
                                     await message.add_reaction(reaction_emoji)
-                                    print(f"✅ Réaction AutoRank {autorank_id} restaurée: {reaction_emoji}")
-                                else:
-                                    print(f"ℹ️ Réaction AutoRank {autorank_id} déjà présente: {reaction_emoji}")
                                     
                 except Exception as e:
                     print(f"❌ Erreur restauration réaction AutoRank {autorank_id}: {e}")
-        
-        print("✅ AutoRank buttons et reactions restored successfully")
+                    
     except Exception as e:
         print(f"❌ Error restoring autorank buttons: {e}")
 
