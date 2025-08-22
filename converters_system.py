@@ -199,8 +199,14 @@ class PixelsConverterView(discord.ui.View):
 
                 # Trouver la couleur la plus proche
                 distances = np.sqrt(np.sum((palette_np - old_pixel) ** 2, axis=1))
-                closest_idx = np.argmin(distances)
-                new_pixel = palette_np[closest_idx]
+                
+                # Vérifier que distances n'est pas vide
+                if len(distances) == 0:
+                    # Utiliser la première couleur de la palette par défaut si aucune couleur n'est disponible
+                    new_pixel = old_pixel  # Garder le pixel original
+                else:
+                    closest_idx = np.argmin(distances)
+                    new_pixel = palette_np[closest_idx]
 
                 img_array[y, x] = new_pixel
 
@@ -1118,7 +1124,7 @@ class PixelsConverterView(discord.ui.View):
 
             # Left arrow
             left_arrow = discord.ui.Button(
-                label="<:LeftArrowLOGO:1408246340957245450>",
+                emoji="<:LeftArrowLOGO:1408246340957245450>",
                 style=discord.ButtonStyle.gray if self.color_page == 0 else discord.ButtonStyle.primary,
                 disabled=self.color_page == 0,
                 row=0
@@ -1171,7 +1177,7 @@ class PixelsConverterView(discord.ui.View):
 
             # Right arrow
             right_arrow = discord.ui.Button(
-                label="<:RightArrowLOGO:1408246262406578206>",
+                emoji="<:RightArrowLOGO:1408246262406578206>",
                 style=discord.ButtonStyle.gray if self.color_page >= total_pages - 1 else discord.ButtonStyle.primary,
                 disabled=self.color_page >= total_pages - 1,
                 row=0
