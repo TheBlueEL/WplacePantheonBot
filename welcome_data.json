@@ -10,13 +10,13 @@
     "text_config": {
       "welcome_text": {
         "x_offset": 50,
-        "y_offset": 225,
+        "y_offset": 250,
         "font_size": 84,
         "font_path": "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
       },
       "server_text": {
         "x_offset": 50,
-        "y_offset": 175,
+        "y_offset": 150,
         "font_size": 72,
         "font_path": "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
         "text": "To the Server!"
