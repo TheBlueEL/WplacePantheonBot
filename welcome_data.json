@@ -7,6 +7,12 @@
       "y": 75,
       "diameter": 705
     },
+    "profile_decoration": {
+      "url": "https://raw.githubusercontent.com/TheBlueEL/pictures/refs/heads/main/ProfileDecoration.png",
+      "x": 100,
+      "y": 75,
+      "enabled": true
+    },
     "text_config": {
       "welcome_text": {
         "x_offset": 50,
