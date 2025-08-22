@@ -1,17 +1,25 @@
-
 {
   "template_config": {
-    "template_url": "https://raw.githubusercontent.com/TheBlueEL/pictures/refs/heads/main/WelcomeCard.png",
-    "background_color": [255, 255, 255],
+    "background_color": [
+      255,
+      255,
+      255
+    ],
     "avatar_position": {
       "x": 100,
       "y": 75,
       "diameter": 705
     },
+    "default_profile": {
+      "url": "https://raw.githubusercontent.com/TheBlueEL/pictures/refs/heads/main/DefaultProfile.png",
+      "x": 100,
+      "y": 75,
+      "enabled": true
+    },
     "profile_decoration": {
-      "url": "https://raw.githubusercontent.com/TheBlueEL/pictures/refs/heads/main/ProfileDecoration.png",
-      "x": 60,
-      "y": 35,
+      "url": "https://raw.githubusercontent.com/TheBlueEL/pictures/refs/heads/main/ProfileOutline.png",
+      "x": 100,
+      "y": 75,
       "enabled": true
     },
     "text_config": {
@@ -30,8 +38,18 @@
         "font_path": "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
         "margin_right": 25
       },
-      "text_color": [255, 255, 255, 255],
-      "shadow_color": [0, 0, 0, 128],
+      "text_color": [
+        255,
+        255,
+        255,
+        255
+      ],
+      "shadow_color": [
+        0,
+        0,
+        0,
+        128
+      ],
       "shadow_offset": 5
     }
   }
