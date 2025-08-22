@@ -169,93 +169,64 @@ class PixelsConverterView(discord.ui.View):
         return max(0, min(255, int(value)))
 
     def apply_dithering_javascript(self, image, palette):
-        """Version ultra-rapide pour images HD/4K - vectorisation complète avec parallélisme"""
+        """Version ultra-rapide pour images HD/4K - vectorisation complète avec parallélisme et qualité maximale"""
         if image.mode != 'RGB':
             image = image.convert('RGB')
 
         width, height = image.size
         
-        # Réduire la résolution temporairement pour les très grandes images pour accélérer le dithering
+        # Pas de réduction de résolution - traiter à la taille originale pour la qualité maximale
         original_size = (width, height)
-        max_dither_size = 1920  # Taille max pour le dithering détaillé
-        
-        if width > max_dither_size or height > max_dither_size:
-            # Calculer la nouvelle taille en gardant le ratio
-            if width > height:
-                new_width = max_dither_size
-                new_height = int(height * (max_dither_size / width))
-            else:
-                new_height = max_dither_size
-                new_width = int(width * (max_dither_size / height))
-            
-            # Redimensionner temporairement
-            dither_image = image.resize((new_width, new_height), Image.Resampling.LANCZOS)
-        else:
-            dither_image = image
-            new_width, new_height = width, height
+        new_width, new_height = width, height
+        dither_image = image
 
         img_array = np.array(dither_image, dtype=np.float32)
 
-        # Palette JavaScript optimisée
-        js_palette = np.array([
-            [0,0,0],[60,60,60],[120,120,120],[170,170,170],[210,210,210],[255,255,255],
-            [96,0,24],[165,14,30],[237,28,36],[250,128,114],[228,92,26],[255,127,39],[246,170,9],
-            [249,221,59],[255,250,188],[156,132,49],[197,173,49],[232,212,95],[74,107,58],[90,148,74],[132,197,115],
-            [14,185,104],[19,230,123],[135,255,94],[12,129,110],[16,174,166],[19,225,190],[15,121,159],[96,247,242],
-            [187,250,242],[40,80,158],[64,147,228],[125,199,255],[77,49,184],[107,80,246],[153,177,251],
-            [74,66,132],[122,113,196],[181,174,241],[170,56,185],[224,159,249],
-            [203,0,122],[236,31,128],[243,141,169],[155,82,73],[209,128,120],[250,182,164],
-            [104,70,52],[149,104,42],[219,164,99],[123,99,82],[156,132,107],[214,181,148],
-            [209,128,81],[248,178,119],[255,197,165],[109,100,63],[148,140,107],[205,197,158],
-            [51,57,65],[109,117,141],[179,185,209]
-        ], dtype=np.float32)
-
-        # Dithering ultra-rapide avec vectorisation par chunks
-        chunk_size = 64  # Traiter par chunks pour éviter la surcharge mémoire
+        # Utiliser la palette active de l'utilisateur pour un meilleur rendu
+        palette_rgb = np.array([color["rgb"] for color in palette if not color.get("hidden", False)], dtype=np.float32)
         
-        for y_start in range(0, new_height, chunk_size):
-            y_end = min(y_start + chunk_size, new_height)
-            
-            for y in range(y_start, y_end):
-                # Vectorisation horizontale complète pour chaque ligne
-                row = img_array[y].copy()
-                
-                for x in range(new_width):
-                    old_pixel = row[x]
-                    
-                    # Distance vectorisée ultra-rapide avec sécurité
-                    diff = js_palette - old_pixel
-                    distances = np.sum(diff * diff, axis=1)
-                    
-                    if len(distances) > 0 and len(js_palette) > 0:
-                        closest_idx = np.argmin(distances)
-                        new_pixel = js_palette[closest_idx]
-                    else:
-                        new_pixel = old_pixel.copy()
-                    
-                    row[x] = new_pixel
-                    quant_error = old_pixel - new_pixel
-                    
-                    # Diffusion d'erreur optimisée avec vérifications de bounds
-                    if x + 1 < new_width:
-                        row[x + 1] += quant_error * 0.4375
-                    if y + 1 < new_height:
-                        if x - 1 >= 0:
-                            img_array[y + 1, x - 1] += quant_error * 0.1875
-                        img_array[y + 1, x] += quant_error * 0.3125
-                        if x + 1 < new_width:
-                            img_array[y + 1, x + 1] += quant_error * 0.0625
-                
-                # Appliquer la ligne modifiée
-                img_array[y] = row
+        if len(palette_rgb) == 0:
+            # Fallback vers palette par défaut si aucune couleur active
+            palette_rgb = np.array([
+                [0,0,0],[60,60,60],[120,120,120],[170,170,170],[210,210,210],[255,255,255],
+                [96,0,24],[165,14,30],[237,28,36],[250,128,114],[228,92,26],[255,127,39],[246,170,9],
+                [249,221,59],[255,250,188],[156,132,49],[197,173,49],[232,212,95],[74,107,58],[90,148,74],[132,197,115],
+                [14,185,104],[19,230,123],[135,255,94],[12,129,110],[16,174,166],[19,225,190],[15,121,159],[96,247,242],
+                [187,250,242],[40,80,158],[64,147,228],[125,199,255],[77,49,184],[107,80,246],[153,177,251],
+                [74,66,132],[122,113,196],[181,174,241],[170,56,185],[224,159,249],
+                [203,0,122],[236,31,128],[243,141,169],[155,82,73],[209,128,120],[250,182,164],
+                [104,70,52],[149,104,42],[219,164,99],[123,99,82],[156,132,107],[214,181,148],
+                [209,128,81],[248,178,119],[255,197,165],[109,100,63],[148,140,107],[205,197,158],
+                [51,57,65],[109,117,141],[179,185,209]
+            ], dtype=np.float32)
 
-        # Clamp et conversion
+        # Dithering optimisé Floyd-Steinberg avec traitement ligne par ligne pour vitesse maximale
+        for y in range(new_height):
+            for x in range(new_width):
+                old_pixel = img_array[y, x]
+                
+                # Calcul vectorisé ultra-rapide de la couleur la plus proche
+                diff = palette_rgb - old_pixel
+                distances = np.sum(diff * diff, axis=1)
+                closest_idx = np.argmin(distances)
+                new_pixel = palette_rgb[closest_idx]
+                
+                img_array[y, x] = new_pixel
+                quant_error = old_pixel - new_pixel
+                
+                # Diffusion d'erreur Floyd-Steinberg optimisée
+                if x + 1 < new_width:
+                    img_array[y, x + 1] += quant_error * (7.0 / 16.0)
+                if y + 1 < new_height:
+                    if x > 0:
+                        img_array[y + 1, x - 1] += quant_error * (3.0 / 16.0)
+                    img_array[y + 1, x] += quant_error * (5.0 / 16.0)
+                    if x + 1 < new_width:
+                        img_array[y + 1, x + 1] += quant_error * (1.0 / 16.0)
+
+        # Clamp et conversion avec qualité maximale
         result_array = np.clip(img_array, 0, 255).astype(np.uint8)
         processed_image = Image.fromarray(result_array)
-        
-        # Redimensionner à la taille originale si nécessaire
-        if original_size != (new_width, new_height):
-            processed_image = processed_image.resize(original_size, Image.Resampling.NEAREST)
         
         return processed_image
 
@@ -317,31 +288,27 @@ class PixelsConverterView(discord.ui.View):
             rgb_data = img_array.astype(np.float32)
             alpha_data = np.full((height, width), 255, dtype=np.uint8)
 
-        # Traitement par chunks ultra-rapide pour éviter la surcharge mémoire sur grandes images
-        chunk_height = min(512, height)  # Chunks adaptatifs selon la taille
-        total_pixels = height * width
+        # Traitement vectorisé ultra-optimisé avec qualité maximale
+        rgb_flat = rgb_data.reshape(-1, 3)
         
-        # Pré-allocation du résultat
-        processed_rgb = np.zeros_like(rgb_data)
+        # Calcul vectorisé des distances avec algorithme de distance perceptuelle amélioré
+        # Utilise la pondération perceptuelle pour des couleurs plus naturelles
+        r_weight = 0.299
+        g_weight = 0.587  
+        b_weight = 0.114
         
-        for y_start in range(0, height, chunk_height):
-            y_end = min(y_start + chunk_height, height)
-            chunk_rgb = rgb_data[y_start:y_end]
-            
-            # Vectorisation complète du chunk
-            chunk_flat = chunk_rgb.reshape(-1, 3)
-            
-            # Calcul vectorisé des distances - optimisé pour vitesse maximale
-            chunk_size = chunk_flat.shape[0]
-            if chunk_size > 0:
-                # Broadcasting optimisé pour le chunk
-                diff = chunk_flat[:, np.newaxis, :] - palette_rgb[np.newaxis, :, :]
-                distances = np.sum(diff * diff, axis=2)
-                closest_indices = np.argmin(distances, axis=1)
-                
-                # Application vectorisée des couleurs
-                chunk_processed = palette_rgb[closest_indices].reshape(chunk_rgb.shape)
-                processed_rgb[y_start:y_end] = chunk_processed
+        weights = np.array([r_weight, g_weight, b_weight], dtype=np.float32)
+        
+        # Broadcasting ultra-optimisé pour tous les pixels à la fois
+        diff = rgb_flat[:, np.newaxis, :] - palette_rgb[np.newaxis, :, :]
+        
+        # Distance perceptuelle pondérée pour de meilleurs résultats visuels
+        weighted_diff = diff * weights
+        distances = np.sum(weighted_diff * weighted_diff, axis=2)
+        
+        closest_indices = np.argmin(distances, axis=1)
+        processed_flat = palette_rgb[closest_indices]
+        processed_rgb = processed_flat.reshape(rgb_data.shape)
 
         # Gestion transparence ultra-rapide
         if original_mode in ('RGBA', 'LA', 'P') or transparent_hide_active:
@@ -1177,6 +1144,15 @@ class PixelsConverterView(discord.ui.View):
                     color_name = color.get("name", "Unknown")[:15]
                     color_emoji = color.get("emoji", "🎨")
                     color_enabled = color.get("enabled", False)
+
+                    # Vérifier si l'emoji est valide (custom Discord emoji ou emoji Unicode)
+                    if color_emoji and (color_emoji.startswith('<:') or color_emoji.startswith('<a:')):
+                        # Custom Discord emoji - vérifier le format
+                        import re
+                        if not re.match(r'<a?:\w+:\d+>', color_emoji):
+                            color_emoji = "🎨"  # Fallback emoji
+                    elif not color_emoji:
+                        color_emoji = "🎨"  # Fallback emoji
 
                     button = discord.ui.Button(
                         label=color_name,
