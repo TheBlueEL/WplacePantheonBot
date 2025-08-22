@@ -26,11 +26,6 @@ async def on_ready():
     print(f'Bot connected as {client.user.name}')
     print(f'Bot ID: {client.user.id}')
 
-    # Synchroniser avec GitHub au démarrage
-    print("Synchronisation avec GitHub...")
-    github_sync = GitHubSync()
-    await github_sync.sync_all_files_to_github()
-
     # Charger les extensions
     try:
         await client.load_extension('embed_system')
@@ -80,6 +75,11 @@ async def on_ready():
         print(f'Synced {len(synced)} command(s)')
     except Exception as e:
         print(f'Failed to sync commands: {e}')
+
+    # Synchroniser avec GitHub après les commandes
+    print("Synchronisation avec GitHub...")
+    github_sync = GitHubSync()
+    await github_sync.sync_all_files_to_github()
 
 @client.event
 async def on_message(message):
