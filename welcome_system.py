@@ -506,7 +506,6 @@ class WelcomeSystemManagerView(discord.ui.View):
             sample_member = self.guild.me if self.guild.me else self.bot.user
             if sample_member:
                 try:
-                    from . import WelcomeSystem
                     welcome_system = WelcomeSystem(self.bot)
                     preview_image = await welcome_system.create_welcome_card(sample_member)
                     if preview_image:
