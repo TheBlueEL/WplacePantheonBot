@@ -571,10 +571,12 @@ class WelcomeSystem(commands.Cog):
 
             # Determine file extension for the welcome card
             welcome_card.seek(0)
-            file_header = welcome_card.read(10)
+            file_header = welcome_card.read(6)  # GIF header is 6 bytes: "GIF87a" or "GIF89a"
             welcome_card.seek(0)
 
-            filename = "welcome.gif" if file_header.startswith(b'GIF') else "welcome.png"
+            # Check for proper GIF signature
+            is_gif = file_header.startswith(b'GIF87a') or file_header.startswith(b'GIF89a')
+            filename = "welcome.gif" if is_gif else "welcome.png"
 
             # Send welcome message with image
             file = discord.File(welcome_card, filename=filename)
