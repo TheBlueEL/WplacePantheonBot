@@ -154,7 +154,6 @@ class WelcomeSystem(commands.Cog):
             if default_profile_data:
                 try:
                     default_profile = Image.open(io.BytesIO(default_profile_data)).convert("RGBA")
-                    print(f"✅ DefaultProfile chargée: {default_profile.size}")
                 except Exception as e:
                     print(f"❌ Erreur lors du traitement de DefaultProfile: {e}")
 
@@ -167,7 +166,6 @@ class WelcomeSystem(commands.Cog):
                         custom_default_profile = Image.open(io.BytesIO(custom_content_data)).convert("RGBA")
                         # Utiliser l'image personnalisée au lieu de la default
                         default_profile = custom_default_profile
-                        print(f"✅ Image de contenu personnalisée chargée: {default_profile.size}")
                 except Exception as e:
                     print(f"❌ Erreur lors du chargement de l'image de contenu personnalisée: {e}")
 
@@ -176,7 +174,6 @@ class WelcomeSystem(commands.Cog):
             if decoration_data:
                 try:
                     decoration = Image.open(io.BytesIO(decoration_data)).convert("RGBA")
-                    print(f"✅ ProfileOutline chargée: {decoration.size}")
                     
                     # Traitement de l'image de décoration pour la rendre carrée si nécessaire
                     dec_width, dec_height = decoration.size
@@ -186,7 +183,6 @@ class WelcomeSystem(commands.Cog):
                         left = (dec_width - min_dimension) // 2
                         top = (dec_height - min_dimension) // 2
                         decoration = decoration.crop((left, top, left + min_dimension, top + min_dimension))
-                        print(f"✅ ProfileOutline rognée au format carré: {decoration.size}")
                         
                 except Exception as e:
                     print(f"❌ Erreur lors du traitement de ProfileOutline: {e}")
@@ -248,7 +244,6 @@ class WelcomeSystem(commands.Cog):
                             left = (dec_width - min_dimension) // 2
                             top = (dec_height - min_dimension) // 2
                             custom_decoration = custom_decoration.crop((left, top, left + min_dimension, top + min_dimension))
-                            print(f"✅ Image personnalisée de ProfileOutline rognée au format carré: {custom_decoration.size}")
                         
                         # Redimensionner l'image personnalisée à la taille de ProfileOutline
                         if decoration:
@@ -264,7 +259,6 @@ class WelcomeSystem(commands.Cog):
                             masked_decoration.putalpha(alpha_mask)
                             
                             decoration = masked_decoration
-                            print(f"✅ Masque ProfileOutline appliqué sur l'image personnalisée")
 
                 # Coller la décoration à sa taille d'origine (par-dessus l'avatar)
                 template.paste(decoration, (decoration_x, decoration_y), decoration)
@@ -336,7 +330,6 @@ class WelcomeSystem(commands.Cog):
                     texture_data = await self.download_image(default_profile_config["custom_image_url"])
                     if texture_data:
                         text_texture_image = Image.open(io.BytesIO(texture_data)).convert("RGBA")
-                        print(f"✅ Image de texture de texte chargée: {text_texture_image.size}")
                 except Exception as e:
                     print(f"❌ Erreur lors du chargement de la texture de texte: {e}")
 
@@ -374,7 +367,6 @@ class WelcomeSystem(commands.Cog):
 
                 # Coller l'image texturée sur le template (par-dessus la bordure noire)
                 template = Image.alpha_composite(template, textured_text)
-                print(f"✅ Texture appliquée sur le texte avec bordure noire")
             else:
                 # Dessiner le texte normalement avec les couleurs
                 draw.text((text_x + shadow_offset, text_y_welcome + shadow_offset), 
@@ -398,39 +390,6 @@ class WelcomeSystem(commands.Cog):
         except Exception as e:
             print(f"Erreur lors de la création de la carte de bienvenue: {e}")
             return None
-
-    @app_commands.command(name="test_welcome", description="Test welcome card generation for debugging")
-    async def test_welcome_command(self, interaction: discord.Interaction):
-        """Test command to debug welcome card generation"""
-        await interaction.response.defer()
-
-        try:
-            # Tester la génération de carte de bienvenue
-            welcome_card = await self.create_welcome_card(interaction.user)
-
-            if welcome_card:
-                file = discord.File(welcome_card, filename="welcome_test.png")
-                embed = discord.Embed(
-                    title="✅ Test de la carte de bienvenue",
-                    description="La carte de bienvenue a été générée avec succès !",
-                    color=discord.Color.green()
-                )
-                await interaction.followup.send(embed=embed, file=file)
-            else:
-                embed = discord.Embed(
-                    title="❌ Échec du test",
-                    description="La carte de bienvenue n'a pas pu être générée. Vérifiez les logs pour plus de détails.",
-                    color=discord.Color.red()
-                )
-                await interaction.followup.send(embed=embed)
-
-        except Exception as e:
-            embed = discord.Embed(
-                title="❌ Erreur lors du test",
-                description=f"Erreur: {str(e)}",
-                color=discord.Color.red()
-            )
-            await interaction.followup.send(embed=embed)
 
     @app_commands.command(name="welcome_system", description="Manage welcome card settings and design")
     async def welcome_system_command(self, interaction: discord.Interaction):
@@ -521,7 +480,7 @@ class WelcomeSystem(commands.Cog):
                         else:
                             manager.mode = "profile_outline_image"
                             embed = manager.get_background_image_embed()
-                            embed.title = "🖼️ Profile Outline Image"
+                            embed.title = "<:ImageLOGO:1407072328134951043> Profile Outline Image"
                             embed.description = "Set a custom profile outline image"
 
                         manager.update_buttons()
@@ -760,14 +719,14 @@ class WelcomeSystemManagerView(discord.ui.View):
             bg = self.config["background_color"]
             config_status += f"🎨 Background: RGB({bg[0]}, {bg[1]}, {bg[2]})\n"
         elif self.config.get("background_image"):
-            config_status += "🖼️ Background: Custom Image\n"
+            config_status += "<:ImageLOGO:1407072328134951043> Background: Custom Image\n"
         else:
-            config_status += "⚪ Background: White (Default)\n"
+            config_status += "<:White:1407882887876968518> Background: Default\n"
 
         if self.config.get("profile_decoration", {}).get("enabled", True):
-            config_status += "🖼️ Profile Outline: Enabled\n"
+            config_status += "<:ParticipantsLOGO:1407733929389199460> Profile Outline: <:OnLOGO:1407072463883472978> Enabled\n"
         else:
-            config_status += "❌ Profile Outline: Disabled\n"
+            config_status += "<:ParticipantsLOGO:1407733929389199460> Profile Outline: <:OffLOGO:1407072621836894380> Disabled\n"
 
         embed.add_field(
             name="Current Configuration",
@@ -796,7 +755,7 @@ class WelcomeSystemManagerView(discord.ui.View):
         self.config = load_welcome_data()["template_config"]
 
         embed = discord.Embed(
-            title="🎨 Background Settings",
+            title="<:SettingLOGO:1407071854593839239> Background Settings",
             description="Configure the background of your welcome card",
             color=discord.Color.blue()
         )
@@ -869,7 +828,7 @@ class WelcomeSystemManagerView(discord.ui.View):
         self.config = load_welcome_data()["template_config"]
 
         embed = discord.Embed(
-            title="🖼️ Background Image",
+            title="<:ImageLOGO:1407072328134951043> Background Image",
             description="Set a custom background image for your welcome card",
             color=discord.Color.green()
         )
@@ -877,7 +836,7 @@ class WelcomeSystemManagerView(discord.ui.View):
         if self.config.get("background_image"):
             embed.add_field(
                 name="Current Image",
-                value="✅ Custom image set",
+                value="<:SucessLOGO:1407071637840592977> Custom image set",
                 inline=False
             )
         else:
@@ -901,7 +860,7 @@ class WelcomeSystemManagerView(discord.ui.View):
         self.config = load_welcome_data()["template_config"]
 
         embed = discord.Embed(
-            title="🖼️ Profile Outline Settings",
+            title="<:SettingLOGO:1407071854593839239> Profile Outline Settings",
             description="Configure the profile decoration outline",
             color=discord.Color.orange()
         )
@@ -909,7 +868,7 @@ class WelcomeSystemManagerView(discord.ui.View):
         profile_config = self.config.get("profile_decoration", {})
         enabled = profile_config.get("enabled", True)
 
-        status = "✅ Enabled" if enabled else "❌ Disabled"
+        status = "<:OnLOGO:1407072463883472978> Enabled" if enabled else "<:OffLOGO:1407072621836894380> Disabled"
         embed.add_field(
             name="Current Status",
             value=status,
@@ -926,7 +885,7 @@ class WelcomeSystemManagerView(discord.ui.View):
         elif profile_config.get("custom_image"):
             embed.add_field(
                 name="Custom Image",
-                value="✅ Custom outline image set",
+                value="<:SucessLOGO:1407071637840592977> Custom outline image set",
                 inline=False
             )
         else:
@@ -950,7 +909,7 @@ class WelcomeSystemManagerView(discord.ui.View):
         self.config = load_welcome_data()["template_config"]
 
         embed = discord.Embed(
-            title="📝 Content Settings",
+            title="<:SettingLOGO:1407071854593839239> Content Settings",
             description="Configure the content elements of your welcome card",
             color=discord.Color.purple()
         )
@@ -962,19 +921,19 @@ class WelcomeSystemManagerView(discord.ui.View):
         text_config = self.config.get("text_config", {})
         if text_config.get("text_color"):
             color = text_config["text_color"]
-            config_status += f"🎨 Text Color: RGB({color[0]}, {color[1]}, {color[2]})\n"
+            config_status += f"<:TXTFileLOGO:1407735600752361622> Text Color: RGB({color[0]}, {color[1]}, {color[2]})\n"
         else:
-            config_status += "🎨 Text Color: Default (White)\n"
+            config_status += "<:TXTFileLOGO:1407735600752361622> Text Color: Default (White)\n"
 
         # Default profile status
         default_profile = self.config.get("default_profile", {})
         if default_profile.get("enabled", True):
             if default_profile.get("custom_image_url"):
-                config_status += "🖼️ Default Profile: Custom Image\n"
+                config_status += "<:ParticipantsLOGO:1407733929389199460> Default Profile: Custom Image\n"
             else:
-                config_status += "🖼️ Default Profile: Default\n"
+                config_status += "<:ParticipantsLOGO:1407733929389199460> Default Profile: Default\n"
         else:
-            config_status += "❌ Default Profile: Disabled\n"
+            config_status += "<:ParticipantsLOGO:1407733929389199460> Default Profile: <:OffLOGO:1407072621836894380> Disabled\n"
 
         embed.add_field(
             name="Current Configuration",
@@ -996,7 +955,7 @@ class WelcomeSystemManagerView(discord.ui.View):
         self.config = load_welcome_data()["template_config"]
 
         embed = discord.Embed(
-            title="🎨 Content Color",
+            title="<:ColorLOGO:1408828590241615883> Content Color",
             description="Choose how to set your text color",
             color=discord.Color.purple()
         )
@@ -1030,7 +989,7 @@ class WelcomeSystemManagerView(discord.ui.View):
         self.config = load_welcome_data()["template_config"]
 
         embed = discord.Embed(
-            title="🖼️ Content Image",
+            title="<:ImageLOGO:1407072328134951043> Content Image",
             description="Set a custom default profile image",
             color=discord.Color.green()
         )
@@ -1039,13 +998,13 @@ class WelcomeSystemManagerView(discord.ui.View):
         if default_profile.get("custom_image_url"):
             embed.add_field(
                 name="Current Image",
-                value="✅ Custom image set",
+                value="<:SucessLOGO:1407071637840592977> Custom image set",
                 inline=False
             )
         else:
             embed.add_field(
                 name="Current Image",
-                value="❌ Using default image",
+                value="Using default image",
                 inline=False
             )
 
@@ -1118,7 +1077,6 @@ class WelcomeSystemManagerView(discord.ui.View):
                         # Set GitHub raw URL avec timestamp pour forcer le refresh
                         filename = os.path.basename(file_path)
                         self.preview_image_url = f"https://raw.githubusercontent.com/TheBlueEL/pictures/main/{filename}?t={timestamp}"
-                        print(f"✅ Nouvelle image de prévisualisation générée: {self.preview_image_url}")
                         return True
                 except ImportError:
                     print("GitHub sync not available")
@@ -1187,14 +1145,14 @@ class WelcomeSystemManagerView(discord.ui.View):
             rgb_button = discord.ui.Button(
                 label="RGB Code",
                 style=discord.ButtonStyle.secondary,
-                emoji="🌈"
+                emoji="<:RGBcodeLOGO:1408831982141575290>"
             )
             rgb_button.callback = self.background_rgb_color
 
             reset_button = discord.ui.Button(
                 label="Reset",
                 style=discord.ButtonStyle.danger,
-                emoji="🔄"
+                emoji="<:UpdateLOGO:1407072818214080695>"
             )
             reset_button.callback = self.reset_background_color
 
@@ -1215,14 +1173,14 @@ class WelcomeSystemManagerView(discord.ui.View):
             color_button = discord.ui.Button(
                 label="Color",
                 style=discord.ButtonStyle.primary,
-                emoji="🎨"
+                emoji="<:ColorLOGO:1408828590241615883>"
             )
             color_button.callback = self.background_color_settings
 
             image_button = discord.ui.Button(
                 label="Image",
                 style=discord.ButtonStyle.secondary,
-                emoji="🖼️"
+                emoji="<:ImageLOGO:1407072328134951043>"
             )
             image_button.callback = self.background_image_settings
 
@@ -1249,14 +1207,14 @@ class WelcomeSystemManagerView(discord.ui.View):
             rgb_button = discord.ui.Button(
                 label="RGB Code",
                 style=discord.ButtonStyle.secondary,
-                emoji="🌈"
+                emoji="<:RGBcodeLOGO:1408831982141575290>"
             )
             rgb_button.callback = self.profile_outline_rgb_color
 
             reset_button = discord.ui.Button(
                 label="Reset",
                 style=discord.ButtonStyle.danger,
-                emoji="🔄"
+                emoji="<:UpdateLOGO:1407072818214080695>"
             )
             reset_button.callback = self.reset_profile_outline_color
 
@@ -1312,14 +1270,14 @@ class WelcomeSystemManagerView(discord.ui.View):
             color_button = discord.ui.Button(
                 label="Color",
                 style=discord.ButtonStyle.primary,
-                emoji="🎨"
+                emoji="<:ColorLOGO:1408828590241615883>"
             )
             color_button.callback = self.content_color_settings
 
             image_button = discord.ui.Button(
                 label="Image",
                 style=discord.ButtonStyle.secondary,
-                emoji="🖼️"
+                emoji="<:ImageLOGO:1407072328134951043>"
             )
             image_button.callback = self.content_image_settings
 
@@ -1346,14 +1304,14 @@ class WelcomeSystemManagerView(discord.ui.View):
             rgb_button = discord.ui.Button(
                 label="RGB Code",
                 style=discord.ButtonStyle.secondary,
-                emoji="🌈"
+                emoji="<:RGBcodeLOGO:1408831982141575290>"
             )
             rgb_button.callback = self.content_rgb_color
 
             reset_button = discord.ui.Button(
                 label="Reset",
                 style=discord.ButtonStyle.danger,
-                emoji="🔄"
+                emoji="<:UpdateLOGO:1407072818214080695>"
             )
             reset_button.callback = self.reset_content_color
 
@@ -1416,14 +1374,14 @@ class WelcomeSystemManagerView(discord.ui.View):
             color_button = discord.ui.Button(
                 label="Color",
                 style=discord.ButtonStyle.primary,
-                emoji="🎨"
+                emoji="<:ColorLOGO:1408828590241615883>"
             )
             color_button.callback = self.profile_outline_color_settings
 
             image_button = discord.ui.Button(
                 label="Image",
                 style=discord.ButtonStyle.secondary,
-                emoji="🖼️"
+                emoji="<:ImageLOGO:1407072328134951043>"
             )
             image_button.callback = self.profile_outline_image_settings
 
@@ -1451,14 +1409,14 @@ class WelcomeSystemManagerView(discord.ui.View):
             content_button = discord.ui.Button(
                 label="Content",
                 style=discord.ButtonStyle.secondary,
-                emoji="📝"
+                emoji="<:DescriptionLOGO:1407733417172533299>"
             )
             content_button.callback = self.content_settings
 
             profile_outline_button = discord.ui.Button(
                 label="Profile Outline",
                 style=discord.ButtonStyle.secondary,
-                emoji="🖼️"
+                emoji="<:ProfileLOGO:1408830057819930806>"
             )
             profile_outline_button.callback = self.profile_outline_settings
 
