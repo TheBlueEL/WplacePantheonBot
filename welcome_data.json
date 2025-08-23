@@ -7,19 +7,19 @@
     ],
     "avatar_position": {
       "x": 101,
-      "y": 77+100,
+      "y": 177,
       "diameter": 705
     },
     "default_profile": {
       "url": "https://raw.githubusercontent.com/TheBlueEL/pictures/refs/heads/main/DefaultProfile.png",
       "x": 101,
-      "y": 77+100,
+      "y": 177,
       "enabled": true
     },
     "profile_decoration": {
       "url": "https://raw.githubusercontent.com/TheBlueEL/pictures/refs/heads/main/ProfileOutline.png",
       "x": 60,
-      "y": 35+100,
+      "y": 135,
       "enabled": true,
       "color_override": [
         0,
@@ -30,14 +30,14 @@
     "text_config": {
       "welcome_text": {
         "x_offset": 50,
-        "y_offset": 200+100,
+        "y_offset": 300,
         "font_size": 65,
         "font_path": "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
         "text": "WELCOME, TO THE SERVER"
       },
       "username_text": {
         "x_offset": 50,
-        "y_offset": 300+100,
+        "y_offset": 400,
         "font_size_max": 175,
         "font_size_min": 50,
         "font_path": "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
