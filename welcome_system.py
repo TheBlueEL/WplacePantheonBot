@@ -1657,6 +1657,12 @@ class WelcomeSystemManagerView(discord.ui.View):
         await interaction.response.edit_message(embed=embed, view=self)
 
     async def clear_background_image(self, interaction: discord.Interaction):
+        # Defer response immediately to avoid timeout
+        try:
+            await interaction.response.defer()
+        except discord.InteractionResponded:
+            pass
+
         self.config.pop("background_image", None)
         self.save_config()
 
@@ -1666,9 +1672,23 @@ class WelcomeSystemManagerView(discord.ui.View):
 
         embed = self.get_background_image_embed()
         self.update_buttons()
-        await interaction.response.edit_message(embed=embed, view=self)
+        
+        try:
+            await interaction.edit_original_response(embed=embed, view=self)
+        except discord.NotFound:
+            # Interaction expired, try followup
+            try:
+                await interaction.followup.edit_message(interaction.message.id, embed=embed, view=self)
+            except:
+                pass
 
     async def reset_background_color(self, interaction: discord.Interaction):
+        # Defer response immediately to avoid timeout
+        try:
+            await interaction.response.defer()
+        except discord.InteractionResponded:
+            pass
+
         # Set default background color (white/gray mix)
         self.config["background_color"] = [240, 240, 240]  # Light gray
         self.config.pop("background_image", None)
@@ -1680,7 +1700,15 @@ class WelcomeSystemManagerView(discord.ui.View):
 
         embed = self.get_background_color_embed()
         self.update_buttons()
-        await interaction.response.edit_message(embed=embed, view=self)
+        
+        try:
+            await interaction.edit_original_response(embed=embed, view=self)
+        except discord.NotFound:
+            # Interaction expired, try followup
+            try:
+                await interaction.followup.edit_message(interaction.message.id, embed=embed, view=self)
+            except:
+                pass
 
     # Content callbacks
     async def content_settings(self, interaction: discord.Interaction):
@@ -1735,6 +1763,12 @@ class WelcomeSystemManagerView(discord.ui.View):
         await interaction.response.edit_message(embed=embed, view=self)
 
     async def reset_content_color(self, interaction: discord.Interaction):
+        # Defer response immediately to avoid timeout
+        try:
+            await interaction.response.defer()
+        except discord.InteractionResponded:
+            pass
+
         if "text_config" not in self.config:
             self.config["text_config"] = {}
         # Set default text color (white)
@@ -1747,7 +1781,15 @@ class WelcomeSystemManagerView(discord.ui.View):
 
         embed = self.get_content_color_embed()
         self.update_buttons()
-        await interaction.response.edit_message(embed=embed, view=self)
+        
+        try:
+            await interaction.edit_original_response(embed=embed, view=self)
+        except discord.NotFound:
+            # Interaction expired, try followup
+            try:
+                await interaction.followup.edit_message(interaction.message.id, embed=embed, view=self)
+            except:
+                pass
 
     # Profile outline callbacks
     async def profile_outline_settings(self, interaction: discord.Interaction):
@@ -1757,6 +1799,12 @@ class WelcomeSystemManagerView(discord.ui.View):
         await interaction.response.edit_message(embed=embed, view=self)
 
     async def toggle_profile_outline(self, interaction: discord.Interaction):
+        # Defer response immediately to avoid timeout
+        try:
+            await interaction.response.defer()
+        except discord.InteractionResponded:
+            pass
+
         if "profile_decoration" not in self.config:
             self.config["profile_decoration"] = {}
         current_state = self.config["profile_decoration"].get("enabled", True)
@@ -1769,7 +1817,15 @@ class WelcomeSystemManagerView(discord.ui.View):
 
         embed = self.get_profile_outline_embed()
         self.update_buttons()
-        await interaction.response.edit_message(embed=embed, view=self)
+        
+        try:
+            await interaction.edit_original_response(embed=embed, view=self)
+        except discord.NotFound:
+            # Interaction expired, try followup
+            try:
+                await interaction.followup.edit_message(interaction.message.id, embed=embed, view=self)
+            except:
+                pass
 
     async def profile_outline_color_settings(self, interaction: discord.Interaction):
         self.mode = "profile_outline_color"
@@ -1832,6 +1888,12 @@ class WelcomeSystemManagerView(discord.ui.View):
         await interaction.response.edit_message(embed=embed, view=self)
 
     async def reset_profile_outline_color(self, interaction: discord.Interaction):
+        # Defer response immediately to avoid timeout
+        try:
+            await interaction.response.defer()
+        except discord.InteractionResponded:
+            pass
+
         if "profile_decoration" not in self.config:
             self.config["profile_decoration"] = {}
         # Remove custom overrides to use default white outline
@@ -1845,7 +1907,15 @@ class WelcomeSystemManagerView(discord.ui.View):
 
         embed = self.get_profile_outline_embed()
         self.update_buttons()
-        await interaction.response.edit_message(embed=embed, view=self)
+        
+        try:
+            await interaction.edit_original_response(embed=embed, view=self)
+        except discord.NotFound:
+            # Interaction expired, try followup
+            try:
+                await interaction.followup.edit_message(interaction.message.id, embed=embed, view=self)
+            except:
+                pass
 
     # Back navigation callbacks
     async def back_to_main(self, interaction: discord.Interaction):
