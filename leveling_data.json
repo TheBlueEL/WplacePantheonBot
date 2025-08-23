@@ -19,7 +19,9 @@
       "custom": {}
     },
     "level_card": {
-      "background_image": "https://raw.githubusercontent.com/TheBlueEL/pictures/refs/heads/main/LevelBar.png",
+      "background_color": "None",
+      "background_image": "None",
+      "level_bar_image": "https://raw.githubusercontent.com/TheBlueEL/pictures/refs/heads/main/LevelBar.png",
       "profile_position": {
         "x": 50,
         "y": 50,
@@ -40,6 +42,11 @@
         "y": 726,
         "width": 1988,
         "height": 30
+      },
+      "xp_text_position": {
+        "x": 30,
+        "y": 676,
+        "font_size": 40
       }
     }
   },
