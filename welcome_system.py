@@ -563,9 +563,16 @@ class WelcomeSystemManagerView(discord.ui.View):
             inline=False
         )
 
-        # Add preview image if available
+        # Add preview image if available - avec timestamp pour forcer le refresh
         if hasattr(self, 'preview_image_url') and self.preview_image_url:
-            embed.set_image(url=self.preview_image_url)
+            # Ajouter un timestamp pour éviter le cache Discord
+            import time
+            timestamp = int(time.time())
+            if '?' in self.preview_image_url:
+                image_url = self.preview_image_url.split('?')[0] + f"?refresh={timestamp}"
+            else:
+                image_url = self.preview_image_url + f"?refresh={timestamp}"
+            embed.set_image(url=image_url)
 
         bot_name = get_bot_name(self.bot)
         embed.set_footer(text=f"{bot_name} | Welcome System", icon_url=self.bot.user.display_avatar.url)
@@ -751,13 +758,20 @@ class WelcomeSystemManagerView(discord.ui.View):
     async def generate_preview_image(self, interaction_user):
         """Generate preview image and upload it to GitHub"""
         try:
+            # Recharger la configuration pour avoir les dernières modifications
+            self.config = load_welcome_data()["template_config"]
+            
             welcome_system = WelcomeSystem(self.bot)
+            welcome_system.config = self.config  # S'assurer que le welcome_system utilise la config mise à jour
+            
             preview_image = await welcome_system.create_welcome_card(interaction_user)
 
             if preview_image:
-                # Save preview to temp file
+                # Save preview to temp file avec timestamp pour éviter les conflicts
                 os.makedirs('images', exist_ok=True)
-                filename = f"welcome_preview_{self.user_id}.png"
+                import time
+                timestamp = int(time.time())
+                filename = f"welcome_preview_{self.user_id}_{timestamp}.png"
                 file_path = os.path.join('images', filename)
 
                 with open(file_path, 'wb') as f:
@@ -776,9 +790,10 @@ class WelcomeSystemManagerView(discord.ui.View):
                         except:
                             pass
 
-                        # Set GitHub raw URL
+                        # Set GitHub raw URL avec timestamp pour forcer le refresh
                         filename = os.path.basename(file_path)
-                        self.preview_image_url = f"https://raw.githubusercontent.com/TheBlueEL/pictures/main/{filename}"
+                        self.preview_image_url = f"https://raw.githubusercontent.com/TheBlueEL/pictures/main/{filename}?t={timestamp}"
+                        print(f"✅ Nouvelle image de prévisualisation générée: {self.preview_image_url}")
                         return True
                 except ImportError:
                     print("GitHub sync not available")
@@ -1039,7 +1054,8 @@ class WelcomeSystemManagerView(discord.ui.View):
         self.config.pop("background_image", None)
         self.save_config()
 
-        # Generate new preview
+        # Generate new preview après suppression de l'image de fond
+        print("🔄 Régénération de la prévisualisation après suppression de l'image de fond...")
         await self.generate_preview_image(interaction.user)
 
         embed = self.get_background_image_embed()
@@ -1060,7 +1076,8 @@ class WelcomeSystemManagerView(discord.ui.View):
         self.config["profile_decoration"]["enabled"] = not current_state
         self.save_config()
 
-        # Generate new preview
+        # Generate new preview avec le nouveau statut du profile outline
+        print("🔄 Régénération de la prévisualisation après toggle profile outline...")
         await self.generate_preview_image(interaction.user)
 
         embed = self.get_profile_outline_embed()
@@ -1225,7 +1242,8 @@ class BackgroundHexColorModal(discord.ui.Modal):
             self.view.config.pop("background_image", None)  # Remove image if setting color
             self.view.save_config()
 
-            # Generate new preview
+            # Generate new preview avec la nouvelle configuration
+            print("🔄 Régénération de la prévisualisation après changement de couleur...")
             await self.view.generate_preview_image(interaction.user)
 
             embed = self.view.get_background_color_embed()
@@ -1291,7 +1309,8 @@ class BackgroundRGBColorModal(discord.ui.Modal):
             self.view.config.pop("background_image", None)  # Remove image if setting color
             self.view.save_config()
 
-            # Generate new preview
+            # Generate new preview avec la nouvelle configuration
+            print("🔄 Régénération de la prévisualisation après changement RGB...")
             await self.view.generate_preview_image(interaction.user)
 
             embed = self.view.get_background_color_embed()
@@ -1335,7 +1354,8 @@ class BackgroundImageURLModal(discord.ui.Modal):
         self.view.config.pop("background_color", None)  # Remove color if setting image
         self.view.save_config()
 
-        # Generate new preview
+        # Generate new preview avec la nouvelle image de fond
+        print("🔄 Régénération de la prévisualisation après changement d'image de fond...")
         await self.view.generate_preview_image(interaction.user)
 
         embed = self.view.get_background_image_embed()
