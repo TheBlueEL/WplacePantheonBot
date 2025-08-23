@@ -28,9 +28,9 @@
       "xp_text_color": [65,65,69],
       "xp_bar_color": [225,66,53],
       "profile_position": {
-        "x": 50,
-        "y": 50,
-        "size": 450
+        "x": 75,
+        "y": 75,
+        "size": 400
       },
       "username_position": {
         "x": 550,
