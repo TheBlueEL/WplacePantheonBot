@@ -97,12 +97,12 @@ class WelcomeSystem(commands.Cog):
                 template_data = await self.download_image(self.config["background_image"])
                 if not template_data:
                     return None
-                
+
                 # Traitement de l'image de fond
                 bg_image = Image.open(io.BytesIO(template_data)).convert("RGBA")
                 orig_width, orig_height = bg_image.size
                 orig_ratio = orig_width / orig_height
-                
+
                 # Rogner l'image pour maintenir les bonnes proportions
                 if orig_ratio > target_ratio:
                     # Image trop large, rogner sur les côtés
@@ -114,7 +114,7 @@ class WelcomeSystem(commands.Cog):
                     new_height = int(orig_width / target_ratio)
                     top = (orig_height - new_height) // 2
                     bg_image = bg_image.crop((0, top, orig_width, top + new_height))
-                
+
                 # Redimensionner à la taille exacte
                 template = bg_image.resize((target_width, target_height), Image.Resampling.LANCZOS)
             else:
@@ -174,7 +174,7 @@ class WelcomeSystem(commands.Cog):
             if decoration_data:
                 try:
                     decoration = Image.open(io.BytesIO(decoration_data)).convert("RGBA")
-                    
+
                     # Traitement de l'image de décoration pour la rendre carrée si nécessaire
                     dec_width, dec_height = decoration.size
                     if dec_width != dec_height:
@@ -183,7 +183,7 @@ class WelcomeSystem(commands.Cog):
                         left = (dec_width - min_dimension) // 2
                         top = (dec_height - min_dimension) // 2
                         decoration = decoration.crop((left, top, left + min_dimension, top + min_dimension))
-                        
+
                 except Exception as e:
                     print(f"❌ Erreur lors du traitement de ProfileOutline: {e}")
 
@@ -235,7 +235,7 @@ class WelcomeSystem(commands.Cog):
                     custom_decoration_data = await self.download_image(decoration_config["custom_image"])
                     if custom_decoration_data:
                         custom_decoration = Image.open(io.BytesIO(custom_decoration_data)).convert("RGBA")
-                        
+
                         # Traitement de l'image personnalisée pour la rendre carrée si nécessaire
                         dec_width, dec_height = custom_decoration.size
                         if dec_width != dec_height:
@@ -244,20 +244,20 @@ class WelcomeSystem(commands.Cog):
                             left = (dec_width - min_dimension) // 2
                             top = (dec_height - min_dimension) // 2
                             custom_decoration = custom_decoration.crop((left, top, left + min_dimension, top + min_dimension))
-                        
+
                         # Redimensionner l'image personnalisée à la taille de ProfileOutline
                         if decoration:
                             custom_decoration = custom_decoration.resize(decoration.size, Image.Resampling.LANCZOS)
-                            
+
                             # Appliquer le masque alpha de ProfileOutline sur l'image personnalisée
                             # Utiliser le canal alpha de ProfileOutline comme masque
                             alpha_mask = decoration.split()[-1]  # Canal alpha de ProfileOutline
-                            
+
                             # Créer une nouvelle image avec l'image personnalisée mais utilisant le masque de ProfileOutline
                             masked_decoration = Image.new("RGBA", custom_decoration.size, (0, 0, 0, 0))
                             masked_decoration.paste(custom_decoration, (0, 0))
                             masked_decoration.putalpha(alpha_mask)
-                            
+
                             decoration = masked_decoration
 
                 # Coller la décoration à sa taille d'origine (par-dessus l'avatar)
@@ -337,14 +337,14 @@ class WelcomeSystem(commands.Cog):
                 # Créer une fine bordure noire autour du texte pour la lisibilité
                 border_thickness = 3
                 draw = ImageDraw.Draw(template)
-                
+
                 # Dessiner la bordure noire (plusieurs passes pour épaissir)
                 for adj in range(-border_thickness, border_thickness + 1):
                     for adj_y in range(-border_thickness, border_thickness + 1):
                         if adj != 0 or adj_y != 0:
-                            draw.text((text_x + adj, text_y_welcome + adj_y), 
+                            draw.text((text_x + adj, text_y_welcome + adj_y),
                                      welcome_config["text"], font=font_welcome, fill=(0, 0, 0, 255))
-                            draw.text((text_x + adj, text_y_username + adj_y), 
+                            draw.text((text_x + adj, text_y_username + adj_y),
                                      username_text, font=font_username, fill=(0, 0, 0, 255))
 
                 # Créer un masque pour le texte (sans bordure)
@@ -352,9 +352,9 @@ class WelcomeSystem(commands.Cog):
                 mask_draw = ImageDraw.Draw(text_mask)
 
                 # Dessiner le texte sur le masque en blanc (visible) - seulement le texte principal, pas la bordure
-                mask_draw.text((text_x, text_y_welcome), 
+                mask_draw.text((text_x, text_y_welcome),
                              welcome_config["text"], font=font_welcome, fill=255)
-                mask_draw.text((text_x, text_y_username), 
+                mask_draw.text((text_x, text_y_username),
                              username_text, font=font_username, fill=255)
 
                 # Redimensionner l'image de texture pour couvrir toute la zone de texte
@@ -369,20 +369,24 @@ class WelcomeSystem(commands.Cog):
                 template = Image.alpha_composite(template, textured_text)
             else:
                 # Dessiner le texte normalement avec les couleurs
-                draw.text((text_x + shadow_offset, text_y_welcome + shadow_offset), 
+                draw.text((text_x + shadow_offset, text_y_welcome + shadow_offset),
                          welcome_config["text"], font=font_welcome, fill=shadow_color)
-                draw.text((text_x, text_y_welcome), 
+                draw.text((text_x, text_y_welcome),
                          welcome_config["text"], font=font_welcome, fill=text_color)
 
                 # Dessiner le nom d'utilisateur avec l'ombre
-                draw.text((text_x + shadow_offset, text_y_username + shadow_offset), 
+                draw.text((text_x + shadow_offset, text_y_username + shadow_offset),
                          username_text, font=font_username, fill=shadow_color)
-                draw.text((text_x, text_y_username), 
+                draw.text((text_x, text_y_username),
                          username_text, font=font_username, fill=text_color)
 
             # Convertir en bytes pour l'envoi Discord
             output = io.BytesIO()
-            template.save(output, format='PNG')
+            # Déterminer le format de sortie basé sur le fond
+            if self.config.get("background_image") and self.config["background_image"].lower().endswith('.gif'):
+                template.save(output, format='GIF')
+            else:
+                template.save(output, format='PNG')
             output.seek(0)
 
             return output
@@ -426,33 +430,40 @@ class WelcomeSystem(commands.Cog):
         try:
             welcome_data = load_welcome_data()
             welcome_settings = welcome_data.get("welcome_settings", {})
-            
+
             # Check if welcome system is enabled
             if not welcome_settings.get("enabled", False):
                 return
-                
+
             # Check if channel is configured
             channel_id = welcome_settings.get("channel_id")
             if not channel_id:
                 return
-                
+
             channel = member.guild.get_channel(channel_id)
             if not channel:
                 return
-                
+
             # Create welcome card
             welcome_card = await self.create_welcome_card(member)
             if not welcome_card:
                 return
-                
+
             # Get welcome message and replace {user} placeholder
             welcome_message = welcome_settings.get("welcome_message", "Welcome {user}!")
             welcome_message = welcome_message.replace("{user}", member.mention)
-            
+
+            # Determine file extension for the welcome card
+            welcome_card.seek(0)
+            file_header = welcome_card.read(10)
+            welcome_card.seek(0)
+
+            filename = "welcome.gif" if file_header.startswith(b'GIF') else "welcome.png"
+
             # Send welcome message with image
-            file = discord.File(welcome_card, filename="welcome.png")
+            file = discord.File(welcome_card, filename=filename)
             await channel.send(content=welcome_message, file=file)
-            
+
         except Exception as e:
             print(f"Error in on_member_join: {e}")
 
@@ -557,16 +568,33 @@ class WelcomeSystem(commands.Cog):
             os.makedirs('images', exist_ok=True)
 
             # Generate unique filename
-            filename = f"{uuid.uuid4()}.png"
+            filename = f"{uuid.uuid4()}.png" # Default to png, will be changed if gif
             file_path = os.path.join('images', filename)
 
             # Download the image
             async with aiohttp.ClientSession() as session:
                 async with session.get(image_url) as response:
                     if response.status == 200:
+                        image_data = await response.read()
                         with open(file_path, 'wb') as f:
-                            async for chunk in response.content.iter_chunked(8192):
-                                f.write(chunk)
+                            f.write(image_data)
+
+                        # Determine correct extension
+                        img_format = Image.open(io.BytesIO(image_data)).format
+                        if img_format == 'GIF':
+                            filename = f"{uuid.uuid4()}.gif"
+                            file_path = os.path.join('images', filename)
+                            with open(file_path, 'wb') as f:
+                                f.write(image_data)
+                        elif img_format in ['JPEG', 'PNG', 'WEBP', 'BMP', 'SVG']:
+                             filename = f"{uuid.uuid4()}.{img_format.lower()}"
+                             file_path = os.path.join('images', filename)
+                             with open(file_path, 'wb') as f:
+                                f.write(image_data)
+                        else:
+                             print(f"Unsupported image format: {img_format}")
+                             return None
+
 
                         # Synchronize with GitHub
                         try:
@@ -751,11 +779,12 @@ class WelcomeSystemManagerView(discord.ui.View):
 
         # Show current configuration status
         config_status = ""
-        if self.config.get("background_color"):
+        if self.config.get("background_image"):
+            bg = self.config["background_image"]
+            config_status += f"<:RGBcodeLOGO:1408831982141575290> Background: Custom Image\n"
+        elif self.config.get("background_color"):
             bg = self.config["background_color"]
             config_status += f"<:RGBcodeLOGO:1408831982141575290> Background: RGB({bg[0]}, {bg[1]}, {bg[2]})\n"
-        elif self.config.get("background_image"):
-            config_status += "<:ImageLOGO:1407072328134951043> Background: Custom Image\n"
         else:
             config_status += "<:White:1407882887876968518> Background: Default\n"
 
@@ -952,7 +981,7 @@ class WelcomeSystemManagerView(discord.ui.View):
 
         # Show current configuration status
         config_status = ""
-        
+
         # Text color status
         text_config = self.config.get("text_config", {})
         if text_config.get("text_color"):
@@ -1057,7 +1086,7 @@ class WelcomeSystemManagerView(discord.ui.View):
         """Get settings embed"""
         welcome_data = load_welcome_data()
         welcome_settings = welcome_data.get("welcome_settings", {})
-        
+
         embed = discord.Embed(
             title="<:SettingLOGO:1407071854593839239> Welcome System Settings",
             description="Configure the welcome system behavior",
@@ -1067,7 +1096,7 @@ class WelcomeSystemManagerView(discord.ui.View):
         # System status
         enabled = welcome_settings.get("enabled", False)
         status = "<:OnLOGO:1407072463883472978> Enabled" if enabled else "<:OffLOGO:1407072621836894380> Disabled"
-        
+
         # Channel status
         channel_id = welcome_settings.get("channel_id")
         if channel_id and hasattr(self, 'guild'):
@@ -1075,7 +1104,7 @@ class WelcomeSystemManagerView(discord.ui.View):
             channel_text = f"#{channel.name}" if channel else "Channel not found"
         else:
             channel_text = "Not configured"
-            
+
         # Welcome message
         welcome_message = welcome_settings.get("welcome_message", "Welcome {user}!")
 
@@ -1084,13 +1113,13 @@ class WelcomeSystemManagerView(discord.ui.View):
             value=status,
             inline=False
         )
-        
+
         embed.add_field(
             name="Welcome Channel",
             value=channel_text,
             inline=False
         )
-        
+
         embed.add_field(
             name="Welcome Message",
             value=f"`{welcome_message}`",
@@ -1117,7 +1146,7 @@ class WelcomeSystemManagerView(discord.ui.View):
         welcome_data = load_welcome_data()
         welcome_settings = welcome_data.get("welcome_settings", {})
         channel_id = welcome_settings.get("channel_id")
-        
+
         if channel_id and hasattr(self, 'guild'):
             channel = self.guild.get_channel(channel_id)
             if channel:
@@ -1159,10 +1188,10 @@ class WelcomeSystemManagerView(discord.ui.View):
         try:
             # Recharger la configuration pour avoir les dernières modifications
             self.config = load_welcome_data()["template_config"]
-            
+
             welcome_system = WelcomeSystem(self.bot)
             welcome_system.config = self.config  # S'assurer que le welcome_system utilise la config mise à jour
-            
+
             preview_image = await welcome_system.create_welcome_card(interaction_user)
 
             if preview_image:
@@ -1170,7 +1199,17 @@ class WelcomeSystemManagerView(discord.ui.View):
                 os.makedirs('images', exist_ok=True)
                 import time
                 timestamp = int(time.time())
-                filename = f"welcome_preview_{self.user_id}_{timestamp}.png"
+
+                # Déterminer l'extension basée sur le contenu
+                preview_image.seek(0)
+                file_header = preview_image.read(10)
+                preview_image.seek(0)
+
+                if file_header.startswith(b'GIF'):
+                    filename = f"welcome_preview_{self.user_id}_{timestamp}.gif"
+                else:
+                    filename = f"welcome_preview_{self.user_id}_{timestamp}.png"
+
                 file_path = os.path.join('images', filename)
 
                 with open(file_path, 'wb') as f:
@@ -1517,7 +1556,7 @@ class WelcomeSystemManagerView(discord.ui.View):
             welcome_data = load_welcome_data()
             welcome_settings = welcome_data.get("welcome_settings", {})
             enabled = welcome_settings.get("enabled", False)
-            
+
             toggle_button = discord.ui.Button(
                 label="ON" if enabled else "OFF",
                 style=discord.ButtonStyle.success if enabled else discord.ButtonStyle.danger,
@@ -1672,7 +1711,7 @@ class WelcomeSystemManagerView(discord.ui.View):
 
         embed = self.get_background_image_embed()
         self.update_buttons()
-        
+
         try:
             await interaction.edit_original_response(embed=embed, view=self)
         except discord.NotFound:
@@ -1700,7 +1739,7 @@ class WelcomeSystemManagerView(discord.ui.View):
 
         embed = self.get_background_color_embed()
         self.update_buttons()
-        
+
         try:
             await interaction.edit_original_response(embed=embed, view=self)
         except discord.NotFound:
@@ -1781,7 +1820,7 @@ class WelcomeSystemManagerView(discord.ui.View):
 
         embed = self.get_content_color_embed()
         self.update_buttons()
-        
+
         try:
             await interaction.edit_original_response(embed=embed, view=self)
         except discord.NotFound:
@@ -1817,7 +1856,7 @@ class WelcomeSystemManagerView(discord.ui.View):
 
         embed = self.get_profile_outline_embed()
         self.update_buttons()
-        
+
         try:
             await interaction.edit_original_response(embed=embed, view=self)
         except discord.NotFound:
@@ -1907,7 +1946,7 @@ class WelcomeSystemManagerView(discord.ui.View):
 
         embed = self.get_profile_outline_embed()
         self.update_buttons()
-        
+
         try:
             await interaction.edit_original_response(embed=embed, view=self)
         except discord.NotFound:
@@ -1974,14 +2013,14 @@ class WelcomeSystemManagerView(discord.ui.View):
         welcome_data = load_welcome_data()
         if "welcome_settings" not in welcome_data:
             welcome_data["welcome_settings"] = {}
-        
+
         current_state = welcome_data["welcome_settings"].get("enabled", False)
         welcome_data["welcome_settings"]["enabled"] = not current_state
-        
+
         # Save to file
         with open('welcome_data.json', 'w', encoding='utf-8') as f:
             json.dump(welcome_data, f, indent=2, ensure_ascii=False)
-        
+
         embed = self.get_settings_embed()
         self.update_buttons()
         await interaction.response.edit_message(embed=embed, view=self)
@@ -2007,7 +2046,7 @@ class WelcomeSystemManagerView(discord.ui.View):
         # Remove from active managers
         if interaction.user.id in self.bot.get_cog('WelcomeSystem').active_managers:
             del self.bot.get_cog('WelcomeSystem').active_managers[interaction.user.id]
-        
+
         # Delete the message entirely
         await interaction.response.defer()
         await interaction.delete_original_response()
@@ -2037,7 +2076,7 @@ class ContentHexColorModal(discord.ui.Modal):
 
     async def on_submit(self, interaction: discord.Interaction):
         await interaction.response.defer()
-        
+
         hex_value = self.hex_input.value.strip()
         if hex_value.startswith('#'):
             hex_value = hex_value[1:]
@@ -2104,7 +2143,7 @@ class ContentRGBColorModal(discord.ui.Modal):
 
     async def on_submit(self, interaction: discord.Interaction):
         await interaction.response.defer()
-        
+
         try:
             r = int(self.red_input.value)
             g = int(self.green_input.value)
@@ -2148,7 +2187,7 @@ class ContentImageURLModal(discord.ui.Modal):
 
     async def on_submit(self, interaction: discord.Interaction):
         await interaction.response.defer()
-        
+
         url = self.url_input.value.strip()
         if not url.startswith(('http://', 'https://')):
             error_embed = discord.Embed(
@@ -2204,7 +2243,7 @@ class BackgroundHexColorModal(discord.ui.Modal):
 
     async def on_submit(self, interaction: discord.Interaction):
         await interaction.response.defer()
-        
+
         hex_value = self.hex_input.value.strip()
         if hex_value.startswith('#'):
             hex_value = hex_value[1:]
@@ -2269,7 +2308,7 @@ class BackgroundRGBColorModal(discord.ui.Modal):
 
     async def on_submit(self, interaction: discord.Interaction):
         await interaction.response.defer()
-        
+
         try:
             r = int(self.red_input.value)
             g = int(self.green_input.value)
@@ -2312,7 +2351,7 @@ class BackgroundImageURLModal(discord.ui.Modal):
 
     async def on_submit(self, interaction: discord.Interaction):
         await interaction.response.defer()
-        
+
         url = self.url_input.value.strip()
         if not url.startswith(('http://', 'https://')):
             error_embed = discord.Embed(
@@ -2358,7 +2397,7 @@ class ProfileOutlineHexColorModal(discord.ui.Modal):
 
     async def on_submit(self, interaction: discord.Interaction):
         await interaction.response.defer()
-        
+
         hex_value = self.hex_input.value.strip()
         if hex_value.startswith('#'):
             hex_value = hex_value[1:]
@@ -2425,7 +2464,7 @@ class ProfileOutlineRGBColorModal(discord.ui.Modal):
 
     async def on_submit(self, interaction: discord.Interaction):
         await interaction.response.defer()
-        
+
         try:
             r = int(self.red_input.value)
             g = int(self.green_input.value)
@@ -2469,7 +2508,7 @@ class ProfileOutlineImageURLModal(discord.ui.Modal):
 
     async def on_submit(self, interaction: discord.Interaction):
         await interaction.response.defer()
-        
+
         url = self.url_input.value.strip()
         if not url.startswith(('http://', 'https://')):
             error_embed = discord.Embed(
@@ -2500,7 +2539,7 @@ class WelcomeChannelSelect(discord.ui.Select):
 
         # Get all text channels
         text_channels = [ch for ch in guild.channels if isinstance(ch, discord.TextChannel)]
-        
+
         for channel in text_channels[:25]:  # Discord limit of 25 options
             options.append(discord.SelectOption(
                 label=f"#{channel.name}",
@@ -2527,14 +2566,14 @@ class WelcomeChannelSelect(discord.ui.Select):
             return
 
         channel_id = int(self.values[0])
-        
+
         # Save the selected channel
         welcome_data = load_welcome_data()
         if "welcome_settings" not in welcome_data:
             welcome_data["welcome_settings"] = {}
-        
+
         welcome_data["welcome_settings"]["channel_id"] = channel_id
-        
+
         with open('welcome_data.json', 'w', encoding='utf-8') as f:
             json.dump(welcome_data, f, indent=2, ensure_ascii=False)
 
@@ -2549,7 +2588,7 @@ class WelcomeMessageModal(discord.ui.Modal):
     def __init__(self, view):
         super().__init__(title='💬 Welcome Message')
         self.view = view
-        
+
         welcome_data = load_welcome_data()
         current_message = welcome_data.get("welcome_settings", {}).get("welcome_message", "Welcome {user}!")
 
@@ -2567,9 +2606,9 @@ class WelcomeMessageModal(discord.ui.Modal):
         welcome_data = load_welcome_data()
         if "welcome_settings" not in welcome_data:
             welcome_data["welcome_settings"] = {}
-        
+
         welcome_data["welcome_settings"]["welcome_message"] = self.message_input.value
-        
+
         with open('welcome_data.json', 'w', encoding='utf-8') as f:
             json.dump(welcome_data, f, indent=2, ensure_ascii=False)
 
