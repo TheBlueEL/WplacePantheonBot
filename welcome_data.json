@@ -30,14 +30,14 @@
     "text_config": {
       "welcome_text": {
         "x_offset": 50,
-        "y_offset": 300,
+        "y_offset": 250,
         "font_size": 65,
         "font_path": "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
         "text": "WELCOME, TO THE SERVER"
       },
       "username_text": {
         "x_offset": 50,
-        "y_offset": 400,
+        "y_offset": 350,
         "font_size_max": 175,
         "font_size_min": 50,
         "font_path": "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
