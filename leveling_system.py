@@ -189,9 +189,9 @@ class LevelingSystem(commands.Cog):
                 except:
                     font_xp = ImageFont.load_default()
             
-            # Position XP text below the level bar
+            # Position XP text above the level bar (so it's visible)
             xp_text_x = config["xp_bar_position"]["x"]
-            xp_text_y = config["xp_bar_position"]["y"] + config["xp_bar_position"]["height"] + 10
+            xp_text_y = config["xp_bar_position"]["y"] - 50  # 50px above the level bar
             draw.text((xp_text_x, xp_text_y), xp_text, font=font_xp, fill=(100, 100, 100))
             
             # Convert to bytes
