@@ -1,0 +1,48 @@
+
+{
+  "leveling_settings": {
+    "enabled": true,
+    "xp_settings": {
+      "messages": {
+        "enabled": true,
+        "xp_per_message": 20,
+        "cooldown": 10
+      },
+      "characters": {
+        "enabled": false,
+        "xp_per_character": 1,
+        "character_limit": 20,
+        "cooldown": 10
+      }
+    },
+    "rewards": {
+      "roles": {},
+      "custom": {}
+    },
+    "level_card": {
+      "background_image": "https://raw.githubusercontent.com/TheBlueEL/pictures/refs/heads/main/LevelBar.png",
+      "profile_position": {
+        "x": 50,
+        "y": 50,
+        "size": 150
+      },
+      "username_position": {
+        "x": 220,
+        "y": 80,
+        "font_size": 60
+      },
+      "level_position": {
+        "x": 220,
+        "y": 140,
+        "font_size": 40
+      },
+      "xp_bar_position": {
+        "x": 30,
+        "y": 726,
+        "width": 1988,
+        "height": 30
+      }
+    }
+  },
+  "user_data": {}
+}
