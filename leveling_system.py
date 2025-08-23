@@ -340,13 +340,12 @@ class LevelingSystem(commands.Cog):
                 output.seek(0)
                 return output
             else:
-                # Image statique - utiliser la première frame si c'était un GIF statique
-                if frames:
-                    background = frames[0]
-                
-                # Si background n'est toujours pas défini, créer une image par défaut
-                if 'background' not in locals():
-                    background = Image.new("RGBA", (bg_width, bg_height), (255, 255, 255, 255))
+                # Image statique - s'assurer que background est défini
+                if not 'background' in locals():
+                    if frames:
+                        background = frames[0]
+                    else:
+                        background = Image.new("RGBA", (bg_width, bg_height), (255, 255, 255, 255))
                 
                 output = io.BytesIO()
                 background.save(output, format='PNG')
@@ -440,23 +439,45 @@ class LevelingSystem(commands.Cog):
     @app_commands.command(name="level", description="View your level card")
     async def level_command(self, interaction: discord.Interaction):
         """Show user's level card"""
-        await interaction.response.defer()
-        
-        level_card = await self.create_level_card(interaction.user)
-        if level_card:
-            # Déterminer l'extension du fichier
-            level_card.seek(0)
-            file_header = level_card.read(6)
-            level_card.seek(0)
+        try:
+            await interaction.response.defer()
             
-            # Vérifier si c'est un GIF
-            is_gif = file_header.startswith(b'GIF87a') or file_header.startswith(b'GIF89a')
-            filename = "level_card.gif" if is_gif else "level_card.png"
-            
-            file = discord.File(level_card, filename=filename)
-            await interaction.followup.send(file=file)
-        else:
-            await interaction.followup.send("❌ Error creating level card!", ephemeral=True)
+            level_card = await self.create_level_card(interaction.user)
+            if level_card:
+                # Déterminer l'extension du fichier
+                level_card.seek(0)
+                file_header = level_card.read(6)
+                level_card.seek(0)
+                
+                # Vérifier si c'est un GIF
+                is_gif = file_header.startswith(b'GIF87a') or file_header.startswith(b'GIF89a')
+                filename = "level_card.gif" if is_gif else "level_card.png"
+                
+                file = discord.File(level_card, filename=filename)
+                await interaction.followup.send(file=file)
+            else:
+                await interaction.followup.send("❌ Error creating level card!", ephemeral=True)
+        except discord.NotFound:
+            # Interaction has expired, try sending a regular message
+            level_card = await self.create_level_card(interaction.user)
+            if level_card:
+                level_card.seek(0)
+                file_header = level_card.read(6)
+                level_card.seek(0)
+                
+                is_gif = file_header.startswith(b'GIF87a') or file_header.startswith(b'GIF89a')
+                filename = "level_card.gif" if is_gif else "level_card.png"
+                
+                file = discord.File(level_card, filename=filename)
+                await interaction.channel.send(f"{interaction.user.mention}, here's your level card:", file=file)
+            else:
+                await interaction.channel.send(f"{interaction.user.mention}, ❌ Error creating level card!")
+        except Exception as e:
+            print(f"Error in level command: {e}")
+            try:
+                await interaction.followup.send("❌ An error occurred!", ephemeral=True)
+            except:
+                await interaction.channel.send(f"{interaction.user.mention}, ❌ An error occurred!")
 
 # Views and UI Components
 class LevelSystemMainView(discord.ui.View):
