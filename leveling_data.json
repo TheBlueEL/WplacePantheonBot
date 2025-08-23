@@ -20,7 +20,7 @@
     },
     "level_card": {
       "background_color": "None",
-      "background_image": "None",
+      "background_image": "https://img.freepik.com/photos-premium/coucher-soleil-palmiers-fond-nature_266870-6235.jpg",
       "level_bar_image": "https://raw.githubusercontent.com/TheBlueEL/pictures/refs/heads/main/LevelBar.png",
       "profile_position": {
         "x": 50,
@@ -33,20 +33,20 @@
         "font_size": 75
       },
       "level_position": {
-        "x": 250,
-        "y": 250,
+        "x": 1500,
+        "y": 50,
         "font_size": 100
       },
       "xp_bar_position": {
         "x": 500,
         "y": 350,
-        "width": 1350,
-        "height": 130
+        "width": 1500,
+        "height": 150
       },
       "xp_text_position": {
-        "x": 30,
-        "y": 676,
-        "font_size": 40
+        "x": 1550,
+        "y": 275,
+        "font_size": 70
       },
       "level_text_x_offset": 20,
       "background_size": {
@@ -57,9 +57,9 @@
   },
   "user_data": {
     "723144097015136296": {
-      "xp": 40,
-      "level": 1,
-      "last_message": 1755976649.8122637
+      "xp": 600,
+      "level": 5,
+      "last_message": 1755978601.5296047
     },
     "1259812166349881378": {
       "xp": 20,
@@ -67,9 +67,9 @@
       "last_message": 1755976636.8031838
     },
     "1319660922834387032": {
-      "xp": 20,
-      "level": 1,
-      "last_message": 1755977114.1004503
+      "xp": 320,
+      "level": 3,
+      "last_message": 1755978084.8980606
     }
   }
 }
