@@ -340,7 +340,14 @@ class LevelingSystem(commands.Cog):
                 output.seek(0)
                 return output
             else:
-                # Image statique
+                # Image statique - utiliser la première frame si c'était un GIF statique
+                if frames:
+                    background = frames[0]
+                
+                # Si background n'est toujours pas défini, créer une image par défaut
+                if 'background' not in locals():
+                    background = Image.new("RGBA", (bg_width, bg_height), (255, 255, 255, 255))
+                
                 output = io.BytesIO()
                 background.save(output, format='PNG')
                 output.seek(0)
