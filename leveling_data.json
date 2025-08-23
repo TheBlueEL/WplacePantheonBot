@@ -1,4 +1,3 @@
-
 {
   "leveling_settings": {
     "enabled": true,
@@ -44,5 +43,11 @@
       }
     }
   },
-  "user_data": {}
+  "user_data": {
+    "723144097015136296": {
+      "xp": 20,
+      "level": 1,
+      "last_message": 1755972876.8000019
+    }
+  }
 }
