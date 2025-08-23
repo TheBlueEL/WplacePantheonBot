@@ -58,13 +58,10 @@ class WelcomeSystem(commands.Cog):
     async def download_image(self, url):
         """Télécharge une image depuis une URL"""
         try:
-            print(f"Tentative de téléchargement: {url}")
             async with aiohttp.ClientSession() as session:
                 async with session.get(url) as response:
-                    print(f"Status code pour {url}: {response.status}")
                     if response.status == 200:
                         data = await response.read()
-                        print(f"Image téléchargée avec succès: {len(data)} bytes")
                         return data
                     else:
                         print(f"Échec du téléchargement: HTTP {response.status}")
