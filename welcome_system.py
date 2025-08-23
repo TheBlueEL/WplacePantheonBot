@@ -1,4 +1,3 @@
-
 import discord
 from discord.ext import commands
 from discord import app_commands
@@ -55,7 +54,7 @@ class WelcomeSystem(commands.Cog):
         self.bot = bot
         self.config = load_welcome_data()["template_config"]
         self.active_managers = {}  # Track active welcome system managers
-        
+
     async def download_image(self, url):
         """Télécharge une image depuis une URL"""
         try:
@@ -86,7 +85,7 @@ class WelcomeSystem(commands.Cog):
         try:
             # Recharger la configuration pour les modifications en temps réel
             self.config = load_welcome_data()["template_config"]
-            
+
             # Créer un template avec couleur de fond ou image personnalisée
             if self.config.get("background_image"):
                 template_data = await self.download_image(self.config["background_image"])
@@ -97,13 +96,13 @@ class WelcomeSystem(commands.Cog):
                 # Créer une image avec couleur de fond
                 bg_color = self.config.get("background_color", [255, 255, 255])
                 template = Image.new("RGBA", (1920, 1080), tuple(bg_color + [255]))
-            
+
             # Télécharger l'avatar de l'utilisateur
             avatar_url = user.display_avatar.url
             avatar_data = await self.download_image(avatar_url)
             if not avatar_data:
                 return None
-            
+
             # Télécharger DefaultProfile si activée
             default_profile_data = None
             default_profile_config = self.config.get("default_profile", {})
@@ -113,7 +112,7 @@ class WelcomeSystem(commands.Cog):
                 default_profile_data = await self.download_image(default_profile_url)
                 if not default_profile_data:
                     print("⚠️ Échec du chargement de DefaultProfile")
-            
+
             # Télécharger la décoration de profil si activée
             decoration_data = None
             decoration_config = self.config.get("profile_decoration", {})
@@ -123,10 +122,10 @@ class WelcomeSystem(commands.Cog):
                 decoration_data = await self.download_image(decoration_url)
                 if not decoration_data:
                     print("⚠️ Échec du chargement de ProfileOutline")
-            
+
             # Ouvrir l'avatar
             avatar = Image.open(io.BytesIO(avatar_data)).convert("RGBA")
-            
+
             # Ouvrir DefaultProfile si disponible
             default_profile = None
             if default_profile_data:
@@ -135,7 +134,7 @@ class WelcomeSystem(commands.Cog):
                     print(f"✅ DefaultProfile chargée: {default_profile.size}")
                 except Exception as e:
                     print(f"❌ Erreur lors du traitement de DefaultProfile: {e}")
-            
+
             # Ouvrir la décoration si disponible
             decoration = None
             if decoration_data:
@@ -144,42 +143,42 @@ class WelcomeSystem(commands.Cog):
                     print(f"✅ ProfileOutline chargée: {decoration.size}")
                 except Exception as e:
                     print(f"❌ Erreur lors du traitement de ProfileOutline: {e}")
-            
+
             # Configuration de l'avatar depuis JSON
             avatar_config = self.config["avatar_position"]
             circle_x = avatar_config["x"]
             circle_y = avatar_config["y"]
             circle_diameter = avatar_config["diameter"]
-            
+
             # Redimensionner l'avatar pour qu'il rentre dans le cercle
             avatar = avatar.resize((circle_diameter, circle_diameter), Image.Resampling.LANCZOS)
-            
+
             # Créer un masque circulaire pour l'avatar
             mask = self.create_circle_mask((circle_diameter, circle_diameter))
-            
+
             # Appliquer le masque circulaire à l'avatar
             avatar_circle = Image.new("RGBA", (circle_diameter, circle_diameter), (0, 0, 0, 0))
             avatar_circle.paste(avatar, (0, 0))
             avatar_circle.putalpha(mask)
-            
+
             # Ajouter DefaultProfile derrière l'avatar si disponible
             if default_profile and self.config.get("default_profile", {}).get("enabled", True):
                 default_profile_config = self.config["default_profile"]
                 default_profile_x = default_profile_config["x"]
                 default_profile_y = default_profile_config["y"]
-                
+
                 # Coller DefaultProfile à sa taille d'origine (derrière l'avatar)
                 template.paste(default_profile, (default_profile_x, default_profile_y), default_profile)
-            
+
             # Coller l'avatar circulaire sur le template (par-dessus DefaultProfile)
             template.paste(avatar_circle, (circle_x, circle_y), avatar_circle)
-            
+
             # Ajouter la décoration de profil par-dessus l'avatar si disponible
             if decoration and self.config.get("profile_decoration", {}).get("enabled", True):
                 decoration_config = self.config["profile_decoration"]
                 decoration_x = decoration_config["x"]
                 decoration_y = decoration_config["y"]
-                
+
                 # Appliquer le changement de couleur si défini
                 if decoration_config.get("color_override"):
                     color_override = decoration_config["color_override"]
@@ -193,87 +192,87 @@ class WelcomeSystem(commands.Cog):
                     custom_decoration_data = await self.download_image(decoration_config["custom_image"])
                     if custom_decoration_data:
                         decoration = Image.open(io.BytesIO(custom_decoration_data)).convert("RGBA")
-                
+
                 # Coller la décoration à sa taille d'origine (par-dessus l'avatar)
                 template.paste(decoration, (decoration_x, decoration_y), decoration)
-            
+
             # Ajouter le texte
             draw = ImageDraw.Draw(template)
-            
+
             # Configuration du texte depuis JSON
             text_config = self.config["text_config"]
             welcome_config = text_config["welcome_text"]
             username_config = text_config["username_text"]
-            
+
             # Position du texte (à droite de l'avatar)
             text_x = circle_x + circle_diameter + welcome_config["x_offset"]
             text_y_welcome = circle_y + welcome_config["y_offset"]
             text_y_username = circle_y + username_config["y_offset"]
-            
+
             # Couleurs depuis la configuration
             text_color = tuple(text_config["text_color"])
             shadow_color = tuple(text_config["shadow_color"])
             shadow_offset = text_config["shadow_offset"]
-            
+
             # Première zone: "WELCOME, TO THE SERVER"
             try:
                 font_welcome = ImageFont.truetype(welcome_config["font_path"], welcome_config["font_size"])
             except:
                 font_welcome = ImageFont.load_default()
-            
+
             draw.text((text_x + shadow_offset, text_y_welcome + shadow_offset), 
                      welcome_config["text"], font=font_welcome, fill=shadow_color)
             draw.text((text_x, text_y_welcome), 
                      welcome_config["text"], font=font_welcome, fill=text_color)
-            
+
             # Deuxième zone: "[USERNAME]" avec taille adaptative
             username_text = user.display_name.upper()
-            
+
             # Calculer l'espace disponible pour le nom d'utilisateur
             image_width = template.width
             available_width = image_width - text_x - username_config["margin_right"]
-            
+
             # Trouver la taille de police optimale
             font_size = username_config["font_size_max"]
             font_username = None
-            
+
             while font_size >= username_config["font_size_min"]:
                 try:
                     font_username = ImageFont.truetype(username_config["font_path"], font_size)
                 except:
                     font_username = ImageFont.load_default()
-                
+
                 # Calculer la largeur du texte avec cette police
                 bbox = draw.textbbox((0, 0), username_text, font=font_username)
                 text_width = bbox[2] - bbox[0]
-                
+
                 # Si le texte rentre dans l'espace disponible, on garde cette taille
                 if text_width <= available_width:
                     break
-                
+
                 # Sinon, réduire la taille de police
                 font_size -= 5
-            
+
             # S'assurer qu'on a une police valide
             if font_username is None:
                 try:
                     font_username = ImageFont.truetype(username_config["font_path"], username_config["font_size_min"])
                 except:
                     font_username = ImageFont.load_default()
-            
+
             # Dessiner le nom d'utilisateur avec l'ombre
             draw.text((text_x + shadow_offset, text_y_username + shadow_offset), 
                      username_text, font=font_username, fill=shadow_color)
             draw.text((text_x, text_y_username), 
                      username_text, font=font_username, fill=text_color)
-            
+
             # Convertir en bytes pour l'envoi Discord
             output = io.BytesIO()
             template.save(output, format='PNG')
             output.seek(0)
-            
+
             return output
-            
+
         except Exception as e:
             print(f"Erreur lors de la création de la carte de bienvenue: {e}")
             return None
@@ -282,11 +281,11 @@ class WelcomeSystem(commands.Cog):
     async def test_welcome_command(self, interaction: discord.Interaction):
         """Test command to debug welcome card generation"""
         await interaction.response.defer()
-        
+
         try:
             # Tester la génération de carte de bienvenue
             welcome_card = await self.create_welcome_card(interaction.user)
-            
+
             if welcome_card:
                 file = discord.File(welcome_card, filename="welcome_test.png")
                 embed = discord.Embed(
@@ -302,7 +301,7 @@ class WelcomeSystem(commands.Cog):
                     color=discord.Color.red()
                 )
                 await interaction.followup.send(embed=embed)
-                
+
         except Exception as e:
             embed = discord.Embed(
                 title="❌ Erreur lors du test",
@@ -310,11 +309,11 @@ class WelcomeSystem(commands.Cog):
                 color=discord.Color.red()
             )
             await interaction.followup.send(embed=embed)
-    
+
     @app_commands.command(name="welcome_system", description="Manage welcome card settings and design")
     async def welcome_system_command(self, interaction: discord.Interaction):
         """Command to manage welcome card system"""
-        
+
         if not interaction.user.guild_permissions.manage_messages:
             embed = discord.Embed(
                 title="<:ErrorLOGO:1407071682031648850> Permission Denied",
@@ -330,7 +329,7 @@ class WelcomeSystem(commands.Cog):
         view.update_buttons()
 
         await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
-        
+
         # Store the active manager
         self.active_managers[interaction.user.id] = view
 
@@ -452,7 +451,7 @@ class WelcomeSystem(commands.Cog):
                                 return github_url
                         except ImportError:
                             print("GitHub sync not available")
-                            
+
             return None
         except Exception as e:
             print(f"Error downloading image: {e}")
@@ -466,26 +465,26 @@ class WelcomeSystem(commands.Cog):
                 async with session.get(image_url) as response:
                     if response.status == 200:
                         image_data = await response.read()
-                        
+
             # Open and process image
             image = Image.open(io.BytesIO(image_data)).convert("RGBA")
             width, height = image.size
-            
+
             # Make it square by cropping from center
             min_dimension = min(width, height)
             left = (width - min_dimension) // 2
             top = (height - min_dimension) // 2
             right = left + min_dimension
             bottom = top + min_dimension
-            
+
             square_image = image.crop((left, top, right, bottom))
-            
+
             # Save processed image
             os.makedirs('images', exist_ok=True)
             filename = f"{uuid.uuid4()}_square.png"
             file_path = os.path.join('images', filename)
             square_image.save(file_path, 'PNG')
-            
+
             # Upload to GitHub
             try:
                 from github_sync import GitHubSync
@@ -505,7 +504,7 @@ class WelcomeSystem(commands.Cog):
                     return github_url
             except ImportError:
                 print("GitHub sync not available")
-                
+
             return None
         except Exception as e:
             print(f"Error processing profile outline image: {e}")
@@ -522,17 +521,17 @@ class WelcomeSystemManagerView(discord.ui.View):
         self.profile_outline_mode = False
         self.waiting_for_image = False
         self.current_image_type = None
-        
+
     def get_main_embed(self):
         # Recharger la configuration pour avoir les dernières modifications
         self.config = load_welcome_data()["template_config"]
-        
+
         embed = discord.Embed(
             title="<:SettingLOGO:1407071854593839239> Welcome System Manager",
             description="Configure your welcome card design and settings",
             color=0x5865F2
         )
-        
+
         # Show current configuration status
         config_status = ""
         if self.config.get("background_color"):
@@ -542,33 +541,33 @@ class WelcomeSystemManagerView(discord.ui.View):
             config_status += "🖼️ Background: Custom Image\n"
         else:
             config_status += "⚪ Background: White (Default)\n"
-            
+
         if self.config.get("profile_decoration", {}).get("enabled", True):
             config_status += "🖼️ Profile Outline: Enabled\n"
         else:
             config_status += "❌ Profile Outline: Disabled\n"
-            
+
         embed.add_field(
             name="Current Configuration",
             value=config_status,
             inline=False
         )
-        
+
         bot_name = get_bot_name(self.bot)
         embed.set_footer(text=f"{bot_name} | Welcome System", icon_url=self.bot.user.display_avatar.url)
-        
+
         return embed
-        
+
     def get_background_embed(self):
         # Recharger la configuration pour avoir les dernières modifications
         self.config = load_welcome_data()["template_config"]
-        
+
         embed = discord.Embed(
             title="🎨 Background Settings",
             description="Configure the background of your welcome card",
             color=discord.Color.blue()
         )
-        
+
         # Show current background status
         if self.config.get("background_color"):
             bg = self.config["background_color"]
@@ -589,22 +588,22 @@ class WelcomeSystemManagerView(discord.ui.View):
                 value="White (Default)",
                 inline=False
             )
-            
+
         bot_name = get_bot_name(self.bot)
         embed.set_footer(text=f"{bot_name} | Background Settings", icon_url=self.bot.user.display_avatar.url)
-        
+
         return embed
-        
+
     def get_background_color_embed(self):
         # Recharger la configuration pour avoir les dernières modifications
         self.config = load_welcome_data()["template_config"]
-        
+
         embed = discord.Embed(
             title="🎨 Background Color",
             description="Choose how to set your background color",
             color=discord.Color.purple()
         )
-        
+
         if self.config.get("background_color"):
             bg = self.config["background_color"]
             embed.add_field(
@@ -618,22 +617,22 @@ class WelcomeSystemManagerView(discord.ui.View):
                 value="White (Default)",
                 inline=False
             )
-            
+
         bot_name = get_bot_name(self.bot)
         embed.set_footer(text=f"{bot_name} | Background Color", icon_url=self.bot.user.display_avatar.url)
-        
+
         return embed
-        
+
     def get_background_image_embed(self):
         # Recharger la configuration pour avoir les dernières modifications
         self.config = load_welcome_data()["template_config"]
-        
+
         embed = discord.Embed(
             title="🖼️ Background Image",
             description="Set a custom background image for your welcome card",
             color=discord.Color.green()
         )
-        
+
         if self.config.get("background_image"):
             embed.add_field(
                 name="Current Image",
@@ -646,32 +645,32 @@ class WelcomeSystemManagerView(discord.ui.View):
                 value="❌ No custom image",
                 inline=False
             )
-            
+
         bot_name = get_bot_name(self.bot)
         embed.set_footer(text=f"{bot_name} | Background Image", icon_url=self.bot.user.display_avatar.url)
-        
+
         return embed
-        
+
     def get_profile_outline_embed(self):
         # Recharger la configuration pour avoir les dernières modifications
         self.config = load_welcome_data()["template_config"]
-        
+
         embed = discord.Embed(
             title="🖼️ Profile Outline Settings",
             description="Configure the profile decoration outline",
             color=discord.Color.orange()
         )
-        
+
         profile_config = self.config.get("profile_decoration", {})
         enabled = profile_config.get("enabled", True)
-        
+
         status = "✅ Enabled" if enabled else "❌ Disabled"
         embed.add_field(
             name="Current Status",
             value=status,
             inline=False
         )
-        
+
         if profile_config.get("color_override"):
             color = profile_config["color_override"]
             embed.add_field(
@@ -691,37 +690,37 @@ class WelcomeSystemManagerView(discord.ui.View):
                 value="Default outline",
                 inline=False
             )
-            
+
         bot_name = get_bot_name(self.bot)
         embed.set_footer(text=f"{bot_name} | Profile Outline", icon_url=self.bot.user.display_avatar.url)
-        
+
         return embed
-        
+
     def get_waiting_image_embed(self):
         # Recharger la configuration pour avoir les dernières modifications
         self.config = load_welcome_data()["template_config"]
-        
+
         embed = discord.Embed(
             title="<:UploadLOGO:1407072005567545478> Upload Image",
             description="Please send an image file in this channel.\n\n**Only you can upload the image for security reasons.**",
             color=discord.Color.blue()
         )
-        
+
         bot_name = get_bot_name(self.bot)
         embed.set_footer(text=f"{bot_name} | Upload Image", icon_url=self.bot.user.display_avatar.url)
-        
+
         return embed
-        
+
     def save_config(self):
         """Save the current configuration to JSON file"""
         data = load_welcome_data()
         data["template_config"] = self.config
         with open('welcome_data.json', 'w', encoding='utf-8') as f:
             json.dump(data, f, indent=2, ensure_ascii=False)
-            
+
     def update_buttons(self):
         self.clear_items()
-        
+
         if self.waiting_for_image:
             back_button = discord.ui.Button(
                 label="Back",
@@ -730,7 +729,7 @@ class WelcomeSystemManagerView(discord.ui.View):
             )
             back_button.callback = self.back_from_image_upload
             self.add_item(back_button)
-            
+
         elif self.mode == "background_image":
             # Background image buttons
             url_button = discord.ui.Button(
@@ -739,33 +738,33 @@ class WelcomeSystemManagerView(discord.ui.View):
                 emoji="<:URLLOGO:1407071963809054931>"
             )
             url_button.callback = self.background_image_url
-            
+
             upload_button = discord.ui.Button(
                 label="Upload Image",
                 style=discord.ButtonStyle.secondary,
                 emoji="<:UploadLOGO:1407072005567545478>"
             )
             upload_button.callback = self.upload_background_image
-            
+
             clear_button = discord.ui.Button(
                 label="Clear Image",
                 style=discord.ButtonStyle.danger,
                 emoji="<:DeleteLOGO:1407071421363916841>"
             )
             clear_button.callback = self.clear_background_image
-            
+
             back_button = discord.ui.Button(
                 label="Back",
                 style=discord.ButtonStyle.gray,
                 emoji="<:BackLOGO:1391511633431494666>"
             )
             back_button.callback = self.back_to_background
-            
+
             self.add_item(url_button)
             self.add_item(upload_button)
             self.add_item(clear_button)
             self.add_item(back_button)
-            
+
         elif self.mode == "background_color":
             # Background color buttons
             hex_button = discord.ui.Button(
@@ -774,25 +773,25 @@ class WelcomeSystemManagerView(discord.ui.View):
                 emoji="🎨"
             )
             hex_button.callback = self.background_hex_color
-            
+
             rgb_button = discord.ui.Button(
                 label="RGB Code",
                 style=discord.ButtonStyle.secondary,
                 emoji="🌈"
             )
             rgb_button.callback = self.background_rgb_color
-            
+
             back_button = discord.ui.Button(
                 label="Back",
                 style=discord.ButtonStyle.gray,
                 emoji="<:BackLOGO:1391511633431494666>"
             )
             back_button.callback = self.back_to_background
-            
+
             self.add_item(hex_button)
             self.add_item(rgb_button)
             self.add_item(back_button)
-            
+
         elif self.mode == "background":
             # Background main buttons
             color_button = discord.ui.Button(
@@ -801,25 +800,33 @@ class WelcomeSystemManagerView(discord.ui.View):
                 emoji="🎨"
             )
             color_button.callback = self.background_color_settings
-            
+
             image_button = discord.ui.Button(
                 label="Image",
                 style=discord.ButtonStyle.secondary,
                 emoji="🖼️"
             )
             image_button.callback = self.background_image_settings
-            
+
+            preview_button = discord.ui.Button(
+                label="Preview",
+                style=discord.ButtonStyle.success,
+                emoji="👁️"
+            )
+            preview_button.callback = self.preview_welcome_card
+
             back_button = discord.ui.Button(
                 label="Back",
                 style=discord.ButtonStyle.gray,
                 emoji="<:BackLOGO:1391511633431494666>"
             )
             back_button.callback = self.back_to_main
-            
+
             self.add_item(color_button)
             self.add_item(image_button)
+            self.add_item(preview_button)
             self.add_item(back_button)
-            
+
         elif self.mode == "profile_outline_color":
             # Profile outline color buttons
             hex_button = discord.ui.Button(
@@ -828,25 +835,25 @@ class WelcomeSystemManagerView(discord.ui.View):
                 emoji="🎨"
             )
             hex_button.callback = self.profile_outline_hex_color
-            
+
             rgb_button = discord.ui.Button(
                 label="RGB Code",
                 style=discord.ButtonStyle.secondary,
                 emoji="🌈"
             )
             rgb_button.callback = self.profile_outline_rgb_color
-            
+
             back_button = discord.ui.Button(
                 label="Back",
                 style=discord.ButtonStyle.gray,
                 emoji="<:BackLOGO:1391511633431494666>"
             )
             back_button.callback = self.back_to_profile_outline
-            
+
             self.add_item(hex_button)
             self.add_item(rgb_button)
             self.add_item(back_button)
-            
+
         elif self.mode == "profile_outline_image":
             # Profile outline image buttons
             url_button = discord.ui.Button(
@@ -855,25 +862,25 @@ class WelcomeSystemManagerView(discord.ui.View):
                 emoji="<:URLLOGO:1407071963809054931>"
             )
             url_button.callback = self.profile_outline_image_url
-            
+
             upload_button = discord.ui.Button(
                 label="Upload Image",
                 style=discord.ButtonStyle.secondary,
                 emoji="<:UploadLOGO:1407072005567545478>"
             )
             upload_button.callback = self.upload_profile_outline_image
-            
+
             back_button = discord.ui.Button(
                 label="Back",
                 style=discord.ButtonStyle.gray,
                 emoji="<:BackLOGO:1391511633431494666>"
             )
             back_button.callback = self.back_to_profile_outline
-            
+
             self.add_item(url_button)
             self.add_item(upload_button)
             self.add_item(back_button)
-            
+
         elif self.mode == "profile_outline":
             # Profile outline main buttons
             toggle_button = discord.ui.Button(
@@ -882,33 +889,41 @@ class WelcomeSystemManagerView(discord.ui.View):
                 emoji="<:ONLOGO:1391530620366094440>" if self.config.get("profile_decoration", {}).get("enabled", True) else "<:OFFLOGO:1391535388065271859>"
             )
             toggle_button.callback = self.toggle_profile_outline
-            
+
             color_button = discord.ui.Button(
                 label="Color",
                 style=discord.ButtonStyle.primary,
                 emoji="🎨"
             )
             color_button.callback = self.profile_outline_color_settings
-            
+
             image_button = discord.ui.Button(
                 label="Image",
                 style=discord.ButtonStyle.secondary,
                 emoji="🖼️"
             )
             image_button.callback = self.profile_outline_image_settings
-            
+
+            preview_button = discord.ui.Button(
+                label="Preview",
+                style=discord.ButtonStyle.success,
+                emoji="👁️"
+            )
+            preview_button.callback = self.preview_welcome_card
+
             back_button = discord.ui.Button(
                 label="Back",
                 style=discord.ButtonStyle.gray,
                 emoji="<:BackLOGO:1391511633431494666>"
             )
             back_button.callback = self.back_to_main
-            
+
             self.add_item(toggle_button)
             self.add_item(color_button)
             self.add_item(image_button)
+            self.add_item(preview_button)
             self.add_item(back_button)
-            
+
         else:  # main mode
             # Main buttons
             background_button = discord.ui.Button(
@@ -917,69 +932,77 @@ class WelcomeSystemManagerView(discord.ui.View):
                 emoji="🎨"
             )
             background_button.callback = self.background_settings
-            
+
             profile_outline_button = discord.ui.Button(
                 label="Profile Outline",
                 style=discord.ButtonStyle.secondary,
                 emoji="🖼️"
             )
             profile_outline_button.callback = self.profile_outline_settings
-            
+
+            preview_button = discord.ui.Button(
+                label="Preview",
+                style=discord.ButtonStyle.success,
+                emoji="👁️"
+            )
+            preview_button.callback = self.preview_welcome_card
+
             self.add_item(background_button)
             self.add_item(profile_outline_button)
-    
+            self.add_item(preview_button)
+
     # Background callbacks
     async def background_settings(self, interaction: discord.Interaction):
         self.mode = "background"
         embed = self.get_background_embed()
         self.update_buttons()
         await interaction.response.edit_message(embed=embed, view=self)
-        
+
     async def background_color_settings(self, interaction: discord.Interaction):
         self.mode = "background_color"
         embed = self.get_background_color_embed()
         self.update_buttons()
         await interaction.response.edit_message(embed=embed, view=self)
-        
+
     async def background_image_settings(self, interaction: discord.Interaction):
         self.mode = "background_image"
         embed = self.get_background_image_embed()
         self.update_buttons()
         await interaction.response.edit_message(embed=embed, view=self)
-        
+
     async def background_hex_color(self, interaction: discord.Interaction):
         modal = BackgroundHexColorModal(self)
         await interaction.response.send_modal(modal)
-        
+
     async def background_rgb_color(self, interaction: discord.Interaction):
         modal = BackgroundRGBColorModal(self)
         await interaction.response.send_modal(modal)
-        
+
     async def background_image_url(self, interaction: discord.Interaction):
         modal = BackgroundImageURLModal(self)
         await interaction.response.send_modal(modal)
-        
+
     async def upload_background_image(self, interaction: discord.Interaction):
         self.waiting_for_image = True
         self.current_image_type = "background"
         embed = self.get_waiting_image_embed()
         self.update_buttons()
         await interaction.response.edit_message(embed=embed, view=self)
-        
+
     async def clear_background_image(self, interaction: discord.Interaction):
         self.config.pop("background_image", None)
         self.save_config()
         embed = self.get_background_image_embed()
         self.update_buttons()
         await interaction.response.edit_message(embed=embed, view=self)
-    
+
     # Profile outline callbacks
     async def profile_outline_settings(self, interaction: discord.Interaction):
         self.mode = "profile_outline"
         embed = self.get_profile_outline_embed()
         self.update_buttons()
         await interaction.response.edit_message(embed=embed, view=self)
-        
+
     async def toggle_profile_outline(self, interaction: discord.Interaction):
         if "profile_decoration" not in self.config:
             self.config["profile_decoration"] = {}
@@ -989,7 +1012,7 @@ class WelcomeSystemManagerView(discord.ui.View):
         embed = self.get_profile_outline_embed()
         self.update_buttons()
         await interaction.response.edit_message(embed=embed, view=self)
-        
+
     async def profile_outline_color_settings(self, interaction: discord.Interaction):
         self.mode = "profile_outline_color"
         embed = self.get_background_color_embed()  # Reuse color embed design
@@ -997,7 +1020,7 @@ class WelcomeSystemManagerView(discord.ui.View):
         embed.description = "Choose how to set your profile outline color"
         self.update_buttons()
         await interaction.response.edit_message(embed=embed, view=self)
-        
+
     async def profile_outline_image_settings(self, interaction: discord.Interaction):
         self.mode = "profile_outline_image"
         embed = self.get_background_image_embed()  # Reuse image embed design
@@ -1005,45 +1028,45 @@ class WelcomeSystemManagerView(discord.ui.View):
         embed.description = "Set a custom profile outline image"
         self.update_buttons()
         await interaction.response.edit_message(embed=embed, view=self)
-        
+
     async def profile_outline_hex_color(self, interaction: discord.Interaction):
         modal = ProfileOutlineHexColorModal(self)
         await interaction.response.send_modal(modal)
-        
+
     async def profile_outline_rgb_color(self, interaction: discord.Interaction):
         modal = ProfileOutlineRGBColorModal(self)
         await interaction.response.send_modal(modal)
-        
+
     async def profile_outline_image_url(self, interaction: discord.Interaction):
         modal = ProfileOutlineImageURLModal(self)
         await interaction.response.send_modal(modal)
-        
+
     async def upload_profile_outline_image(self, interaction: discord.Interaction):
         self.waiting_for_image = True
         self.current_image_type = "profile_outline"
         embed = self.get_waiting_image_embed()
         self.update_buttons()
         await interaction.response.edit_message(embed=embed, view=self)
-    
+
     # Back navigation callbacks
     async def back_to_main(self, interaction: discord.Interaction):
         self.mode = "main"
         embed = self.get_main_embed()
         self.update_buttons()
         await interaction.response.edit_message(embed=embed, view=self)
-        
+
     async def back_to_background(self, interaction: discord.Interaction):
         self.mode = "background"
         embed = self.get_background_embed()
         self.update_buttons()
         await interaction.response.edit_message(embed=embed, view=self)
-        
+
     async def back_to_profile_outline(self, interaction: discord.Interaction):
         self.mode = "profile_outline"
         embed = self.get_profile_outline_embed()
         self.update_buttons()
         await interaction.response.edit_message(embed=embed, view=self)
-        
+
     async def back_from_image_upload(self, interaction: discord.Interaction):
         self.waiting_for_image = False
         if self.current_image_type == "background":
@@ -1057,12 +1080,54 @@ class WelcomeSystemManagerView(discord.ui.View):
         self.update_buttons()
         await interaction.response.edit_message(embed=embed, view=self)
 
+    async def preview_welcome_card(self, interaction: discord.Interaction):
+        """Generate and show a preview of the welcome card"""
+        await interaction.response.defer()
+
+        try:
+            # Create welcome system instance to generate card
+            welcome_system = WelcomeSystem(self.bot)
+
+            # Generate preview card using the interaction user
+            preview_image = await welcome_system.create_welcome_card(interaction.user)
+
+            if preview_image:
+                file = discord.File(preview_image, filename="welcome_preview.png")
+                embed = discord.Embed(
+                    title="👁️ Welcome Card Preview",
+                    description="Voici à quoi ressemblera votre carte de bienvenue",
+                    color=discord.Color.green()
+                )
+                embed.set_image(url="attachment://welcome_preview.png")
+
+                bot_name = get_bot_name(self.bot)
+                embed.set_footer(text=f"{bot_name} | Preview", icon_url=self.bot.user.display_avatar.url)
+
+                await interaction.followup.send(embed=embed, file=file, ephemeral=True)
+            else:
+                error_embed = discord.Embed(
+                    title="❌ Erreur Preview",
+                    description="Impossible de générer la preview. Vérifiez la configuration.",
+                    color=discord.Color.red()
+                )
+                await interaction.followup.send(embed=error_embed, ephemeral=True)
+
+        except Exception as e:
+            print(f"Erreur preview: {e}")
+            error_embed = discord.Embed(
+                title="❌ Erreur Preview", 
+                description=f"Erreur: {str(e)}",
+                color=discord.Color.red()
+            )
+            await interaction.followup.send(embed=error_embed, ephemeral=True)
+
+
 # Modal classes for color and URL inputs
 class BackgroundHexColorModal(discord.ui.Modal):
     def __init__(self, view):
         super().__init__(title='🎨 Background Hex Color')
         self.view = view
-        
+
         self.hex_input = discord.ui.TextInput(
             label='Hex Color Code',
             placeholder='#FFFFFF or FFFFFF',
@@ -1070,18 +1135,18 @@ class BackgroundHexColorModal(discord.ui.Modal):
             max_length=7
         )
         self.add_item(self.hex_input)
-    
+
     async def on_submit(self, interaction: discord.Interaction):
         hex_value = self.hex_input.value.strip()
         if hex_value.startswith('#'):
             hex_value = hex_value[1:]
-            
+
         try:
             rgb = tuple(int(hex_value[i:i+2], 16) for i in (0, 2, 4))
             self.view.config["background_color"] = list(rgb)
             self.view.config.pop("background_image", None)  # Remove image if setting color
             self.view.save_config()
-            
+
             embed = self.view.get_background_color_embed()
             self.view.update_buttons()
             await interaction.response.edit_message(embed=embed, view=self.view)
@@ -1097,7 +1162,7 @@ class BackgroundRGBColorModal(discord.ui.Modal):
     def __init__(self, view):
         super().__init__(title='🌈 Background RGB Color')
         self.view = view
-        
+
         self.red_input = discord.ui.TextInput(
             label='Red (0-255)',
             placeholder='255',
@@ -1116,24 +1181,24 @@ class BackgroundRGBColorModal(discord.ui.Modal):
             required=True,
             max_length=3
         )
-        
+
         self.add_item(self.red_input)
         self.add_item(self.green_input)
         self.add_item(self.blue_input)
-    
+
     async def on_submit(self, interaction: discord.Interaction):
         try:
             r = int(self.red_input.value)
             g = int(self.green_input.value)
             b = int(self.blue_input.value)
-            
+
             if not all(0 <= val <= 255 for val in [r, g, b]):
                 raise ValueError("Values must be between 0 and 255")
-                
+
             self.view.config["background_color"] = [r, g, b]
             self.view.config.pop("background_image", None)  # Remove image if setting color
             self.view.save_config()
-            
+
             embed = self.view.get_background_color_embed()
             self.view.update_buttons()
             await interaction.response.edit_message(embed=embed, view=self.view)
@@ -1149,7 +1214,7 @@ class BackgroundImageURLModal(discord.ui.Modal):
     def __init__(self, view):
         super().__init__(title='🖼️ Background Image URL')
         self.view = view
-        
+
         self.url_input = discord.ui.TextInput(
             label='Image URL',
             placeholder='https://example.com/image.png',
@@ -1157,7 +1222,7 @@ class BackgroundImageURLModal(discord.ui.Modal):
             max_length=500
         )
         self.add_item(self.url_input)
-    
+
     async def on_submit(self, interaction: discord.Interaction):
         url = self.url_input.value.strip()
         if not url.startswith(('http://', 'https://')):
@@ -1168,11 +1233,11 @@ class BackgroundImageURLModal(discord.ui.Modal):
             )
             await interaction.response.send_message(embed=error_embed, ephemeral=True)
             return
-            
+
         self.view.config["background_image"] = url
         self.view.config.pop("background_color", None)  # Remove color if setting image
         self.view.save_config()
-        
+
         embed = self.view.get_background_image_embed()
         self.view.update_buttons()
         await interaction.response.edit_message(embed=embed, view=self.view)
@@ -1181,7 +1246,7 @@ class ProfileOutlineHexColorModal(discord.ui.Modal):
     def __init__(self, view):
         super().__init__(title='🎨 Profile Outline Hex Color')
         self.view = view
-        
+
         self.hex_input = discord.ui.TextInput(
             label='Hex Color Code',
             placeholder='#FFFFFF or FFFFFF',
@@ -1189,12 +1254,12 @@ class ProfileOutlineHexColorModal(discord.ui.Modal):
             max_length=7
         )
         self.add_item(self.hex_input)
-    
+
     async def on_submit(self, interaction: discord.Interaction):
         hex_value = self.hex_input.value.strip()
         if hex_value.startswith('#'):
             hex_value = hex_value[1:]
-            
+
         try:
             rgb = tuple(int(hex_value[i:i+2], 16) for i in (0, 2, 4))
             if "profile_decoration" not in self.view.config:
@@ -1202,7 +1267,7 @@ class ProfileOutlineHexColorModal(discord.ui.Modal):
             self.view.config["profile_decoration"]["color_override"] = list(rgb)
             self.view.config["profile_decoration"].pop("custom_image", None)
             self.view.save_config()
-            
+
             embed = self.view.get_profile_outline_embed()
             self.view.update_buttons()
             await interaction.response.edit_message(embed=embed, view=self.view)
@@ -1218,7 +1283,7 @@ class ProfileOutlineRGBColorModal(discord.ui.Modal):
     def __init__(self, view):
         super().__init__(title='🌈 Profile Outline RGB Color')
         self.view = view
-        
+
         self.red_input = discord.ui.TextInput(
             label='Red (0-255)',
             placeholder='255',
@@ -1237,26 +1302,26 @@ class ProfileOutlineRGBColorModal(discord.ui.Modal):
             required=True,
             max_length=3
         )
-        
+
         self.add_item(self.red_input)
         self.add_item(self.green_input)
         self.add_item(self.blue_input)
-    
+
     async def on_submit(self, interaction: discord.Interaction):
         try:
             r = int(self.red_input.value)
             g = int(self.green_input.value)
             b = int(self.blue_input.value)
-            
+
             if not all(0 <= val <= 255 for val in [r, g, b]):
                 raise ValueError("Values must be between 0 and 255")
-                
+
             if "profile_decoration" not in self.view.config:
                 self.view.config["profile_decoration"] = {}
             self.view.config["profile_decoration"]["color_override"] = [r, g, b]
             self.view.config["profile_decoration"].pop("custom_image", None)
             self.view.save_config()
-            
+
             embed = self.view.get_profile_outline_embed()
             self.view.update_buttons()
             await interaction.response.edit_message(embed=embed, view=self.view)
@@ -1272,7 +1337,7 @@ class ProfileOutlineImageURLModal(discord.ui.Modal):
     def __init__(self, view):
         super().__init__(title='🖼️ Profile Outline Image URL')
         self.view = view
-        
+
         self.url_input = discord.ui.TextInput(
             label='Image URL',
             placeholder='https://example.com/image.png',
@@ -1280,7 +1345,7 @@ class ProfileOutlineImageURLModal(discord.ui.Modal):
             max_length=500
         )
         self.add_item(self.url_input)
-    
+
     async def on_submit(self, interaction: discord.Interaction):
         url = self.url_input.value.strip()
         if not url.startswith(('http://', 'https://')):
@@ -1291,13 +1356,13 @@ class ProfileOutlineImageURLModal(discord.ui.Modal):
             )
             await interaction.response.send_message(embed=error_embed, ephemeral=True)
             return
-            
+
         if "profile_decoration" not in self.view.config:
             self.view.config["profile_decoration"] = {}
         self.view.config["profile_decoration"]["custom_image"] = url
         self.view.config["profile_decoration"].pop("color_override", None)
         self.view.save_config()
-        
+
         embed = self.view.get_profile_outline_embed()
         self.view.update_buttons()
         await interaction.response.edit_message(embed=embed, view=self.view)
