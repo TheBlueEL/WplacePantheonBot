@@ -19,9 +19,14 @@
       "custom": {}
     },
     "level_card": {
-      "background_color": "None",
-      "background_image": "https://media.discordapp.net/attachments/1405303214643085314/1408908416604442888/1I4s.gif?ex=68ab73b6&is=68aa2236&hm=7beb81169cd1b599a97f4e3df0572340b9e410a10a2868b54205511a72beab50&=",
+      "background_color": [245, 55, 48],
+      "default_background_color": [245, 55, 48],
+      "background_image": "None",
       "level_bar_image": "https://raw.githubusercontent.com/TheBlueEL/pictures/refs/heads/main/LevelBar.png",
+      "username_color": [255, 255, 255],
+      "level_color": [245, 55, 48],
+      "xp_text_color": [255, 255, 255],
+      "xp_bar_color": [245, 55, 48],
       "profile_position": {
         "x": 50,
         "y": 50,
@@ -57,9 +62,9 @@
   },
   "user_data": {
     "723144097015136296": {
-      "xp": 640,
-      "level": 6,
-      "last_message": 1755980343.1647842
+      "xp": 600,
+      "level": 5,
+      "last_message": 1755978601.5296047
     },
     "1259812166349881378": {
       "xp": 20,
@@ -70,11 +75,6 @@
       "xp": 320,
       "level": 3,
       "last_message": 1755978084.8980606
-    },
-    "285195698356617216": {
-      "xp": 20,
-      "level": 1,
-      "last_message": 1755981658.7177138
     }
   }
 }
