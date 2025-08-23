@@ -40,13 +40,18 @@
       "xp_bar_position": {
         "x": 30,
         "y": 726,
-        "width": 1988,
-        "height": 30
+        "width": 300,
+        "height": 20
       },
       "xp_text_position": {
         "x": 30,
         "y": 676,
         "font_size": 40
+      },
+      "level_text_x_offset": 20,
+      "background_size": {
+        "width": 2048,
+        "height": 540
       }
     }
   },
