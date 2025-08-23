@@ -837,7 +837,7 @@ class WelcomeSystemManagerView(discord.ui.View):
         else:
             embed.add_field(
                 name="Current Image",
-                value="❌ No custom image",
+                value="<:ErrorLOGO:1407071682031648850> No custom image",
                 inline=False
             )
 
@@ -1701,47 +1701,6 @@ class WelcomeSystemManagerView(discord.ui.View):
 
         self.update_buttons()
         await interaction.response.edit_message(embed=embed, view=self)
-
-    async def preview_welcome_card(self, interaction: discord.Interaction):
-        """Generate and show a preview of the welcome card"""
-        await interaction.response.defer()
-
-        try:
-            # Create welcome system instance to generate card
-            welcome_system = WelcomeSystem(self.bot)
-
-            # Generate preview card using the interaction user
-            preview_image = await welcome_system.create_welcome_card(interaction.user)
-
-            if preview_image:
-                file = discord.File(preview_image, filename="welcome_preview.png")
-                embed = discord.Embed(
-                    title="👁️ Welcome Card Preview",
-                    description="Voici à quoi ressemblera votre carte de bienvenue",
-                    color=discord.Color.green()
-                )
-                embed.set_image(url="attachment://welcome_preview.png")
-
-                bot_name = get_bot_name(self.bot)
-                embed.set_footer(text=f"{bot_name} | Preview", icon_url=self.bot.user.display_avatar.url)
-
-                await interaction.followup.send(embed=embed, file=file, ephemeral=True)
-            else:
-                error_embed = discord.Embed(
-                    title="❌ Erreur Preview",
-                    description="Impossible de générer la preview. Vérifiez la configuration.",
-                    color=discord.Color.red()
-                )
-                await interaction.followup.send(embed=error_embed, ephemeral=True)
-
-        except Exception as e:
-            print(f"Erreur preview: {e}")
-            error_embed = discord.Embed(
-                title="❌ Erreur Preview", 
-                description=f"Erreur: {str(e)}",
-                color=discord.Color.red()
-            )
-            await interaction.followup.send(embed=error_embed, ephemeral=True)
 
     async def close_embed(self, interaction: discord.Interaction):
         """Close the welcome system embed"""
