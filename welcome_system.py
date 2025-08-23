@@ -128,7 +128,6 @@ class WelcomeSystem(commands.Cog):
             default_profile_config = self.config.get("default_profile", {})
             if default_profile_config.get("enabled", True) and "url" in default_profile_config:
                 default_profile_url = default_profile_config["url"]
-                print(f"Chargement DefaultProfile: {default_profile_url}")
                 default_profile_data = await self.download_image(default_profile_url)
                 if not default_profile_data:
                     print("⚠️ Échec du chargement de DefaultProfile")
@@ -138,7 +137,6 @@ class WelcomeSystem(commands.Cog):
             decoration_config = self.config.get("profile_decoration", {})
             if decoration_config.get("enabled", True) and "url" in decoration_config:
                 decoration_url = decoration_config["url"]
-                print(f"Chargement ProfileOutline: {decoration_url}")
                 decoration_data = await self.download_image(decoration_url)
                 if not decoration_data:
                     print("⚠️ Échec du chargement de ProfileOutline")
