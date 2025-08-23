@@ -1,7 +1,7 @@
 {
   "welcome_settings": {
-    "enabled": false,
-    "channel_id": null,
+    "enabled": true,
+    "channel_id": 1407741858746073258,
     "welcome_message": "Welcome {user}!"
   },
   "template_config": {
@@ -51,10 +51,6 @@
       ],
       "shadow_offset": 2
     },
-    "background_color": [
-      240,
-      240,
-      240
-    ]
+    "background_image": "https://raw.githubusercontent.com/TheBlueEL/pictures/main/b511c2ce-e756-4cbf-9bbc-c88f609d204b.png"
   }
 }
