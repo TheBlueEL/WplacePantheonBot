@@ -104,16 +104,16 @@ class LevelingSystem(commands.Cog):
         """Calculate user's ranking position compared to all other users"""
         data = load_leveling_data()
         all_users = data["user_data"]
-        
+
         # Create a list of (user_id, xp) tuples and sort by XP descending
         user_xp_list = [(uid, udata["xp"]) for uid, udata in all_users.items()]
         user_xp_list.sort(key=lambda x: x[1], reverse=True)
-        
+
         # Find the position of the current user
         for position, (uid, xp) in enumerate(user_xp_list, 1):
             if uid == str(user_id):
                 return position
-        
+
         return len(user_xp_list) + 1  # If not found, place at the end
 
     def calculate_dynamic_positions(self, user, user_data, user_ranking, config, bg_width, bg_height):
@@ -145,23 +145,23 @@ class LevelingSystem(commands.Cog):
             level_text = f"LEVEL {user_data['level']}"
             ranking_text = f"#{user_ranking}"
             discriminator = f"#{user.discriminator}" if user.discriminator != "0" else f"#{user.id % 10000:04d}"
-            
+
             xp_needed, current_xp_in_level = get_xp_for_next_level(user_data["xp"])
             xp_text = f"{current_xp_in_level}/{xp_needed} XP"
 
             # Get text dimensions
             level_bbox = font_level.getbbox(level_text)
             level_width = level_bbox[2] - level_bbox[0]
-            
+
             ranking_bbox = font_ranking.getbbox(ranking_text)
             ranking_width = ranking_bbox[2] - ranking_bbox[0]
-            
+
             xp_bbox = font_xp.getbbox(xp_text)
             xp_width = xp_bbox[2] - xp_bbox[0]
-            
+
             username_bbox = font_username.getbbox(username)
             username_width = username_bbox[2] - username_bbox[0]
-            
+
             discriminator_bbox = font_discriminator.getbbox(discriminator)
             discriminator_width = discriminator_bbox[2] - discriminator_bbox[0]
 
@@ -169,13 +169,13 @@ class LevelingSystem(commands.Cog):
             margin = 50
             min_spacing = 30
             username_discriminator_spacing = 10
-            
+
             # Calculate positions from right to left (XP has priority)
             # XP text position (pushes from right)
             default_xp_x = config["xp_text_position"]["x"]
             xp_x = min(default_xp_x, bg_width - margin - xp_width)
             xp_y = config["xp_text_position"]["y"]
-            
+
             # Level text position (pushes from right, but gives way to XP only if needed)
             default_level_x = config["level_position"]["x"]
             if default_level_x + level_width + min_spacing > xp_x:
@@ -183,7 +183,7 @@ class LevelingSystem(commands.Cog):
             else:
                 level_x = default_level_x
             level_y = config["level_position"]["y"]
-            
+
             # Ranking position (pushes from right, but gives way to level only if needed)
             default_ranking_x = config.get("ranking_position", {}).get("x", 1350)
             if default_ranking_x + ranking_width + min_spacing > level_x:
@@ -191,17 +191,17 @@ class LevelingSystem(commands.Cog):
             else:
                 ranking_x = default_ranking_x
             ranking_y = config.get("ranking_position", {}).get("y", 35)
-            
+
             # Username and discriminator (push from left, but give way to XP)
             available_space_for_username = xp_x - config["username_position"]["x"] - min_spacing - discriminator_width - username_discriminator_spacing
-            
+
             # Adjust username font size if necessary
             username_font_size = config["username_position"]["font_size"]
             if username_width > available_space_for_username:
                 # Calculate new font size to fit
                 scale_factor = available_space_for_username / username_width
                 username_font_size = max(30, int(username_font_size * scale_factor))  # Minimum size of 30
-                
+
                 # Recalculate with new font size
                 try:
                     font_username_adjusted = ImageFont.truetype("PlayPretend.otf", username_font_size)
@@ -210,22 +210,22 @@ class LevelingSystem(commands.Cog):
                         font_username_adjusted = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", username_font_size)
                     except IOError:
                         font_username_adjusted = ImageFont.load_default()
-                
+
                 username_bbox_adjusted = font_username_adjusted.getbbox(username)
                 username_width_adjusted = username_bbox_adjusted[2] - username_bbox_adjusted[0]
-                
+
                 # If still too wide, keep the adjusted size
                 if username_width_adjusted <= available_space_for_username:
                     username_width = username_width_adjusted
-            
+
             # Username position
             username_x = config["username_position"]["x"]
             username_y = config["username_position"]["y"]
-            
+
             # If username had to be resized significantly, move it down slightly
             if username_font_size < config["username_position"]["font_size"] * 0.8:
                 username_y += int((config["username_position"]["font_size"] - username_font_size) * 0.3)
-            
+
             # Discriminator position (right after username)
             discriminator_x = username_x + username_width + username_discriminator_spacing
             discriminator_y = config.get("discriminator_position", {}).get("y", 295)
@@ -238,7 +238,7 @@ class LevelingSystem(commands.Cog):
                 "xp_text": {"x": xp_x, "y": xp_y},
                 "fonts": {"username_size": username_font_size}
             }
-            
+
         except Exception as e:
             print(f"Error calculating dynamic positions: {e}")
             # Return default positions if calculation fails
@@ -257,7 +257,7 @@ class LevelingSystem(commands.Cog):
             data = load_leveling_data()
             user_data = data["user_data"].get(str(user.id), {"xp": 0, "level": 1})
             config = data["leveling_settings"]["level_card"]
-            
+
             # Calculate user ranking
             user_ranking = self.calculate_user_ranking(user.id)
 
@@ -357,7 +357,7 @@ class LevelingSystem(commands.Cog):
             levelbar_data = await self.download_image(config.get("level_bar_image", "https://raw.githubusercontent.com/TheBlueEL/pictures/refs/heads/main/LevelBar.png"))
             levelbar_x = 0
             levelbar_y = 0
-            
+
             if levelbar_data:
                 levelbar = Image.open(io.BytesIO(levelbar_data)).convert("RGBA")
                 # Position level bar using config
@@ -372,7 +372,7 @@ class LevelingSystem(commands.Cog):
                     # Default positioning
                     levelbar_x = 30
                     levelbar_y = bg_height - levelbar.height - 30
-                
+
                 # Paste the level bar background first
                 background.paste(levelbar, (levelbar_x, levelbar_y), levelbar)
 
@@ -388,14 +388,14 @@ class LevelingSystem(commands.Cog):
                     xp_bar_color_rgb = config.get("xp_bar_color", [245, 55, 48])
                     xp_bar_color = tuple(xp_bar_color_rgb) + (255,)
                     progress_width = int(levelbar.width * progress)
-                    
+
                     # Create a mask for the progress bar to match the levelbar shape
                     progress_bar = Image.new("RGBA", (progress_width, levelbar.height), xp_bar_color)
-                    
+
                     # Create a temporary image to apply the levelbar as a mask
                     temp_levelbar = levelbar.copy()
                     temp_levelbar = temp_levelbar.crop((0, 0, progress_width, levelbar.height))
-                    
+
                     # Composite the progress bar with the levelbar shape as mask
                     if temp_levelbar.size[0] > 0:
                         background.paste(progress_bar, (levelbar_x, levelbar_y), temp_levelbar)
@@ -424,17 +424,17 @@ class LevelingSystem(commands.Cog):
                         outline_data = await self.download_image(outline_url)
                         if outline_data:
                             outline = Image.open(io.BytesIO(outline_data)).convert("RGBA")
-                            
+
                             # Apply color override if specified
                             if profile_outline_config.get("color_override"):
                                 color_override = profile_outline_config["color_override"]
                                 colored_outline = Image.new("RGBA", outline.size, tuple(color_override + [255]))
                                 colored_outline.putalpha(outline.split()[-1])
                                 outline = colored_outline
-                            
+
                             # Resize outline to match avatar size
                             outline = outline.resize((size, size), Image.Resampling.LANCZOS)
-                            
+
                             # Paste outline over avatar
                             background.paste(outline, (config["profile_position"]["x"], config["profile_position"]["y"]), outline)
 
@@ -467,7 +467,7 @@ class LevelingSystem(commands.Cog):
             if discriminator_config:
                 discriminator = f"#{user.discriminator}" if user.discriminator != "0" else f"#{user.id % 10000:04d}"
                 discriminator_color = discriminator_config.get("color", [200, 200, 200])
-                
+
                 try:
                     font_discriminator = ImageFont.truetype("PlayPretend.otf", discriminator_config.get("font_size", 50))
                 except IOError:
@@ -490,7 +490,7 @@ class LevelingSystem(commands.Cog):
             if ranking_config:
                 ranking_text = f"#{user_ranking}"
                 ranking_color = ranking_config.get("color", [255, 255, 255])
-                
+
                 try:
                     font_ranking = ImageFont.truetype("PlayPretend.otf", ranking_config.get("font_size", 60))
                 except IOError:
@@ -561,7 +561,7 @@ class LevelingSystem(commands.Cog):
                     if discriminator_config:
                         discriminator = f"#{user.discriminator}" if user.discriminator != "0" else f"#{user.id % 10000:04d}"
                         discriminator_color = discriminator_config.get("color", [200, 200, 200])
-                        
+
                         try:
                             font_discriminator = ImageFont.truetype("PlayPretend.otf", discriminator_config.get("font_size", 50))
                         except IOError:
@@ -582,7 +582,7 @@ class LevelingSystem(commands.Cog):
                     if ranking_config:
                         ranking_text = f"#{user_ranking}"
                         ranking_color = ranking_config.get("color", [255, 255, 255])
-                        
+
                         try:
                             font_ranking = ImageFont.truetype("PlayPretend.otf", ranking_config.get("font_size", 60))
                         except IOError:
@@ -645,10 +645,10 @@ class LevelingSystem(commands.Cog):
         user_id = message.author.id
         # Check if user has an active level card manager
         for view in self.bot._connection._view_store._synced_message_views.values():
-            if (hasattr(view, 'user_id') and view.user_id == user_id and 
-                hasattr(view, 'waiting_for_image') and view.waiting_for_image and 
+            if (hasattr(view, 'user_id') and view.user_id == user_id and
+                hasattr(view, 'waiting_for_image') and view.waiting_for_image and
                 isinstance(view, LevelCardManagerView) and message.attachments):
-                
+
                 # Check if the attachment is an image
                 attachment = message.attachments[0]
                 allowed_extensions = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.svg']
@@ -856,9 +856,9 @@ class LevelingSystem(commands.Cog):
     @app_commands.command(name="level_system", description="Manage the server leveling system")
     async def level_system(self, interaction: discord.Interaction):
         """Main level system management command"""
-        view = LevelSystemMainView(interaction.user)
+        view = LevelSystemMainView(self.bot, interaction.user)
         embed = view.get_main_embed()
-        await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
+        await interaction.response.send_message(embed=embed, view=view)
 
     @app_commands.command(name="level", description="View your level card")
     async def level_command(self, interaction: discord.Interaction):
@@ -883,8 +883,9 @@ class LevelingSystem(commands.Cog):
 
 # Views and UI Components
 class LevelSystemMainView(discord.ui.View):
-    def __init__(self, user):
+    def __init__(self, bot, user):
         super().__init__(timeout=300)
+        self.bot = bot
         self.user = user
 
     def get_main_embed(self):
@@ -904,13 +905,13 @@ class LevelSystemMainView(discord.ui.View):
 
     @discord.ui.button(label="Reward Settings", style=discord.ButtonStyle.secondary, emoji="🎁")
     async def reward_settings(self, interaction: discord.Interaction, button: discord.ui.Button):
-        view = RewardSettingsView(self.user)
+        view = RewardSettingsView(self.bot, self.user)
         embed = view.get_embed()
         await interaction.response.edit_message(embed=embed, view=view)
 
     @discord.ui.button(label="XP Settings", style=discord.ButtonStyle.secondary, emoji="⚡")
     async def xp_settings(self, interaction: discord.Interaction, button: discord.ui.Button):
-        view = XPSettingsView(self.user)
+        view = XPSettingsView(self.bot, self.user)
         embed = view.get_embed()
         await interaction.response.edit_message(embed=embed, view=view)
 
@@ -939,8 +940,9 @@ class LevelSystemMainView(discord.ui.View):
         await interaction.response.edit_message(embed=embed, view=self)
 
 class RewardSettingsView(discord.ui.View):
-    def __init__(self, user):
+    def __init__(self, bot, user):
         super().__init__(timeout=300)
+        self.bot = bot
         self.user = user
 
     def get_embed(self):
@@ -953,7 +955,7 @@ class RewardSettingsView(discord.ui.View):
 
     @discord.ui.button(label="Role", style=discord.ButtonStyle.secondary, emoji="👑")
     async def role_rewards(self, interaction: discord.Interaction, button: discord.ui.Button):
-        view = RoleRewardsView(self.user)
+        view = RoleRewardsView(self.bot, self.user)
         embed = view.get_embed()
         await interaction.response.edit_message(embed=embed, view=view)
 
@@ -965,13 +967,14 @@ class RewardSettingsView(discord.ui.View):
 
     @discord.ui.button(label="Back", style=discord.ButtonStyle.danger, emoji="↩️")
     async def back(self, interaction: discord.Interaction, button: discord.ui.Button):
-        view = LevelSystemMainView(self.user)
+        view = LevelSystemMainView(self.bot, self.user)
         embed = view.get_main_embed()
         await interaction.response.edit_message(embed=embed, view=view)
 
 class RoleRewardsView(discord.ui.View):
-    def __init__(self, user):
+    def __init__(self, bot, user):
         super().__init__(timeout=300)
+        self.bot = bot
         self.user = user
 
     def get_embed(self):
@@ -1015,7 +1018,7 @@ class RoleRewardsView(discord.ui.View):
 
     @discord.ui.button(label="Back", style=discord.ButtonStyle.danger, emoji="↩️")
     async def back(self, interaction: discord.Interaction, button: discord.ui.Button):
-        view = RewardSettingsView(self.user)
+        view = RewardSettingsView(self.bot, self.user)
         embed = view.get_embed()
         await interaction.response.edit_message(embed=embed, view=view)
 
@@ -1077,12 +1080,12 @@ class AddRoleRewardView(discord.ui.View):
             description=f"Role {self.selected_role.mention} will be given at level {self.level}!",
             color=0x00ff00
         )
-        view = RoleRewardsView(self.user)
+        view = RoleRewardsView(self.bot, self.user)
         await interaction.response.edit_message(embed=embed, view=view)
 
     @discord.ui.button(label="Back", style=discord.ButtonStyle.danger, emoji="↩️")
     async def back(self, interaction: discord.Interaction, button: discord.ui.Button):
-        view = RoleRewardsView(self.user)
+        view = RoleRewardsView(self.bot, self.user)
         embed = view.get_embed()
         await interaction.response.edit_message(embed=embed, view=view)
 
@@ -1127,7 +1130,7 @@ class EditRoleRewardView(discord.ui.View):
 
     @discord.ui.button(label="Back", style=discord.ButtonStyle.danger, emoji="↩️")
     async def back(self, interaction: discord.Interaction, button: discord.ui.Button):
-        view = RoleRewardsView(self.user)
+        view = RoleRewardsView(self.bot, self.user)
         embed = view.get_embed()
         await interaction.response.edit_message(embed=embed, view=view)
 
@@ -1172,7 +1175,7 @@ class RemoveRoleRewardView(discord.ui.View):
 
     @discord.ui.button(label="Back", style=discord.ButtonStyle.danger, emoji="↩️")
     async def back(self, interaction: discord.Interaction, button: discord.ui.Button):
-        view = RoleRewardsView(self.user)
+        view = RoleRewardsView(self.bot, self.user)
         embed = view.get_embed()
         await interaction.response.edit_message(embed=embed, view=view)
 
@@ -1224,7 +1227,7 @@ class ConfirmRemoveView(discord.ui.View):
             description="The role reward has been successfully removed!",
             color=0x00ff00
         )
-        view = RoleRewardsView(interaction.user)
+        view = RoleRewardsView(self.bot, interaction.user)
         await interaction.response.edit_message(embed=embed, view=view)
 
 class CustomRewardsView(discord.ui.View):
@@ -1242,13 +1245,14 @@ class CustomRewardsView(discord.ui.View):
 
     @discord.ui.button(label="Back", style=discord.ButtonStyle.danger, emoji="↩️")
     async def back(self, interaction: discord.Interaction, button: discord.ui.Button):
-        view = RewardSettingsView(self.user)
+        view = RewardSettingsView(self.bot, self.user)
         embed = view.get_embed()
         await interaction.response.edit_message(embed=embed, view=view)
 
 class XPSettingsView(discord.ui.View):
-    def __init__(self, user):
+    def __init__(self, bot, user):
         super().__init__(timeout=300)
+        self.bot = bot
         self.user = user
 
     def get_embed(self):
@@ -1273,7 +1277,7 @@ class XPSettingsView(discord.ui.View):
 
     @discord.ui.button(label="Back", style=discord.ButtonStyle.danger, emoji="↩️")
     async def back(self, interaction: discord.Interaction, button: discord.ui.Button):
-        view = LevelSystemMainView(self.user)
+        view = LevelSystemMainView(self.bot, self.user)
         embed = view.get_main_embed()
         await interaction.response.edit_message(embed=embed, view=view)
 
@@ -1320,7 +1324,7 @@ class MessageXPView(discord.ui.View):
 
     @discord.ui.button(label="Back", style=discord.ButtonStyle.danger, emoji="↩️")
     async def back(self, interaction: discord.Interaction, button: discord.ui.Button):
-        view = XPSettingsView(self.user)
+        view = XPSettingsView(self.bot, self.user)
         embed = view.get_embed()
         await interaction.response.edit_message(embed=embed, view=view)
 
@@ -1416,7 +1420,7 @@ class CharacterXPView(discord.ui.View):
 
     @discord.ui.button(label="Back", style=discord.ButtonStyle.danger, emoji="↩️")
     async def back(self, interaction: discord.Interaction, button: discord.ui.Button):
-        view = XPSettingsView(self.user)
+        view = XPSettingsView(self.bot, self.user)
         embed = view.get_embed()
         await interaction.response.edit_message(embed=embed, view=view)
 
@@ -1479,12 +1483,13 @@ class CharacterCooldownModal(discord.ui.Modal):
             await interaction.response.send_message("❌ Please enter valid numbers!", ephemeral=True)
 
 class BackToMainButton(discord.ui.Button):
-    def __init__(self, user):
+    def __init__(self, bot, user):
         super().__init__(label="Back to Main", style=discord.ButtonStyle.danger, emoji="↩️")
+        self.bot = bot
         self.user = user
 
     async def callback(self, interaction: discord.Interaction):
-        view = LevelSystemMainView(self.user)
+        view = LevelSystemMainView(self.bot, self.user)
         embed = view.get_main_embed()
         await interaction.response.edit_message(embed=embed, view=view)
 
@@ -2102,7 +2107,7 @@ class LevelCardManagerView(discord.ui.View):
             embed = self.get_profile_outline_embed()
             embed.title = "🎨 Profile Outline Color"
             embed.description = "Choose how to set your profile outline color"
-        
+
         self.update_buttons()
         await interaction.response.edit_message(embed=embed, view=self)
 
@@ -2120,7 +2125,7 @@ class LevelCardManagerView(discord.ui.View):
             embed = self.get_profile_outline_embed()
             embed.title = "🖼️ Profile Outline Image"
             embed.description = "Set a custom profile outline image"
-        
+
         self.update_buttons()
         await interaction.response.edit_message(embed=embed, view=self)
 
@@ -2243,7 +2248,7 @@ class LevelCardManagerView(discord.ui.View):
     async def back_to_parent(self, interaction: discord.Interaction):
         if self.mode.endswith("_color") or self.mode.endswith("_image"):
             self.mode = self.mode.replace("_color", "").replace("_image", "")
-        
+
         if self.mode == "xp_info":
             embed = self.get_xp_info_embed()
         elif self.mode == "xp_bar":
@@ -2266,7 +2271,7 @@ class LevelCardManagerView(discord.ui.View):
     async def back_from_image_upload(self, interaction: discord.Interaction):
         self.waiting_for_image = False
         self.mode = self.current_image_type + "_image"
-        
+
         if self.mode == "xp_bar_image":
             embed = self.get_xp_bar_embed()
             embed.title = "🖼️ XP Bar Image"
@@ -2332,7 +2337,7 @@ class LevelCardHexColorModal(discord.ui.Modal):
 
         try:
             rgb = tuple(int(hex_value[i:i+2], 16) for i in (0, 2, 4))
-            
+
             if self.view.mode == "xp_info_color":
                 self.view.config["xp_text_color"] = list(rgb)
             elif self.view.mode == "xp_progress_color":
