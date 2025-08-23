@@ -225,17 +225,33 @@ class WelcomeSystem(commands.Cog):
                     # Si une image personnalisée est définie, la télécharger
                     custom_decoration_data = await self.download_image(decoration_config["custom_image"])
                     if custom_decoration_data:
-                        decoration = Image.open(io.BytesIO(custom_decoration_data)).convert("RGBA")
+                        custom_decoration = Image.open(io.BytesIO(custom_decoration_data)).convert("RGBA")
                         
                         # Traitement de l'image personnalisée pour la rendre carrée si nécessaire
-                        dec_width, dec_height = decoration.size
+                        dec_width, dec_height = custom_decoration.size
                         if dec_width != dec_height:
                             # Rogner pour faire un carré depuis le centre
                             min_dimension = min(dec_width, dec_height)
                             left = (dec_width - min_dimension) // 2
                             top = (dec_height - min_dimension) // 2
-                            decoration = decoration.crop((left, top, left + min_dimension, top + min_dimension))
-                            print(f"✅ Image personnalisée de ProfileOutline rognée au format carré: {decoration.size}")
+                            custom_decoration = custom_decoration.crop((left, top, left + min_dimension, top + min_dimension))
+                            print(f"✅ Image personnalisée de ProfileOutline rognée au format carré: {custom_decoration.size}")
+                        
+                        # Redimensionner l'image personnalisée à la taille de ProfileOutline
+                        if decoration:
+                            custom_decoration = custom_decoration.resize(decoration.size, Image.Resampling.LANCZOS)
+                            
+                            # Appliquer le masque alpha de ProfileOutline sur l'image personnalisée
+                            # Utiliser le canal alpha de ProfileOutline comme masque
+                            alpha_mask = decoration.split()[-1]  # Canal alpha de ProfileOutline
+                            
+                            # Créer une nouvelle image avec l'image personnalisée mais utilisant le masque de ProfileOutline
+                            masked_decoration = Image.new("RGBA", custom_decoration.size, (0, 0, 0, 0))
+                            masked_decoration.paste(custom_decoration, (0, 0))
+                            masked_decoration.putalpha(alpha_mask)
+                            
+                            decoration = masked_decoration
+                            print(f"✅ Masque ProfileOutline appliqué sur l'image personnalisée")
 
                 # Coller la décoration à sa taille d'origine (par-dessus l'avatar)
                 template.paste(decoration, (decoration_x, decoration_y), decoration)
