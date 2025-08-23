@@ -21,6 +21,11 @@ def load_welcome_data():
     except FileNotFoundError:
         # Return default configuration if file doesn't exist
         return {
+            "welcome_settings": {
+                "enabled": False,
+                "channel_id": None,
+                "welcome_message": "Welcome {user}!"
+            },
             "template_config": {
                 "template_url": "https://raw.githubusercontent.com/TheBlueEL/pictures/refs/heads/main/WelcomeCard.png",
                 "avatar_position": {
@@ -414,6 +419,42 @@ class WelcomeSystem(commands.Cog):
 
         # Store the active manager
         self.active_managers[interaction.user.id] = view
+
+    @commands.Cog.listener()
+    async def on_member_join(self, member):
+        """Handle new member joining"""
+        try:
+            welcome_data = load_welcome_data()
+            welcome_settings = welcome_data.get("welcome_settings", {})
+            
+            # Check if welcome system is enabled
+            if not welcome_settings.get("enabled", False):
+                return
+                
+            # Check if channel is configured
+            channel_id = welcome_settings.get("channel_id")
+            if not channel_id:
+                return
+                
+            channel = member.guild.get_channel(channel_id)
+            if not channel:
+                return
+                
+            # Create welcome card
+            welcome_card = await self.create_welcome_card(member)
+            if not welcome_card:
+                return
+                
+            # Get welcome message and replace {user} placeholder
+            welcome_message = welcome_settings.get("welcome_message", "Welcome {user}!")
+            welcome_message = welcome_message.replace("{user}", member.mention)
+            
+            # Send welcome message with image
+            file = discord.File(welcome_card, filename="welcome.png")
+            await channel.send(content=welcome_message, file=file)
+            
+        except Exception as e:
+            print(f"Error in on_member_join: {e}")
 
     @commands.Cog.listener()
     async def on_message(self, message):
@@ -1012,6 +1053,85 @@ class WelcomeSystemManagerView(discord.ui.View):
 
         return embed
 
+    def get_settings_embed(self):
+        """Get settings embed"""
+        welcome_data = load_welcome_data()
+        welcome_settings = welcome_data.get("welcome_settings", {})
+        
+        embed = discord.Embed(
+            title="<:SettingLOGO:1407071854593839239> Welcome System Settings",
+            description="Configure the welcome system behavior",
+            color=discord.Color.blue()
+        )
+
+        # System status
+        enabled = welcome_settings.get("enabled", False)
+        status = "<:OnLOGO:1407072463883472978> Enabled" if enabled else "<:OffLOGO:1407072621836894380> Disabled"
+        
+        # Channel status
+        channel_id = welcome_settings.get("channel_id")
+        if channel_id and hasattr(self, 'guild'):
+            channel = self.guild.get_channel(channel_id)
+            channel_text = f"#{channel.name}" if channel else "Channel not found"
+        else:
+            channel_text = "Not configured"
+            
+        # Welcome message
+        welcome_message = welcome_settings.get("welcome_message", "Welcome {user}!")
+
+        embed.add_field(
+            name="System Status",
+            value=status,
+            inline=False
+        )
+        
+        embed.add_field(
+            name="Welcome Channel",
+            value=channel_text,
+            inline=False
+        )
+        
+        embed.add_field(
+            name="Welcome Message",
+            value=f"`{welcome_message}`",
+            inline=False
+        )
+
+        # Add preview image if available
+        if hasattr(self, 'preview_image_url') and self.preview_image_url:
+            embed.set_image(url=self.preview_image_url)
+
+        bot_name = get_bot_name(self.bot)
+        embed.set_footer(text=f"{bot_name} | Welcome Settings", icon_url=self.bot.user.display_avatar.url)
+
+        return embed
+
+    def get_channel_selection_embed(self):
+        """Get channel selection embed"""
+        embed = discord.Embed(
+            title="<:ChannelLOGO:1407733929389199460> Select Welcome Channel",
+            description="Choose the channel where welcome messages will be sent",
+            color=discord.Color.green()
+        )
+
+        welcome_data = load_welcome_data()
+        welcome_settings = welcome_data.get("welcome_settings", {})
+        channel_id = welcome_settings.get("channel_id")
+        
+        if channel_id and hasattr(self, 'guild'):
+            channel = self.guild.get_channel(channel_id)
+            if channel:
+                embed.add_field(
+                    name="Current Channel",
+                    value=f"#{channel.name}",
+                    inline=False
+                )
+
+        bot_name = get_bot_name(self.bot)
+        embed.set_footer(text=f"{bot_name} | Channel Selection", icon_url=self.bot.user.display_avatar.url)
+
+        return embed
+
     def get_waiting_image_embed(self):
         # Recharger la configuration pour avoir les dernières modifications
         self.config = load_welcome_data()["template_config"]
@@ -1392,39 +1512,110 @@ class WelcomeSystemManagerView(discord.ui.View):
             self.add_item(image_button)
             self.add_item(back_button)
 
+        elif self.mode == "settings":
+            # Settings buttons
+            welcome_data = load_welcome_data()
+            welcome_settings = welcome_data.get("welcome_settings", {})
+            enabled = welcome_settings.get("enabled", False)
+            
+            toggle_button = discord.ui.Button(
+                label="ON" if enabled else "OFF",
+                style=discord.ButtonStyle.success if enabled else discord.ButtonStyle.danger,
+                emoji="<:OnLOGO:1407072463883472978>" if enabled else "<:OffLOGO:1407072621836894380>",
+                row=0
+            )
+            toggle_button.callback = self.toggle_welcome_system
+
+            channel_button = discord.ui.Button(
+                label="Channel",
+                style=discord.ButtonStyle.primary,
+                emoji="<:ChannelLOGO:1407733929389199460>",
+                row=0
+            )
+            channel_button.callback = self.channel_selection
+
+            content_button = discord.ui.Button(
+                label="Content",
+                style=discord.ButtonStyle.secondary,
+                emoji="<:TXTFileLOGO:1407735600752361622>",
+                row=0
+            )
+            content_button.callback = self.welcome_message_settings
+
+            back_button = discord.ui.Button(
+                label="Back",
+                style=discord.ButtonStyle.gray,
+                emoji="<:BackLOGO:1391511633431494666>",
+                row=1
+            )
+            back_button.callback = self.back_to_main
+
+            self.add_item(toggle_button)
+            self.add_item(channel_button)
+            self.add_item(content_button)
+            self.add_item(back_button)
+
+        elif self.mode == "channel_selection":
+            # Channel selection with dropdown
+            if hasattr(self, 'guild') and self.guild:
+                channel_select = WelcomeChannelSelect(self.guild)
+                self.add_item(channel_select)
+
+            back_button = discord.ui.Button(
+                label="Back",
+                style=discord.ButtonStyle.gray,
+                emoji="<:BackLOGO:1391511633431494666>"
+            )
+            back_button.callback = self.back_to_settings
+            self.add_item(back_button)
+
         else:  # main mode
-            # Main buttons
+            # Main buttons - Row 1
             background_button = discord.ui.Button(
                 label="Background",
                 style=discord.ButtonStyle.primary,
-                emoji="<:BackgroundLOGO:1408834163309805579>"
+                emoji="<:BackgroundLOGO:1408834163309805579>",
+                row=0
             )
             background_button.callback = self.background_settings
 
             content_button = discord.ui.Button(
                 label="Content",
                 style=discord.ButtonStyle.secondary,
-                emoji="<:DescriptionLOGO:1407733417172533299>"
+                emoji="<:DescriptionLOGO:1407733417172533299>",
+                row=0
             )
             content_button.callback = self.content_settings
 
             profile_outline_button = discord.ui.Button(
                 label="Profile Outline",
                 style=discord.ButtonStyle.secondary,
-                emoji="<:ProfileLOGO:1408830057819930806>"
+                emoji="<:ProfileLOGO:1408830057819930806>",
+                row=0
             )
             profile_outline_button.callback = self.profile_outline_settings
+
+            # Main buttons - Row 2
+            settings_button = discord.ui.Button(
+                label="Settings",
+                style=discord.ButtonStyle.secondary,
+                emoji="<:SettingLOGO:1407071854593839239>",
+                row=1
+            )
+            settings_button.callback = self.system_settings
 
             close_button = discord.ui.Button(
                 label="Close",
                 style=discord.ButtonStyle.danger,
-                emoji="<:CloseLOGO:1391531593524318271>"
+                emoji="<:CloseLOGO:1391531593524318271>",
+                row=1
             )
             close_button.callback = self.close_embed
 
             self.add_item(background_button)
             self.add_item(content_button)
             self.add_item(profile_outline_button)
+            self.add_item(settings_button)
             self.add_item(close_button)
 
     # Background callbacks
@@ -1699,6 +1890,45 @@ class WelcomeSystemManagerView(discord.ui.View):
             if hasattr(self, 'preview_image_url') and self.preview_image_url:
                 embed.set_image(url=self.preview_image_url)
 
+        self.update_buttons()
+        await interaction.response.edit_message(embed=embed, view=self)
+
+    # New callback methods
+    async def system_settings(self, interaction: discord.Interaction):
+        self.mode = "settings"
+        embed = self.get_settings_embed()
+        self.update_buttons()
+        await interaction.response.edit_message(embed=embed, view=self)
+
+    async def toggle_welcome_system(self, interaction: discord.Interaction):
+        welcome_data = load_welcome_data()
+        if "welcome_settings" not in welcome_data:
+            welcome_data["welcome_settings"] = {}
+        
+        current_state = welcome_data["welcome_settings"].get("enabled", False)
+        welcome_data["welcome_settings"]["enabled"] = not current_state
+        
+        # Save to file
+        with open('welcome_data.json', 'w', encoding='utf-8') as f:
+            json.dump(welcome_data, f, indent=2, ensure_ascii=False)
+        
+        embed = self.get_settings_embed()
+        self.update_buttons()
+        await interaction.response.edit_message(embed=embed, view=self)
+
+    async def channel_selection(self, interaction: discord.Interaction):
+        self.mode = "channel_selection"
+        embed = self.get_channel_selection_embed()
+        self.update_buttons()
+        await interaction.response.edit_message(embed=embed, view=self)
+
+    async def welcome_message_settings(self, interaction: discord.Interaction):
+        modal = WelcomeMessageModal(self)
+        await interaction.response.send_modal(modal)
+
+    async def back_to_settings(self, interaction: discord.Interaction):
+        self.mode = "settings"
+        embed = self.get_settings_embed()
         self.update_buttons()
         await interaction.response.edit_message(embed=embed, view=self)
 
@@ -2192,6 +2422,92 @@ class ProfileOutlineImageURLModal(discord.ui.Modal):
         embed = self.view.get_profile_outline_embed()
         self.view.update_buttons()
         await interaction.edit_original_response(embed=embed, view=self.view)
+
+class WelcomeChannelSelect(discord.ui.Select):
+    def __init__(self, guild):
+        self.guild = guild
+        options = []
+
+        # Get all text channels
+        text_channels = [ch for ch in guild.channels if isinstance(ch, discord.TextChannel)]
+        
+        for channel in text_channels[:25]:  # Discord limit of 25 options
+            options.append(discord.SelectOption(
+                label=f"#{channel.name}",
+                description=f"Category: {channel.category.name if channel.category else 'No category'}",
+                value=str(channel.id)
+            ))
+
+        if not options:
+            options.append(discord.SelectOption(
+                label="No channels available",
+                description="No text channels found",
+                value="none"
+            ))
+
+        super().__init__(
+            placeholder="Select a welcome channel...",
+            options=options,
+            min_values=1,
+            max_values=1
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        if self.values[0] == "none":
+            return
+
+        channel_id = int(self.values[0])
+        
+        # Save the selected channel
+        welcome_data = load_welcome_data()
+        if "welcome_settings" not in welcome_data:
+            welcome_data["welcome_settings"] = {}
+        
+        welcome_data["welcome_settings"]["channel_id"] = channel_id
+        
+        with open('welcome_data.json', 'w', encoding='utf-8') as f:
+            json.dump(welcome_data, f, indent=2, ensure_ascii=False)
+
+        # Go back to settings
+        parent_view = self.view
+        parent_view.mode = "settings"
+        embed = parent_view.get_settings_embed()
+        parent_view.update_buttons()
+        await interaction.response.edit_message(embed=embed, view=parent_view)
+
+class WelcomeMessageModal(discord.ui.Modal):
+    def __init__(self, view):
+        super().__init__(title='💬 Welcome Message')
+        self.view = view
+        
+        welcome_data = load_welcome_data()
+        current_message = welcome_data.get("welcome_settings", {}).get("welcome_message", "Welcome {user}!")
+
+        self.message_input = discord.ui.TextInput(
+            label='Welcome Message',
+            placeholder='Welcome {user}! Use {user} to mention the new member',
+            required=True,
+            max_length=2000,
+            style=discord.TextStyle.paragraph,
+            default=current_message
+        )
+        self.add_item(self.message_input)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        welcome_data = load_welcome_data()
+        if "welcome_settings" not in welcome_data:
+            welcome_data["welcome_settings"] = {}
+        
+        welcome_data["welcome_settings"]["welcome_message"] = self.message_input.value
+        
+        with open('welcome_data.json', 'w', encoding='utf-8') as f:
+            json.dump(welcome_data, f, indent=2, ensure_ascii=False)
+
+        # Go back to settings
+        self.view.mode = "settings"
+        embed = self.view.get_settings_embed()
+        self.view.update_buttons()
+        await interaction.response.edit_message(embed=embed, view=self.view)
 
 async def setup(bot):
     await bot.add_cog(WelcomeSystem(bot))
