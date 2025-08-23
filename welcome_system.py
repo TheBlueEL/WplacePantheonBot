@@ -92,31 +92,74 @@ class WelcomeSystem(commands.Cog):
             target_width, target_height = 2048, 1080
             target_ratio = target_width / target_height
 
+            # Variables pour gérer les GIFs animés
+            is_animated_gif = False
+            frames = []
+            durations = []
+
             # Créer un template avec couleur de fond ou image personnalisée
             if self.config.get("background_image"):
                 template_data = await self.download_image(self.config["background_image"])
                 if not template_data:
                     return None
 
-                # Traitement de l'image de fond
-                bg_image = Image.open(io.BytesIO(template_data)).convert("RGBA")
-                orig_width, orig_height = bg_image.size
-                orig_ratio = orig_width / orig_height
+                # Ouvrir l'image de fond
+                bg_image = Image.open(io.BytesIO(template_data))
+                
+                # Vérifier si c'est un GIF animé
+                if hasattr(bg_image, 'is_animated') and bg_image.is_animated:
+                    is_animated_gif = True
+                    # Traiter chaque frame du GIF
+                    for frame_idx in range(bg_image.n_frames):
+                        bg_image.seek(frame_idx)
+                        frame = bg_image.copy().convert("RGBA")
+                        
+                        # Appliquer les mêmes transformations à chaque frame
+                        orig_width, orig_height = frame.size
+                        orig_ratio = orig_width / orig_height
 
-                # Rogner l'image pour maintenir les bonnes proportions
-                if orig_ratio > target_ratio:
-                    # Image trop large, rogner sur les côtés
-                    new_width = int(orig_height * target_ratio)
-                    left = (orig_width - new_width) // 2
-                    bg_image = bg_image.crop((left, 0, left + new_width, orig_height))
-                elif orig_ratio < target_ratio:
-                    # Image trop haute, rogner en haut et en bas
-                    new_height = int(orig_width / target_ratio)
-                    top = (orig_height - new_height) // 2
-                    bg_image = bg_image.crop((0, top, orig_width, top + new_height))
+                        # Rogner l'image pour maintenir les bonnes proportions
+                        if orig_ratio > target_ratio:
+                            # Image trop large, rogner sur les côtés
+                            new_width = int(orig_height * target_ratio)
+                            left = (orig_width - new_width) // 2
+                            frame = frame.crop((left, 0, left + new_width, orig_height))
+                        elif orig_ratio < target_ratio:
+                            # Image trop haute, rogner en haut et en bas
+                            new_height = int(orig_width / target_ratio)
+                            top = (orig_height - new_height) // 2
+                            frame = frame.crop((0, top, orig_width, top + new_height))
 
-                # Redimensionner à la taille exacte
-                template = bg_image.resize((target_width, target_height), Image.Resampling.LANCZOS)
+                        # Redimensionner à la taille exacte
+                        frame = frame.resize((target_width, target_height), Image.Resampling.LANCZOS)
+                        frames.append(frame)
+                        
+                        # Récupérer la durée de la frame
+                        try:
+                            duration = bg_image.info.get('duration', 100)
+                            durations.append(duration)
+                        except:
+                            durations.append(100)  # 100ms par défaut
+                else:
+                    # Image statique
+                    bg_image = bg_image.convert("RGBA")
+                    orig_width, orig_height = bg_image.size
+                    orig_ratio = orig_width / orig_height
+
+                    # Rogner l'image pour maintenir les bonnes proportions
+                    if orig_ratio > target_ratio:
+                        # Image trop large, rogner sur les côtés
+                        new_width = int(orig_height * target_ratio)
+                        left = (orig_width - new_width) // 2
+                        bg_image = bg_image.crop((left, 0, left + new_width, orig_height))
+                    elif orig_ratio < target_ratio:
+                        # Image trop haute, rogner en haut et en bas
+                        new_height = int(orig_width / target_ratio)
+                        top = (orig_height - new_height) // 2
+                        bg_image = bg_image.crop((0, top, orig_width, top + new_height))
+
+                    # Redimensionner à la taille exacte
+                    template = bg_image.resize((target_width, target_height), Image.Resampling.LANCZOS)
             else:
                 # Créer une image avec couleur de fond
                 bg_color = self.config.get("background_color", [255, 255, 255])
@@ -380,16 +423,89 @@ class WelcomeSystem(commands.Cog):
                 draw.text((text_x, text_y_username),
                          username_text, font=font_username, fill=text_color)
 
-            # Convertir en bytes pour l'envoi Discord
-            output = io.BytesIO()
-            # Déterminer le format de sortie basé sur le fond
-            if self.config.get("background_image") and self.config["background_image"].lower().endswith('.gif'):
-                template.save(output, format='GIF')
-            else:
-                template.save(output, format='PNG')
-            output.seek(0)
+            # Si c'est un GIF animé, traiter toutes les frames
+            if is_animated_gif:
+                final_frames = []
+                
+                for frame_idx, bg_frame in enumerate(frames):
+                    # Utiliser bg_frame comme template pour cette frame
+                    current_template = bg_frame.copy()
+                    
+                    # Ajouter tous les éléments overlay sur cette frame
+                    # Ajouter DefaultProfile derrière l'avatar si disponible
+                    if default_profile and self.config.get("default_profile", {}).get("enabled", True):
+                        default_profile_config = self.config["default_profile"]
+                        default_profile_x = default_profile_config["x"]
+                        default_profile_y = default_profile_config["y"]
+                        current_template.paste(default_profile, (default_profile_x, default_profile_y), default_profile)
 
-            return output
+                    # Coller l'avatar circulaire sur le template
+                    current_template.paste(avatar_circle, (circle_x, circle_y), avatar_circle)
+
+                    # Ajouter la décoration de profil si disponible
+                    if decoration and self.config.get("profile_decoration", {}).get("enabled", True):
+                        decoration_config = self.config["profile_decoration"]
+                        decoration_x = decoration_config["x"]
+                        decoration_y = decoration_config["y"]
+                        current_template.paste(decoration, (decoration_x, decoration_y), decoration)
+
+                    # Ajouter le texte sur cette frame
+                    draw = ImageDraw.Draw(current_template)
+                    
+                    if text_texture_image:
+                        # Appliquer la texture de texte
+                        border_thickness = 3
+                        for adj in range(-border_thickness, border_thickness + 1):
+                            for adj_y in range(-border_thickness, border_thickness + 1):
+                                if adj != 0 or adj_y != 0:
+                                    draw.text((text_x + adj, text_y_welcome + adj_y),
+                                             welcome_config["text"], font=font_welcome, fill=(0, 0, 0, 255))
+                                    draw.text((text_x + adj, text_y_username + adj_y),
+                                             username_text, font=font_username, fill=(0, 0, 0, 255))
+
+                        text_mask = Image.new('L', current_template.size, 0)
+                        mask_draw = ImageDraw.Draw(text_mask)
+                        mask_draw.text((text_x, text_y_welcome),
+                                     welcome_config["text"], font=font_welcome, fill=255)
+                        mask_draw.text((text_x, text_y_username),
+                                     username_text, font=font_username, fill=255)
+
+                        texture_resized = text_texture_image.resize(current_template.size, Image.Resampling.LANCZOS)
+                        textured_text = Image.new("RGBA", current_template.size, (0, 0, 0, 0))
+                        textured_text.paste(texture_resized, (0, 0))
+                        textured_text.putalpha(text_mask)
+                        current_template = Image.alpha_composite(current_template, textured_text)
+                    else:
+                        # Texte normal
+                        draw.text((text_x + shadow_offset, text_y_welcome + shadow_offset),
+                                 welcome_config["text"], font=font_welcome, fill=shadow_color)
+                        draw.text((text_x, text_y_welcome),
+                                 welcome_config["text"], font=font_welcome, fill=text_color)
+                        draw.text((text_x + shadow_offset, text_y_username + shadow_offset),
+                                 username_text, font=font_username, fill=shadow_color)
+                        draw.text((text_x, text_y_username),
+                                 username_text, font=font_username, fill=text_color)
+                    
+                    final_frames.append(current_template)
+                
+                # Sauvegarder le GIF animé
+                output = io.BytesIO()
+                final_frames[0].save(
+                    output,
+                    format='GIF',
+                    save_all=True,
+                    append_images=final_frames[1:],
+                    duration=durations,
+                    loop=0  # Boucle infinie
+                )
+                output.seek(0)
+                return output
+            else:
+                # Image statique
+                output = io.BytesIO()
+                template.save(output, format='PNG')
+                output.seek(0)
+                return output
 
         except Exception as e:
             print(f"Erreur lors de la création de la carte de bienvenue: {e}")
