@@ -1,10 +1,6 @@
 {
   "template_config": {
-    "background_color": [
-      0,
-      100,
-      0
-    ],
+    "background_color": [0, 100, 0],
     "avatar_position": {
       "x": 101,
       "y": 77,
@@ -20,18 +16,14 @@
       "url": "https://raw.githubusercontent.com/TheBlueEL/pictures/refs/heads/main/ProfileOutline.png",
       "x": 60,
       "y": 35,
-      "enabled": true,
-      "color_override": [
-        0,
-        0,
-        0
-      ]
+      "enabled": false,
+      "color_override": [0, 0, 0]
     },
     "text_config": {
       "welcome_text": {
         "x_offset": 50,
         "y_offset": 200,
-        "font_size": 70,
+        "font_size": 65,
         "font_path": "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
         "text": "WELCOME, TO THE SERVER"
       },
@@ -43,18 +35,8 @@
         "font_path": "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
         "margin_right": 25
       },
-      "text_color": [
-        255,
-        255,
-        255,
-        255
-      ],
-      "shadow_color": [
-        0,
-        0,
-        0,
-        128
-      ],
+      "text_color": [255, 255, 255, 255],
+      "shadow_color": [0, 0, 0, 128],
       "shadow_offset": 2
     }
   }
