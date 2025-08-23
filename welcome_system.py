@@ -323,12 +323,18 @@ class WelcomeSystem(commands.Cog):
             await interaction.response.send_message(embed=embed, ephemeral=True)
             return
 
+        await interaction.response.defer(ephemeral=True)
+
         view = WelcomeSystemManagerView(self.bot, interaction.user.id)
         view.guild = interaction.guild
+        
+        # Generate preview image
+        await view.generate_preview_image(interaction.user)
+        
         embed = view.get_main_embed()
         view.update_buttons()
 
-        await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
+        await interaction.followup.send(embed=embed, view=view)
 
         # Store the active manager
         self.active_managers[interaction.user.id] = view
@@ -372,6 +378,9 @@ class WelcomeSystem(commands.Cog):
 
                         manager.save_config()
                         manager.waiting_for_image = False
+
+                        # Generate new preview
+                        await manager.generate_preview_image(message.author)
 
                         # Update the manager view
                         if manager.current_image_type == "background":
@@ -521,6 +530,7 @@ class WelcomeSystemManagerView(discord.ui.View):
         self.profile_outline_mode = False
         self.waiting_for_image = False
         self.current_image_type = None
+        self.preview_image_url = None
 
     def get_main_embed(self):
         # Recharger la configuration pour avoir les dernières modifications
@@ -552,6 +562,10 @@ class WelcomeSystemManagerView(discord.ui.View):
             value=config_status,
             inline=False
         )
+
+        # Add preview image if available
+        if hasattr(self, 'preview_image_url') and self.preview_image_url:
+            embed.set_image(url=self.preview_image_url)
 
         bot_name = get_bot_name(self.bot)
         embed.set_footer(text=f"{bot_name} | Welcome System", icon_url=self.bot.user.display_avatar.url)
@@ -588,6 +602,10 @@ class WelcomeSystemManagerView(discord.ui.View):
                 value="White (Default)",
                 inline=False
             )
+
+        # Add preview image if available
+        if hasattr(self, 'preview_image_url') and self.preview_image_url:
+            embed.set_image(url=self.preview_image_url)
 
         bot_name = get_bot_name(self.bot)
         embed.set_footer(text=f"{bot_name} | Background Settings", icon_url=self.bot.user.display_avatar.url)
@@ -691,6 +709,10 @@ class WelcomeSystemManagerView(discord.ui.View):
                 inline=False
             )
 
+        # Add preview image if available
+        if hasattr(self, 'preview_image_url') and self.preview_image_url:
+            embed.set_image(url=self.preview_image_url)
+
         bot_name = get_bot_name(self.bot)
         embed.set_footer(text=f"{bot_name} | Profile Outline", icon_url=self.bot.user.display_avatar.url)
 
@@ -717,6 +739,46 @@ class WelcomeSystemManagerView(discord.ui.View):
         data["template_config"] = self.config
         with open('welcome_data.json', 'w', encoding='utf-8') as f:
             json.dump(data, f, indent=2, ensure_ascii=False)
+
+    async def generate_preview_image(self, interaction_user):
+        """Generate preview image and upload it to GitHub"""
+        try:
+            welcome_system = WelcomeSystem(self.bot)
+            preview_image = await welcome_system.create_welcome_card(interaction_user)
+            
+            if preview_image:
+                # Save preview to temp file
+                os.makedirs('images', exist_ok=True)
+                filename = f"welcome_preview_{self.user_id}.png"
+                file_path = os.path.join('images', filename)
+                
+                with open(file_path, 'wb') as f:
+                    f.write(preview_image.getvalue())
+                
+                # Upload to GitHub
+                try:
+                    from github_sync import GitHubSync
+                    github_sync = GitHubSync()
+                    sync_success = await github_sync.sync_image_to_pictures_repo(file_path)
+                    
+                    if sync_success:
+                        # Delete local file after successful sync
+                        try:
+                            os.remove(file_path)
+                        except:
+                            pass
+                        
+                        # Set GitHub raw URL
+                        filename = os.path.basename(file_path)
+                        self.preview_image_url = f"https://raw.githubusercontent.com/TheBlueEL/pictures/main/{filename}"
+                        return True
+                except ImportError:
+                    print("GitHub sync not available")
+                    
+        except Exception as e:
+            print(f"Error generating preview: {e}")
+        
+        return False
 
     def update_buttons(self):
         self.clear_items()
@@ -1123,6 +1185,9 @@ class BackgroundHexColorModal(discord.ui.Modal):
             self.view.config.pop("background_image", None)  # Remove image if setting color
             self.view.save_config()
 
+            # Generate new preview
+            await self.view.generate_preview_image(interaction.user)
+
             embed = self.view.get_background_color_embed()
             self.view.update_buttons()
             await interaction.response.edit_message(embed=embed, view=self.view)
@@ -1175,6 +1240,9 @@ class BackgroundRGBColorModal(discord.ui.Modal):
             self.view.config.pop("background_image", None)  # Remove image if setting color
             self.view.save_config()
 
+            # Generate new preview
+            await self.view.generate_preview_image(interaction.user)
+
             embed = self.view.get_background_color_embed()
             self.view.update_buttons()
             await interaction.response.edit_message(embed=embed, view=self.view)
@@ -1213,6 +1281,9 @@ class BackgroundImageURLModal(discord.ui.Modal):
         self.view.config["background_image"] = url
         self.view.config.pop("background_color", None)  # Remove color if setting image
         self.view.save_config()
+
+        # Generate new preview
+        await self.view.generate_preview_image(interaction.user)
 
         embed = self.view.get_background_image_embed()
         self.view.update_buttons()
