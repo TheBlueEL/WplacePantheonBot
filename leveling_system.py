@@ -93,12 +93,31 @@ class LevelingSystem(commands.Cog):
         draw.ellipse((0, 0, size[0], size[1]), fill=255)
         return mask
 
+    def calculate_user_ranking(self, user_id):
+        """Calculate user's ranking position compared to all other users"""
+        data = load_leveling_data()
+        all_users = data["user_data"]
+        
+        # Create a list of (user_id, xp) tuples and sort by XP descending
+        user_xp_list = [(uid, udata["xp"]) for uid, udata in all_users.items()]
+        user_xp_list.sort(key=lambda x: x[1], reverse=True)
+        
+        # Find the position of the current user
+        for position, (uid, xp) in enumerate(user_xp_list, 1):
+            if uid == str(user_id):
+                return position
+        
+        return len(user_xp_list) + 1  # If not found, place at the end
+
     async def create_level_card(self, user):
         """Create level card for user"""
         try:
             data = load_leveling_data()
             user_data = data["user_data"].get(str(user.id), {"xp": 0, "level": 1})
             config = data["leveling_settings"]["level_card"]
+            
+            # Calculate user ranking
+            user_ranking = self.calculate_user_ranking(user.id)
 
             # Get background size from config
             bg_width = config.get("background_size", {}).get("width", 2048)
@@ -193,10 +212,13 @@ class LevelingSystem(commands.Cog):
                 background = Image.new("RGBA", (bg_width, bg_height), bg_color)
 
             # Download and add level bar image
-            levelbar_data = await self.download_image(config.get("level_bar_image", "https://raw.githubusercontent.com/TheBlueEL/pictures/refs/heads/main/LevelBar.png")) # Default level bar image
+            levelbar_data = await self.download_image(config.get("level_bar_image", "https://raw.githubusercontent.com/TheBlueEL/pictures/refs/heads/main/LevelBar.png"))
+            levelbar_x = 0
+            levelbar_y = 0
+            
             if levelbar_data:
                 levelbar = Image.open(io.BytesIO(levelbar_data)).convert("RGBA")
-                # Position level bar using config or bottom right with 30px margin
+                # Position level bar using config
                 xp_bar_config = config.get("xp_bar_position", {})
                 if "x" in xp_bar_config and "y" in xp_bar_config:
                     # Use custom position and resize if width/height specified
@@ -205,9 +227,11 @@ class LevelingSystem(commands.Cog):
                     levelbar_x = xp_bar_config["x"]
                     levelbar_y = xp_bar_config["y"]
                 else:
-                    # Default positioning in bottom right with 30px margin
-                    levelbar_x = bg_width - levelbar.width - 30
+                    # Default positioning
+                    levelbar_x = 30
                     levelbar_y = bg_height - levelbar.height - 30
+                
+                # Paste the level bar background first
                 background.paste(levelbar, (levelbar_x, levelbar_y), levelbar)
 
                 # Create XP progress bar overlay
@@ -217,13 +241,22 @@ class LevelingSystem(commands.Cog):
                 else:
                     progress = 1.0
 
-                # Create XP bar color based on config
-                xp_bar_color_rgb = config.get("xp_bar_color", [245, 55, 48]) # Default red
-                xp_bar_color = tuple(xp_bar_color_rgb) + (255,)
-
                 # Create XP progress bar using the specified color
-                xp_progress_bar = Image.new("RGBA", (int(levelbar.width * progress), levelbar.height), xp_bar_color)
-                background.paste(xp_progress_bar, (levelbar_x, levelbar_y), xp_progress_bar)
+                if progress > 0:
+                    xp_bar_color_rgb = config.get("xp_bar_color", [245, 55, 48])
+                    xp_bar_color = tuple(xp_bar_color_rgb) + (255,)
+                    progress_width = int(levelbar.width * progress)
+                    
+                    # Create a mask for the progress bar to match the levelbar shape
+                    progress_bar = Image.new("RGBA", (progress_width, levelbar.height), xp_bar_color)
+                    
+                    # Create a temporary image to apply the levelbar as a mask
+                    temp_levelbar = levelbar.copy()
+                    temp_levelbar = temp_levelbar.crop((0, 0, progress_width, levelbar.height))
+                    
+                    # Composite the progress bar with the levelbar shape as mask
+                    if temp_levelbar.size[0] > 0:
+                        background.paste(progress_bar, (levelbar_x, levelbar_y), temp_levelbar)
 
 
             # Download user avatar
@@ -258,15 +291,49 @@ class LevelingSystem(commands.Cog):
 
             # Draw username with configurable color
             username = user.name
-            username_color = config.get("username_color", [0, 0, 0]) # Default black
+            username_color = config.get("username_color", [255, 255, 255]) # Default white
             draw.text((config["username_position"]["x"], config["username_position"]["y"]),
                      username, font=font_username, fill=tuple(username_color))
+
+            # Draw discriminator next to username
+            discriminator_config = config.get("discriminator_position", {})
+            if discriminator_config:
+                discriminator = f"#{user.discriminator}" if user.discriminator != "0" else f"#{user.id % 10000:04d}"
+                discriminator_color = discriminator_config.get("color", [200, 200, 200])
+                
+                try:
+                    font_discriminator = ImageFont.truetype("PlayPretend.otf", discriminator_config.get("font_size", 50))
+                except IOError:
+                    try:
+                        font_discriminator = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", discriminator_config.get("font_size", 50))
+                    except IOError:
+                        font_discriminator = ImageFont.load_default()
+
+                draw.text((discriminator_config.get("x", 900), discriminator_config.get("y", 275)),
+                         discriminator, font=font_discriminator, fill=tuple(discriminator_color))
 
             # Draw level with configurable color
             level_text = f"LEVEL {user_data['level']}"
             level_color = config.get("level_color", [245, 55, 48]) # Default red
             draw.text((config["level_position"]["x"], config["level_position"]["y"]),
                      level_text, font=font_level, fill=tuple(level_color))
+
+            # Draw ranking position
+            ranking_config = config.get("ranking_position", {})
+            if ranking_config:
+                ranking_text = f"#{user_ranking}"
+                ranking_color = ranking_config.get("color", [255, 255, 255])
+                
+                try:
+                    font_ranking = ImageFont.truetype("PlayPretend.otf", ranking_config.get("font_size", 60))
+                except IOError:
+                    try:
+                        font_ranking = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", ranking_config.get("font_size", 60))
+                    except IOError:
+                        font_ranking = ImageFont.load_default()
+
+                draw.text((ranking_config.get("x", 50), ranking_config.get("y", 350)),
+                         ranking_text, font=font_ranking, fill=tuple(ranking_color))
 
             # Draw XP progress text
             xp_needed, current_xp_in_level = get_xp_for_next_level(user_data["xp"])
@@ -284,7 +351,7 @@ class LevelingSystem(commands.Cog):
             # Position XP text using config
             xp_text_x = config["xp_text_position"]["x"]
             xp_text_y = config["xp_text_position"]["y"]
-            xp_text_color = config.get("xp_text_color", [154, 154, 154]) # Default gray
+            xp_text_color = config.get("xp_text_color", [255, 255, 255]) # Default white
             draw.text((xp_text_x, xp_text_y), xp_text, font=font_xp, fill=tuple(xp_text_color))
 
 
@@ -316,9 +383,43 @@ class LevelingSystem(commands.Cog):
                     draw.text((config["username_position"]["x"], config["username_position"]["y"]),
                              username, font=font_username, fill=tuple(username_color))
 
+                    # Draw discriminator
+                    discriminator_config = config.get("discriminator_position", {})
+                    if discriminator_config:
+                        discriminator = f"#{user.discriminator}" if user.discriminator != "0" else f"#{user.id % 10000:04d}"
+                        discriminator_color = discriminator_config.get("color", [200, 200, 200])
+                        
+                        try:
+                            font_discriminator = ImageFont.truetype("PlayPretend.otf", discriminator_config.get("font_size", 50))
+                        except IOError:
+                            try:
+                                font_discriminator = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", discriminator_config.get("font_size", 50))
+                            except IOError:
+                                font_discriminator = ImageFont.load_default()
+
+                        draw.text((discriminator_config.get("x", 900), discriminator_config.get("y", 275)),
+                                 discriminator, font=font_discriminator, fill=tuple(discriminator_color))
+
                     # Draw level
                     draw.text((config["level_position"]["x"], config["level_position"]["y"]),
                              level_text, font=font_level, fill=tuple(level_color))
+
+                    # Draw ranking position
+                    ranking_config = config.get("ranking_position", {})
+                    if ranking_config:
+                        ranking_text = f"#{user_ranking}"
+                        ranking_color = ranking_config.get("color", [255, 255, 255])
+                        
+                        try:
+                            font_ranking = ImageFont.truetype("PlayPretend.otf", ranking_config.get("font_size", 60))
+                        except IOError:
+                            try:
+                                font_ranking = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", ranking_config.get("font_size", 60))
+                            except IOError:
+                                font_ranking = ImageFont.load_default()
+
+                        draw.text((ranking_config.get("x", 50), ranking_config.get("y", 350)),
+                                 ranking_text, font=font_ranking, fill=tuple(ranking_color))
 
                     # Draw XP progress text
                     draw.text((xp_text_x, xp_text_y), xp_text, font=font_xp, fill=tuple(xp_text_color))
