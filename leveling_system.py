@@ -109,6 +109,132 @@ class LevelingSystem(commands.Cog):
         
         return len(user_xp_list) + 1  # If not found, place at the end
 
+    def calculate_dynamic_positions(self, user, user_data, user_ranking, config, bg_width, bg_height):
+        """Calculate dynamic positions for all text elements based on content length"""
+        try:
+            # Get fonts for text measurement
+            try:
+                font_username = ImageFont.truetype("PlayPretend.otf", config["username_position"]["font_size"])
+                font_level = ImageFont.truetype("PlayPretend.otf", config["level_position"]["font_size"])
+                font_xp = ImageFont.truetype("PlayPretend.otf", config["xp_text_position"]["font_size"])
+                font_ranking = ImageFont.truetype("PlayPretend.otf", config.get("ranking_position", {}).get("font_size", 120))
+                font_discriminator = ImageFont.truetype("PlayPretend.otf", config.get("discriminator_position", {}).get("font_size", 50))
+            except IOError:
+                try:
+                    font_username = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", config["username_position"]["font_size"])
+                    font_level = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", config["level_position"]["font_size"])
+                    font_xp = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", config["xp_text_position"]["font_size"])
+                    font_ranking = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", config.get("ranking_position", {}).get("font_size", 120))
+                    font_discriminator = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", config.get("discriminator_position", {}).get("font_size", 50))
+                except IOError:
+                    font_username = ImageFont.load_default()
+                    font_level = ImageFont.load_default()
+                    font_xp = ImageFont.load_default()
+                    font_ranking = ImageFont.load_default()
+                    font_discriminator = ImageFont.load_default()
+
+            # Prepare text content
+            username = user.name
+            level_text = f"LEVEL {user_data['level']}"
+            ranking_text = f"#{user_ranking}"
+            discriminator = f"#{user.discriminator}" if user.discriminator != "0" else f"#{user.id % 10000:04d}"
+            
+            xp_needed, current_xp_in_level = get_xp_for_next_level(user_data["xp"])
+            xp_text = f"{current_xp_in_level}/{xp_needed} XP"
+
+            # Get text dimensions
+            level_bbox = font_level.getbbox(level_text)
+            level_width = level_bbox[2] - level_bbox[0]
+            
+            ranking_bbox = font_ranking.getbbox(ranking_text)
+            ranking_width = ranking_bbox[2] - ranking_bbox[0]
+            
+            xp_bbox = font_xp.getbbox(xp_text)
+            xp_width = xp_bbox[2] - xp_bbox[0]
+            
+            username_bbox = font_username.getbbox(username)
+            username_width = username_bbox[2] - username_bbox[0]
+            
+            discriminator_bbox = font_discriminator.getbbox(discriminator)
+            discriminator_width = discriminator_bbox[2] - discriminator_bbox[0]
+
+            # Define margins and spacing
+            margin = 50
+            min_spacing = 30
+            username_discriminator_spacing = 10
+            
+            # Calculate positions from right to left (XP has priority)
+            # XP text position (pushes from right)
+            xp_x = bg_width - margin - xp_width
+            xp_y = config["xp_text_position"]["y"]
+            
+            # Level text position (pushes from right, but gives way to XP)
+            level_x = min(config["level_position"]["x"], xp_x - level_width - min_spacing)
+            level_y = config["level_position"]["y"]
+            
+            # Ranking position (pushes from right, but gives way to level)
+            ranking_x = min(config.get("ranking_position", {}).get("x", 1350), level_x - ranking_width - min_spacing)
+            ranking_y = config.get("ranking_position", {}).get("y", 35)
+            
+            # Username and discriminator (push from left, but give way to XP)
+            available_space_for_username = xp_x - config["username_position"]["x"] - min_spacing - discriminator_width - username_discriminator_spacing
+            
+            # Adjust username font size if necessary
+            username_font_size = config["username_position"]["font_size"]
+            if username_width > available_space_for_username:
+                # Calculate new font size to fit
+                scale_factor = available_space_for_username / username_width
+                username_font_size = max(30, int(username_font_size * scale_factor))  # Minimum size of 30
+                
+                # Recalculate with new font size
+                try:
+                    font_username_adjusted = ImageFont.truetype("PlayPretend.otf", username_font_size)
+                except IOError:
+                    try:
+                        font_username_adjusted = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", username_font_size)
+                    except IOError:
+                        font_username_adjusted = ImageFont.load_default()
+                
+                username_bbox_adjusted = font_username_adjusted.getbbox(username)
+                username_width_adjusted = username_bbox_adjusted[2] - username_bbox_adjusted[0]
+                
+                # If still too wide, keep the adjusted size
+                if username_width_adjusted <= available_space_for_username:
+                    username_width = username_width_adjusted
+            
+            # Username position
+            username_x = config["username_position"]["x"]
+            username_y = config["username_position"]["y"]
+            
+            # If username had to be resized significantly, move it down slightly
+            if username_font_size < config["username_position"]["font_size"] * 0.8:
+                username_y += int((config["username_position"]["font_size"] - username_font_size) * 0.3)
+            
+            # Discriminator position (right after username)
+            discriminator_x = username_x + username_width + username_discriminator_spacing
+            discriminator_y = config.get("discriminator_position", {}).get("y", 295)
+
+            return {
+                "username": {"x": username_x, "y": username_y},
+                "discriminator": {"x": discriminator_x, "y": discriminator_y},
+                "level": {"x": level_x, "y": level_y},
+                "ranking": {"x": ranking_x, "y": ranking_y},
+                "xp_text": {"x": xp_x, "y": xp_y},
+                "fonts": {"username_size": username_font_size}
+            }
+            
+        except Exception as e:
+            print(f"Error calculating dynamic positions: {e}")
+            # Return default positions if calculation fails
+            return {
+                "username": {"x": config["username_position"]["x"], "y": config["username_position"]["y"]},
+                "discriminator": {"x": config.get("discriminator_position", {}).get("x", 1050), "y": config.get("discriminator_position", {}).get("y", 295)},
+                "level": {"x": config["level_position"]["x"], "y": config["level_position"]["y"]},
+                "ranking": {"x": config.get("ranking_position", {}).get("x", 1350), "y": config.get("ranking_position", {}).get("y", 35)},
+                "xp_text": {"x": config["xp_text_position"]["x"], "y": config["xp_text_position"]["y"]},
+                "fonts": {"username_size": config["username_position"]["font_size"]}
+            }
+
     async def create_level_card(self, user):
         """Create level card for user"""
         try:
@@ -274,16 +400,19 @@ class LevelingSystem(commands.Cog):
                 # Paste avatar
                 background.paste(avatar, (config["profile_position"]["x"], config["profile_position"]["y"]), avatar)
 
+            # Calculate dynamic positions based on content
+            positions = self.calculate_dynamic_positions(user, user_data, user_ranking, config, bg_width, bg_height)
+
             # Draw text
             draw = ImageDraw.Draw(background)
 
             try:
-                font_username = ImageFont.truetype("PlayPretend.otf", config["username_position"]["font_size"])
+                font_username = ImageFont.truetype("PlayPretend.otf", positions["fonts"]["username_size"])
                 font_level = ImageFont.truetype("PlayPretend.otf", config["level_position"]["font_size"])
             except IOError:
                 # Fallback vers les polices système si PlayPretend.otf n'est pas disponible
                 try:
-                    font_username = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", config["username_position"]["font_size"])
+                    font_username = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", positions["fonts"]["username_size"])
                     font_level = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", config["level_position"]["font_size"])
                 except IOError:
                     font_username = ImageFont.load_default()
@@ -292,7 +421,7 @@ class LevelingSystem(commands.Cog):
             # Draw username with configurable color
             username = user.name
             username_color = config.get("username_color", [255, 255, 255]) # Default white
-            draw.text((config["username_position"]["x"], config["username_position"]["y"]),
+            draw.text((positions["username"]["x"], positions["username"]["y"]),
                      username, font=font_username, fill=tuple(username_color))
 
             # Draw discriminator next to username
@@ -309,13 +438,13 @@ class LevelingSystem(commands.Cog):
                     except IOError:
                         font_discriminator = ImageFont.load_default()
 
-                draw.text((discriminator_config.get("x", 900), discriminator_config.get("y", 275)),
+                draw.text((positions["discriminator"]["x"], positions["discriminator"]["y"]),
                          discriminator, font=font_discriminator, fill=tuple(discriminator_color))
 
             # Draw level with configurable color
             level_text = f"LEVEL {user_data['level']}"
             level_color = config.get("level_color", [245, 55, 48]) # Default red
-            draw.text((config["level_position"]["x"], config["level_position"]["y"]),
+            draw.text((positions["level"]["x"], positions["level"]["y"]),
                      level_text, font=font_level, fill=tuple(level_color))
 
             # Draw ranking position
@@ -332,7 +461,7 @@ class LevelingSystem(commands.Cog):
                     except IOError:
                         font_ranking = ImageFont.load_default()
 
-                draw.text((ranking_config.get("x", 50), ranking_config.get("y", 350)),
+                draw.text((positions["ranking"]["x"], positions["ranking"]["y"]),
                          ranking_text, font=font_ranking, fill=tuple(ranking_color))
 
             # Draw XP progress text
@@ -348,11 +477,8 @@ class LevelingSystem(commands.Cog):
                 except IOError:
                     font_xp = ImageFont.load_default()
 
-            # Position XP text using config
-            xp_text_x = config["xp_text_position"]["x"]
-            xp_text_y = config["xp_text_position"]["y"]
-            xp_text_color = config.get("xp_text_color", [255, 255, 255]) # Default white
-            draw.text((xp_text_x, xp_text_y), xp_text, font=font_xp, fill=tuple(xp_text_color))
+            # Position XP text using dynamic positions
+            draw.text((positions["xp_text"]["x"], positions["xp_text"]["y"]), xp_text, font=font_xp, fill=tuple(config.get("xp_text_color", [255, 255, 255])))
 
 
             # If it's an animated GIF, process all frames
@@ -379,9 +505,18 @@ class LevelingSystem(commands.Cog):
                     # Add text to this frame
                     draw = ImageDraw.Draw(current_background)
 
+                    # Get adjusted font for username
+                    try:
+                        font_username_frame = ImageFont.truetype("PlayPretend.otf", positions["fonts"]["username_size"])
+                    except IOError:
+                        try:
+                            font_username_frame = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", positions["fonts"]["username_size"])
+                        except IOError:
+                            font_username_frame = ImageFont.load_default()
+
                     # Draw username
-                    draw.text((config["username_position"]["x"], config["username_position"]["y"]),
-                             username, font=font_username, fill=tuple(username_color))
+                    draw.text((positions["username"]["x"], positions["username"]["y"]),
+                             username, font=font_username_frame, fill=tuple(username_color))
 
                     # Draw discriminator
                     discriminator_config = config.get("discriminator_position", {})
@@ -397,11 +532,11 @@ class LevelingSystem(commands.Cog):
                             except IOError:
                                 font_discriminator = ImageFont.load_default()
 
-                        draw.text((discriminator_config.get("x", 900), discriminator_config.get("y", 275)),
+                        draw.text((positions["discriminator"]["x"], positions["discriminator"]["y"]),
                                  discriminator, font=font_discriminator, fill=tuple(discriminator_color))
 
                     # Draw level
-                    draw.text((config["level_position"]["x"], config["level_position"]["y"]),
+                    draw.text((positions["level"]["x"], positions["level"]["y"]),
                              level_text, font=font_level, fill=tuple(level_color))
 
                     # Draw ranking position
@@ -418,11 +553,13 @@ class LevelingSystem(commands.Cog):
                             except IOError:
                                 font_ranking = ImageFont.load_default()
 
-                        draw.text((ranking_config.get("x", 50), ranking_config.get("y", 350)),
+                        draw.text((positions["ranking"]["x"], positions["ranking"]["y"]),
                                  ranking_text, font=font_ranking, fill=tuple(ranking_color))
 
                     # Draw XP progress text
-                    draw.text((xp_text_x, xp_text_y), xp_text, font=font_xp, fill=tuple(xp_text_color))
+                    xp_needed, current_xp_in_level = get_xp_for_next_level(user_data["xp"])
+                    xp_text = f"{current_xp_in_level}/{xp_needed} XP"
+                    draw.text((positions["xp_text"]["x"], positions["xp_text"]["y"]), xp_text, font=font_xp, fill=tuple(config.get("xp_text_color", [255, 255, 255])))
 
                     final_frames.append(current_background)
 
