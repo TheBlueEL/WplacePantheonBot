@@ -22,7 +22,7 @@
       "y": 135,
       "enabled": true,
       "color_override": [
-        0,
+        255,
         255,
         255
       ]
@@ -31,7 +31,7 @@
       "welcome_text": {
         "x_offset": 50,
         "y_offset": 225,
-        "font_size": 65,
+        "font_size": 70,
         "font_path": "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
         "text": "WELCOME, TO THE SERVER"
       },
