@@ -53,7 +53,7 @@ class WelcomeSystem(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.config = load_welcome_data()["template_config"]
-        self.active_managers = {}  # Track active welcome system managers
+        self.active_managers = {}  # Track welcome system managers
 
     async def download_image(self, url):
         """Télécharge une image depuis une URL"""
@@ -808,13 +808,6 @@ class WelcomeSystemManagerView(discord.ui.View):
             )
             image_button.callback = self.background_image_settings
 
-            preview_button = discord.ui.Button(
-                label="Preview",
-                style=discord.ButtonStyle.success,
-                emoji="👁️"
-            )
-            preview_button.callback = self.preview_welcome_card
-
             back_button = discord.ui.Button(
                 label="Back",
                 style=discord.ButtonStyle.gray,
@@ -824,7 +817,6 @@ class WelcomeSystemManagerView(discord.ui.View):
 
             self.add_item(color_button)
             self.add_item(image_button)
-            self.add_item(preview_button)
             self.add_item(back_button)
 
         elif self.mode == "profile_outline_color":
@@ -904,13 +896,6 @@ class WelcomeSystemManagerView(discord.ui.View):
             )
             image_button.callback = self.profile_outline_image_settings
 
-            preview_button = discord.ui.Button(
-                label="Preview",
-                style=discord.ButtonStyle.success,
-                emoji="👁️"
-            )
-            preview_button.callback = self.preview_welcome_card
-
             back_button = discord.ui.Button(
                 label="Back",
                 style=discord.ButtonStyle.gray,
@@ -921,7 +906,6 @@ class WelcomeSystemManagerView(discord.ui.View):
             self.add_item(toggle_button)
             self.add_item(color_button)
             self.add_item(image_button)
-            self.add_item(preview_button)
             self.add_item(back_button)
 
         else:  # main mode
@@ -940,16 +924,8 @@ class WelcomeSystemManagerView(discord.ui.View):
             )
             profile_outline_button.callback = self.profile_outline_settings
 
-            preview_button = discord.ui.Button(
-                label="Preview",
-                style=discord.ButtonStyle.success,
-                emoji="👁️"
-            )
-            preview_button.callback = self.preview_welcome_card
-
             self.add_item(background_button)
             self.add_item(profile_outline_button)
-            self.add_item(preview_button)
 
     # Background callbacks
     async def background_settings(self, interaction: discord.Interaction):
