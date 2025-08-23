@@ -3221,28 +3221,4 @@ class CustomRewardDescriptionModal(discord.ui.Modal):
 async def setup(bot):
     await bot.add_cog(LevelingSystem(bot))
     print("LevelingSystem cog loaded successfully!")
-<line_number>3142</line_number>
-class CharacterLimitModal(discord.ui.Modal):
-    def __init__(self):
-        super().__init__(title="Set Character Limit")
-
-    limit = discord.ui.TextInput(
-        label="Character Limit",
-        placeholder="Maximum characters before cooldown...",
-        min_length=1,
-        max_length=5
-    )
-
-    async def on_submit(self, interaction: discord.Interaction):
-        try:
-            limit_value = int(self.limit.value)
-            if limit_value >= 0:
-                data = load_leveling_data()
-                data["leveling_settings"]["xp_settings"]["characters"]["character_limit"] = limit_value
-                save_leveling_data(data)
-                await interaction.response.send_message(f"<:SucessLOGO:1407071637840592977> Character limit set to {limit_value}!", ephemeral=True)
-            else:
-                await interaction.response.send_message("<:ErrorLOGO:1407071682031648850> Limit must be 0 or higher!", ephemeral=True)
-        except ValueError:
-            await interaction.response.send_message("<:ErrorLOGO:1407071682031648850> Please enter a valid number!", ephemeral=True)
 
