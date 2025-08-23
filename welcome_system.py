@@ -1792,19 +1792,13 @@ class WelcomeSystemManagerView(discord.ui.View):
 
     async def close_embed(self, interaction: discord.Interaction):
         """Close the welcome system embed"""
-        embed = discord.Embed(
-            title="<:SucessLOGO:1407071637840592977> Welcome System Closed",
-            description="The welcome system manager has been closed.",
-            color=discord.Color.green()
-        )
-        
-        # Clear view and disable all components
-        self.clear_items()
-        await interaction.response.edit_message(embed=embed, view=self)
-        
         # Remove from active managers
         if interaction.user.id in self.bot.get_cog('WelcomeSystem').active_managers:
             del self.bot.get_cog('WelcomeSystem').active_managers[interaction.user.id]
+        
+        # Delete the message entirely
+        await interaction.response.defer()
+        await interaction.delete_original_response()
 
 
 # Modal classes for color and URL inputs
