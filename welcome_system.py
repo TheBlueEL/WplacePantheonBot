@@ -636,6 +636,10 @@ class WelcomeSystemManagerView(discord.ui.View):
                 inline=False
             )
 
+        # Add preview image if available
+        if hasattr(self, 'preview_image_url') and self.preview_image_url:
+            embed.set_image(url=self.preview_image_url)
+
         bot_name = get_bot_name(self.bot)
         embed.set_footer(text=f"{bot_name} | Background Color", icon_url=self.bot.user.display_avatar.url)
 
@@ -663,6 +667,10 @@ class WelcomeSystemManagerView(discord.ui.View):
                 value="❌ No custom image",
                 inline=False
             )
+
+        # Add preview image if available
+        if hasattr(self, 'preview_image_url') and self.preview_image_url:
+            embed.set_image(url=self.preview_image_url)
 
         bot_name = get_bot_name(self.bot)
         embed.set_footer(text=f"{bot_name} | Background Image", icon_url=self.bot.user.display_avatar.url)
@@ -1030,6 +1038,10 @@ class WelcomeSystemManagerView(discord.ui.View):
     async def clear_background_image(self, interaction: discord.Interaction):
         self.config.pop("background_image", None)
         self.save_config()
+
+        # Generate new preview
+        await self.generate_preview_image(interaction.user)
+
         embed = self.get_background_image_embed()
         self.update_buttons()
         await interaction.response.edit_message(embed=embed, view=self)
@@ -1047,6 +1059,10 @@ class WelcomeSystemManagerView(discord.ui.View):
         current_state = self.config["profile_decoration"].get("enabled", True)
         self.config["profile_decoration"]["enabled"] = not current_state
         self.save_config()
+
+        # Generate new preview
+        await self.generate_preview_image(interaction.user)
+
         embed = self.get_profile_outline_embed()
         self.update_buttons()
         await interaction.response.edit_message(embed=embed, view=self)
