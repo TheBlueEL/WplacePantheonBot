@@ -15,8 +15,7 @@
       "url": "https://raw.githubusercontent.com/TheBlueEL/pictures/refs/heads/main/ProfileOutline.png",
       "x": 60,
       "y": 135,
-      "enabled": true,
-      "custom_image": "https://raw.githubusercontent.com/TheBlueEL/pictures/main/76ee22ff-3d5c-4d79-9fda-a51cbd696f4e_square.png"
+      "enabled": true
     },
     "text_config": {
       "welcome_text": {
