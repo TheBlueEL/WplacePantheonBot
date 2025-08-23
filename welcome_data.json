@@ -41,6 +41,10 @@
       ],
       "shadow_offset": 2
     },
-    "background_image": "https://raw.githubusercontent.com/TheBlueEL/pictures/main/7cef47cc-bc30-405f-8d86-ea4964de9a34.png"
+    "background_color": [
+      240,
+      240,
+      240
+    ]
   }
 }
