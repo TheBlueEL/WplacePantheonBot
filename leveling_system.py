@@ -94,13 +94,44 @@ class LevelingSystem(commands.Cog):
             user_data = data["user_data"].get(str(user.id), {"xp": 0, "level": 1})
             config = data["leveling_settings"]["level_card"]
             
-            # Download background
-            bg_data = await self.download_image(config["background_image"])
-            if not bg_data:
-                return None
+            # Create white background (2048x756)
+            background = Image.new("RGBA", (2048, 756), (255, 255, 255, 255))
+            
+            # Download and add level bar image
+            levelbar_data = await self.download_image(config["background_image"])
+            if levelbar_data:
+                levelbar = Image.open(io.BytesIO(levelbar_data)).convert("RGBA")
+                # Position level bar in bottom right with 30px margin
+                levelbar_x = 2048 - levelbar.width - 30
+                levelbar_y = 756 - levelbar.height - 30
+                background.paste(levelbar, (levelbar_x, levelbar_y), levelbar)
                 
-            background = Image.open(io.BytesIO(bg_data)).convert("RGBA")
-            background = background.resize((2048, 756), Image.Resampling.LANCZOS)
+                # Create XP progress bar overlay
+                xp_needed, current_xp_in_level = get_xp_for_next_level(user_data["xp"])
+                if xp_needed > 0:
+                    progress = current_xp_in_level / xp_needed
+                else:
+                    progress = 1.0
+                
+                # Create darker version of level bar for XP progress
+                xp_bar = levelbar.copy()
+                # Convert to darker color (darker gray)
+                xp_data = list(xp_bar.getdata())
+                new_xp_data = []
+                for pixel in xp_data:
+                    if len(pixel) == 4 and pixel[3] > 0:  # Si le pixel n'est pas transparent
+                        # Appliquer une couleur plus foncée (gris foncé)
+                        new_xp_data.append((100, 100, 100, pixel[3]))
+                    else:
+                        new_xp_data.append(pixel)
+                xp_bar.putdata(new_xp_data)
+                
+                # Crop XP bar to show only progress percentage
+                if progress > 0:
+                    crop_width = int(levelbar.width * progress)
+                    if crop_width > 0:
+                        xp_bar_cropped = xp_bar.crop((0, 0, crop_width, levelbar.height))
+                        background.paste(xp_bar_cropped, (levelbar_x, levelbar_y), xp_bar_cropped)
             
             # Download user avatar
             avatar_url = user.display_avatar.url
@@ -127,40 +158,17 @@ class LevelingSystem(commands.Cog):
                 font_username = ImageFont.load_default()
                 font_level = ImageFont.load_default()
             
-            # Draw username
+            # Draw username (en noir sur fond blanc)
             username = user.display_name
             draw.text((config["username_position"]["x"], config["username_position"]["y"]), 
-                     username, font=font_username, fill=(255, 255, 255))
+                     username, font=font_username, fill=(0, 0, 0))
             
-            # Draw level
+            # Draw level (en gris)
             level_text = f"LEVEL {user_data['level']}"
             username_bbox = draw.textbbox((0, 0), username, font=font_username)
             level_x = config["username_position"]["x"] + username_bbox[2] + 20
             draw.text((level_x, config["level_position"]["y"]), 
                      level_text, font=font_level, fill=(154, 154, 154))
-            
-            # Draw XP bar
-            xp_needed, current_xp_in_level = get_xp_for_next_level(user_data["xp"])
-            if xp_needed > 0:
-                progress = current_xp_in_level / xp_needed
-            else:
-                progress = 1.0
-            
-            bar_config = config["xp_bar_position"]
-            bar_width = int(bar_config["width"] * progress)
-            
-            # Draw XP bar background (darker)
-            draw.rectangle([
-                (bar_config["x"], bar_config["y"]),
-                (bar_config["x"] + bar_config["width"], bar_config["y"] + bar_config["height"])
-            ], fill=(60, 60, 60))
-            
-            # Draw XP bar progress
-            if bar_width > 0:
-                draw.rectangle([
-                    (bar_config["x"], bar_config["y"]),
-                    (bar_config["x"] + bar_width, bar_config["y"] + bar_config["height"])
-                ], fill=(154, 154, 154))
             
             # Convert to bytes
             output = io.BytesIO()
