@@ -887,29 +887,6 @@ class LevelSystemMainView(discord.ui.View):
         super().__init__(timeout=300)
         self.bot = bot
         self.user = user
-        
-        # Set initial button state based on current settings
-        data = load_leveling_data()
-        enabled = data["leveling_settings"]["enabled"]
-        
-        # Update the toggle button with correct initial state
-        self.clear_items()
-        self.add_item(discord.ui.Button(label="Reward Settings", style=discord.ButtonStyle.secondary, emoji="<:SettingLOGO:1407071854593839239>"))
-        self.add_item(discord.ui.Button(label="XP Settings", style=discord.ButtonStyle.secondary, emoji="<:SettingLOGO:1407071854593839239>"))
-        self.add_item(discord.ui.Button(label="Level Card", style=discord.ButtonStyle.secondary, emoji="🎴"))
-        
-        toggle_button = discord.ui.Button(
-            label="ON" if enabled else "OFF",
-            style=discord.ButtonStyle.success if enabled else discord.ButtonStyle.danger,
-            emoji="<:OnLOGO:1407072463883472978>" if enabled else "<:OffLOGO:1407072621836894380>"
-        )
-        toggle_button.callback = self.toggle_system
-        self.add_item(toggle_button)
-        
-        # Set callbacks for other buttons
-        self.children[0].callback = self.reward_settings
-        self.children[1].callback = self.xp_settings
-        self.children[2].callback = self.level_card
 
     def get_main_embed(self):
         data = load_leveling_data()
@@ -918,7 +895,7 @@ class LevelSystemMainView(discord.ui.View):
         embed = discord.Embed(
             title="📊 Level System Management",
             description=f"Welcome back {self.user.mention}!\n\nManage your server's leveling system below:",
-            color=0x5865f2
+            color=0xFFFFFF
         )
 
         status = "<:OnLOGO:1407072463883472978> Enabled" if settings["enabled"] else "<:OffLOGO:1407072621836894380> Disabled"
@@ -983,7 +960,7 @@ class RewardSettingsView(discord.ui.View):
         embed = discord.Embed(
             title="<:SettingLOGO:1407071854593839239> Reward Settings",
             description="Choose the type of rewards to configure:",
-            color=0x5865f2
+            color=0xFFFFFF
         )
         return embed
 
@@ -1018,7 +995,7 @@ class RoleRewardsView(discord.ui.View):
         embed = discord.Embed(
             title="<:ParticipantsLOGO:1407733929389199460> Role Rewards",
             description="Manage role rewards for leveling up:",
-            color=0x5865f2
+            color=0xFFFFFF
         )
 
         if role_rewards:
@@ -1068,7 +1045,7 @@ class AddRoleRewardView(discord.ui.View):
         embed = discord.Embed(
             title="➕ Add Role Reward",
             description="Select a role and level for the reward:",
-            color=0x5865f2
+            color=0xFFFFFF
         )
 
         if self.selected_role:
@@ -1160,7 +1137,7 @@ class EditRoleRewardView(discord.ui.View):
         embed = discord.Embed(
             title="✏️ Edit Role Reward",
             description="Select a role reward to edit:",
-            color=0x5865f2
+            color=0xFFFFFF
         )
         return embed
 
@@ -1277,7 +1254,7 @@ class CustomRewardsView(discord.ui.View):
         embed = discord.Embed(
             title="<:TotalLOGO:1408245313755545752> Custom Rewards",
             description="Custom reward system is currently in development.\nComing soon!",
-            color=0x5865f2
+            color=0xFFFFFF
         )
         return embed
 
@@ -1297,7 +1274,7 @@ class XPSettingsView(discord.ui.View):
         embed = discord.Embed(
             title="⚡ XP Settings",
             description="Configure how users gain experience:",
-            color=0x5865f2
+            color=0xFFFFFF
         )
         return embed
 
@@ -1354,7 +1331,7 @@ class MessageXPView(discord.ui.View):
         embed = discord.Embed(
             title="💬 Message XP Settings",
             description="Configure XP gain from messages:",
-            color=0x5865f2
+            color=0xFFFFFF
         )
 
         embed.add_field(name="XP per Message", value=str(msg_settings["xp_per_message"]), inline=True)
@@ -1485,7 +1462,7 @@ class CharacterXPView(discord.ui.View):
         embed = discord.Embed(
             title="📝 Character XP Settings",
             description="Configure XP gain from characters:",
-            color=0x5865f2
+            color=0xFFFFFF
         )
 
         embed.add_field(name="XP per Character", value=str(char_settings["xp_per_character"]), inline=True)
@@ -1619,7 +1596,7 @@ class LevelCardManagerView(discord.ui.View):
         embed = discord.Embed(
             title="🎴 Level Card Manager",
             description="Configure your level card design and settings",
-            color=0x5865F2
+            color=0xFFFFFF
         )
 
         # Show current configuration status
