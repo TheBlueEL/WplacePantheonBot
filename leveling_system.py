@@ -976,7 +976,7 @@ class RewardSettingsView(discord.ui.View):
         embed = view.get_embed()
         await interaction.response.edit_message(embed=embed, view=view)
 
-    @discord.ui.button(label="Back", style=discord.ButtonStyle.danger, emoji="<:BackLOGO:1407071474233114766>")
+    @discord.ui.button(label="Back", style=discord.ButtonStyle.gray, emoji="<:BackLOGO:1407071474233114766>")
     async def back(self, interaction: discord.Interaction, button: discord.ui.Button):
         view = LevelSystemMainView(self.bot, self.user)
         embed = view.get_main_embed()
@@ -1027,7 +1027,7 @@ class RoleRewardsView(discord.ui.View):
         embed = view.get_embed()
         await interaction.response.edit_message(embed=embed, view=view)
 
-    @discord.ui.button(label="Back", style=discord.ButtonStyle.danger, emoji="<:BackLOGO:1407071474233114766>")
+    @discord.ui.button(label="Back", style=discord.ButtonStyle.gray, emoji="<:BackLOGO:1407071474233114766>")
     async def back(self, interaction: discord.Interaction, button: discord.ui.Button):
         view = RewardSettingsView(self.bot, self.user)
         embed = view.get_embed()
@@ -1095,7 +1095,7 @@ class AddRoleRewardView(discord.ui.View):
         view = RoleRewardsView(self.bot, self.user)
         await interaction.response.edit_message(embed=embed, view=view)
 
-    @discord.ui.button(label="Back", style=discord.ButtonStyle.danger, emoji="<:BackLOGO:1407071474233114766>")
+    @discord.ui.button(label="Back", style=discord.ButtonStyle.gray, emoji="<:BackLOGO:1407071474233114766>")
     async def back(self, interaction: discord.Interaction, button: discord.ui.Button):
         view = RoleRewardsView(self.bot, self.user)
         embed = view.get_embed()
@@ -1141,7 +1141,7 @@ class EditRoleRewardView(discord.ui.View):
         )
         return embed
 
-    @discord.ui.button(label="Back", style=discord.ButtonStyle.danger, emoji="<:BackLOGO:1407071474233114766>")
+    @discord.ui.button(label="Back", style=discord.ButtonStyle.gray, emoji="<:BackLOGO:1407071474233114766>")
     async def back(self, interaction: discord.Interaction, button: discord.ui.Button):
         view = RoleRewardsView(self.bot, self.user)
         embed = view.get_embed()
@@ -1187,7 +1187,7 @@ class RemoveRoleRewardView(discord.ui.View):
         )
         return embed
 
-    @discord.ui.button(label="Back", style=discord.ButtonStyle.danger, emoji="<:BackLOGO:1407071474233114766>")
+    @discord.ui.button(label="Back", style=discord.ButtonStyle.gray, emoji="<:BackLOGO:1407071474233114766>")
     async def back(self, interaction: discord.Interaction, button: discord.ui.Button):
         view = RoleRewardsView(self.bot, self.user)
         embed = view.get_embed()
@@ -1258,7 +1258,7 @@ class CustomRewardsView(discord.ui.View):
         )
         return embed
 
-    @discord.ui.button(label="Back", style=discord.ButtonStyle.danger, emoji="<:BackLOGO:1407071474233114766>")
+    @discord.ui.button(label="Back", style=discord.ButtonStyle.gray, emoji="<:BackLOGO:1407071474233114766>")
     async def back(self, interaction: discord.Interaction, button: discord.ui.Button):
         view = RewardSettingsView(self.bot, self.user)
         embed = view.get_embed()
@@ -1290,7 +1290,7 @@ class XPSettingsView(discord.ui.View):
         embed = view.get_embed()
         await interaction.response.edit_message(embed=embed, view=view)
 
-    @discord.ui.button(label="Back", style=discord.ButtonStyle.danger, emoji="<:BackLOGO:1407071474233114766>")
+    @discord.ui.button(label="Back", style=discord.ButtonStyle.gray, emoji="<:BackLOGO:1407071474233114766>")
     async def back(self, interaction: discord.Interaction, button: discord.ui.Button):
         view = LevelSystemMainView(self.bot, self.user)
         embed = view.get_main_embed()
@@ -1300,15 +1300,15 @@ class MessageXPView(discord.ui.View):
     def __init__(self, user):
         super().__init__(timeout=300)
         self.user = user
-        
+
         # Set initial button state based on current settings
         data = load_leveling_data()
         enabled = data["leveling_settings"]["xp_settings"]["messages"]["enabled"]
-        
+
         # Add buttons with correct initial states
         self.add_item(discord.ui.Button(label="XP", style=discord.ButtonStyle.secondary, emoji="⚡"))
         self.add_item(discord.ui.Button(label="Cooldown", style=discord.ButtonStyle.secondary, emoji="⏰"))
-        
+
         toggle_button = discord.ui.Button(
             label="ON" if enabled else "OFF",
             style=discord.ButtonStyle.success if enabled else discord.ButtonStyle.danger,
@@ -1316,9 +1316,9 @@ class MessageXPView(discord.ui.View):
         )
         toggle_button.callback = self.toggle
         self.add_item(toggle_button)
-        
-        self.add_item(discord.ui.Button(label="Back", style=discord.ButtonStyle.danger, emoji="<:BackLOGO:1407071474233114766>"))
-        
+
+        self.add_item(discord.ui.Button(label="Back", style=discord.ButtonStyle.gray, emoji="<:BackLOGO:1407071474233114766>"))
+
         # Set callbacks for other buttons
         self.children[0].callback = self.set_xp
         self.children[1].callback = self.set_cooldown
@@ -1373,9 +1373,11 @@ class MessageXPView(discord.ui.View):
         embed = self.get_embed()
         await interaction.response.edit_message(embed=embed, view=self)
 
-    @discord.ui.button(label="Back", style=discord.ButtonStyle.danger, emoji="<:BackLOGO:1407071474233114766>")
-    async def back(self, interaction: discord.Interaction, button: discord.ui.Button):
-        view = XPSettingsView(self.bot, self.user)
+    @discord.ui.button(label="Back", style=discord.ButtonStyle.gray, emoji="<:BackLOGO:1407071474233114766>")
+    async def back(self, interaction: discord.Interaction):
+        from leveling_system import LevelingSystem
+        bot = interaction.client
+        view = XPSettingsView(bot, self.user)
         embed = view.get_embed()
         await interaction.response.edit_message(embed=embed, view=view)
 
@@ -1431,15 +1433,15 @@ class CharacterXPView(discord.ui.View):
     def __init__(self, user):
         super().__init__(timeout=300)
         self.user = user
-        
+
         # Set initial button state based on current settings
         data = load_leveling_data()
         enabled = data["leveling_settings"]["xp_settings"]["characters"]["enabled"]
-        
+
         # Add buttons with correct initial states
         self.add_item(discord.ui.Button(label="XP", style=discord.ButtonStyle.secondary, emoji="⚡"))
         self.add_item(discord.ui.Button(label="Cooldown", style=discord.ButtonStyle.secondary, emoji="⏰"))
-        
+
         toggle_button = discord.ui.Button(
             label="ON" if enabled else "OFF",
             style=discord.ButtonStyle.success if enabled else discord.ButtonStyle.danger,
@@ -1447,9 +1449,9 @@ class CharacterXPView(discord.ui.View):
         )
         toggle_button.callback = self.toggle
         self.add_item(toggle_button)
-        
-        self.add_item(discord.ui.Button(label="Back", style=discord.ButtonStyle.danger, emoji="<:BackLOGO:1407071474233114766>"))
-        
+
+        self.add_item(discord.ui.Button(label="Back", style=discord.ButtonStyle.gray, emoji="<:BackLOGO:1407071474233114766>"))
+
         # Set callbacks for other buttons
         self.children[0].callback = self.set_xp
         self.children[1].callback = self.set_cooldown
@@ -1505,9 +1507,11 @@ class CharacterXPView(discord.ui.View):
         embed = self.get_embed()
         await interaction.response.edit_message(embed=embed, view=self)
 
-    @discord.ui.button(label="Back", style=discord.ButtonStyle.danger, emoji="<:BackLOGO:1407071474233114766>")
-    async def back(self, interaction: discord.Interaction, button: discord.ui.Button):
-        view = XPSettingsView(self.bot, self.user)
+    @discord.ui.button(label="Back", style=discord.ButtonStyle.gray, emoji="<:BackLOGO:1407071474233114766>")
+    async def back(self, interaction: discord.Interaction):
+        from leveling_system import LevelingSystem
+        bot = interaction.client
+        view = XPSettingsView(bot, self.user)
         embed = view.get_embed()
         await interaction.response.edit_message(embed=embed, view=view)
 
@@ -1571,7 +1575,7 @@ class CharacterCooldownModal(discord.ui.Modal):
 
 class BackToMainButton(discord.ui.Button):
     def __init__(self, bot, user):
-        super().__init__(label="Back", style=discord.ButtonStyle.danger, emoji="<:BackLOGO:1407071474233114766>")
+        super().__init__(label="Back", style=discord.ButtonStyle.gray, emoji="<:BackLOGO:1407071474233114766>")
         self.bot = bot
         self.user = user
 
@@ -2115,7 +2119,7 @@ class LevelCardManagerView(discord.ui.View):
 
             back_button = discord.ui.Button(
                 label="Back",
-                style=discord.ButtonStyle.danger,
+                style=discord.ButtonStyle.gray,
                 emoji="<:BackLOGO:1407071474233114766>",
                 row=1
             )
