@@ -7,6 +7,8 @@ import io
 from PIL import Image, ImageDraw, ImageFont
 import time
 import math
+import uuid
+import os
 
 # Data management functions
 def load_leveling_data():
@@ -32,7 +34,12 @@ def load_leveling_data():
                     "level_color": [245, 55, 48], # Default level color (red)
                     "xp_bar_color": [245, 55, 48], # Default XP bar color (red)
                     "background_color": [245, 55, 48], # Default background color (red)
-                    "xp_text_color": [154, 154, 154] # Default XP text color (gray)
+                    "xp_text_color": [154, 154, 154], # Default XP text color (gray)
+                    "profile_outline": {
+                        "enabled": True,
+                        "url": "https://raw.githubusercontent.com/TheBlueEL/pictures/refs/heads/main/ProfileOutline.png",
+                        "color": [255, 255, 255]
+                    }
                 }
             },
             "user_data": {}
@@ -409,6 +416,28 @@ class LevelingSystem(commands.Cog):
                 # Paste avatar
                 background.paste(avatar, (config["profile_position"]["x"], config["profile_position"]["y"]), avatar)
 
+                # Add profile outline if enabled
+                profile_outline_config = config.get("profile_outline", {})
+                if profile_outline_config.get("enabled", True):
+                    outline_url = profile_outline_config.get("url")
+                    if outline_url:
+                        outline_data = await self.download_image(outline_url)
+                        if outline_data:
+                            outline = Image.open(io.BytesIO(outline_data)).convert("RGBA")
+                            
+                            # Apply color override if specified
+                            if profile_outline_config.get("color_override"):
+                                color_override = profile_outline_config["color_override"]
+                                colored_outline = Image.new("RGBA", outline.size, tuple(color_override + [255]))
+                                colored_outline.putalpha(outline.split()[-1])
+                                outline = colored_outline
+                            
+                            # Resize outline to match avatar size
+                            outline = outline.resize((size, size), Image.Resampling.LANCZOS)
+                            
+                            # Paste outline over avatar
+                            background.paste(outline, (config["profile_position"]["x"], config["profile_position"]["y"]), outline)
+
             # Calculate dynamic positions based on content
             positions = self.calculate_dynamic_positions(user, user_data, user_ranking, config, bg_width, bg_height)
 
@@ -608,10 +637,99 @@ class LevelingSystem(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message):
-        """Handle XP gain from messages"""
+        """Handle XP gain from messages and image uploads for level card manager"""
         if message.author.bot:
             return
 
+        # Check for level card manager image uploads
+        user_id = message.author.id
+        # Check if user has an active level card manager
+        for view in self.bot._connection._view_store._synced_message_views.values():
+            if (hasattr(view, 'user_id') and view.user_id == user_id and 
+                hasattr(view, 'waiting_for_image') and view.waiting_for_image and 
+                isinstance(view, LevelCardManagerView) and message.attachments):
+                
+                # Check if the attachment is an image
+                attachment = message.attachments[0]
+                allowed_extensions = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.svg']
+                if any(attachment.filename.lower().endswith(ext) for ext in allowed_extensions):
+                    # Download the image
+                    local_file = await self.download_image_to_github(attachment.url)
+
+                    if local_file:
+                        try:
+                            await message.delete()
+                        except:
+                            pass
+
+                        # Process the image based on type
+                        if view.current_image_type == "xp_bar":
+                            view.config["level_bar_image"] = local_file
+                        elif view.current_image_type == "background":
+                            view.config["background_image"] = local_file
+                            view.config.pop("background_color", None)
+                        elif view.current_image_type == "profile_outline":
+                            if "profile_outline" not in view.config:
+                                view.config["profile_outline"] = {}
+                            view.config["profile_outline"]["custom_image"] = local_file
+                            view.config["profile_outline"].pop("color_override", None)
+
+                        view.save_config()
+                        view.waiting_for_image = False
+
+                        # Generate new preview
+                        await view.generate_preview_image(message.author)
+
+                        # Update the manager view
+                        if view.current_image_type == "xp_bar":
+                            view.mode = "xp_bar_image"
+                            embed = view.get_xp_bar_embed()
+                            embed.title = "🖼️ XP Bar Image"
+                            embed.description = "Set a custom XP bar image"
+                        elif view.current_image_type == "background":
+                            view.mode = "background_image"
+                            embed = view.get_background_embed()
+                            embed.title = "🖼️ Background Image"
+                            embed.description = "Set a custom background image"
+                        elif view.current_image_type == "profile_outline":
+                            view.mode = "profile_outline_image"
+                            embed = view.get_profile_outline_embed()
+                            embed.title = "🖼️ Profile Outline Image"
+                            embed.description = "Set a custom profile outline image"
+
+                        view.update_buttons()
+
+                        # Find and update the original message
+                        try:
+                            channel = message.channel
+                            async for msg in channel.history(limit=50):
+                                if msg.author == self.bot.user and msg.embeds:
+                                    if "Upload Image" in msg.embeds[0].title:
+                                        await msg.edit(embed=embed, view=view)
+                                        break
+                        except Exception as e:
+                            print(f"Error updating message: {e}")
+                else:
+                    # File is not a valid image format
+                    try:
+                        await message.delete()
+                    except:
+                        pass
+
+                    error_embed = discord.Embed(
+                        title="❌ Invalid File Type",
+                        description="Please upload only image files with these extensions:\n`.png`, `.jpg`, `.jpeg`, `.gif`, `.webp`, `.bmp`, `.svg`",
+                        color=discord.Color.red()
+                    )
+
+                    try:
+                        channel = message.channel
+                        await channel.send(embed=error_embed, delete_after=5)
+                    except:
+                        pass
+                return
+
+        # Regular XP processing
         data = load_leveling_data()
         if not data["leveling_settings"]["enabled"]:
             return
@@ -663,6 +781,62 @@ class LevelingSystem(commands.Cog):
             # Check for role rewards
             if new_level > old_level:
                 await self.check_level_rewards(message.author, new_level)
+
+    async def download_image_to_github(self, image_url):
+        """Download image and upload to GitHub, similar to welcome system"""
+        try:
+            # Create images directory if it doesn't exist
+            os.makedirs('images', exist_ok=True)
+
+            # Generate unique filename
+            filename = f"{uuid.uuid4()}.png"
+            file_path = os.path.join('images', filename)
+
+            # Download the image
+            async with aiohttp.ClientSession() as session:
+                async with session.get(image_url) as response:
+                    if response.status == 200:
+                        image_data = await response.read()
+                        with open(file_path, 'wb') as f:
+                            f.write(image_data)
+
+                        # Determine correct extension
+                        img_format = Image.open(io.BytesIO(image_data)).format
+                        if img_format == 'GIF':
+                            filename = f"{uuid.uuid4()}.gif"
+                            file_path = os.path.join('images', filename)
+                            with open(file_path, 'wb') as f:
+                                f.write(image_data)
+                        elif img_format in ['JPEG', 'PNG', 'WEBP', 'BMP', 'SVG']:
+                             filename = f"{uuid.uuid4()}.{img_format.lower()}"
+                             file_path = os.path.join('images', filename)
+                             with open(file_path, 'wb') as f:
+                                f.write(image_data)
+
+                        # Synchronize with GitHub
+                        try:
+                            from github_sync import GitHubSync
+                            github_sync = GitHubSync()
+                            sync_success = await github_sync.sync_image_to_pictures_repo(file_path)
+
+                            if sync_success:
+                                # Delete local file after successful sync
+                                try:
+                                    os.remove(file_path)
+                                except:
+                                    pass
+
+                                # Return GitHub raw URL
+                                filename = os.path.basename(file_path)
+                                github_url = f"https://raw.githubusercontent.com/TheBlueEL/pictures/main/{filename}"
+                                return github_url
+                        except ImportError:
+                            print("GitHub sync not available")
+
+            return None
+        except Exception as e:
+            print(f"Error downloading image: {e}")
+            return None
 
     async def check_level_rewards(self, user, level):
         """Check and assign level rewards"""
@@ -742,14 +916,18 @@ class LevelSystemMainView(discord.ui.View):
 
     @discord.ui.button(label="Level Card", style=discord.ButtonStyle.secondary, emoji="🎴")
     async def level_card(self, interaction: discord.Interaction, button: discord.ui.Button):
-        embed = discord.Embed(
-            title="🎴 Level Card Settings",
-            description="Level card customization is currently view-only.\nMore customization options coming soon!",
-            color=0x5865f2
-        )
-        view = discord.ui.View()
-        view.add_item(BackToMainButton(self.user))
-        await interaction.response.edit_message(embed=embed, view=view)
+        await interaction.response.defer()
+
+        view = LevelCardManagerView(self.bot, interaction.user.id)
+        view.guild = interaction.guild
+
+        # Generate preview image
+        await view.generate_preview_image(interaction.user)
+
+        embed = view.get_main_embed()
+        view.update_buttons()
+
+        await interaction.edit_original_response(embed=embed, view=view)
 
     @discord.ui.button(label="ON/OFF", style=discord.ButtonStyle.success, emoji="🔄")
     async def toggle_system(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -1309,6 +1487,1070 @@ class BackToMainButton(discord.ui.Button):
         view = LevelSystemMainView(self.user)
         embed = view.get_main_embed()
         await interaction.response.edit_message(embed=embed, view=view)
+
+# Level Card Management System
+class LevelCardManagerView(discord.ui.View):
+    def __init__(self, bot, user_id):
+        super().__init__(timeout=300)
+        self.bot = bot
+        self.user_id = user_id
+        self.config = load_leveling_data()["leveling_settings"]["level_card"]
+        self.mode = "main"
+        self.waiting_for_image = False
+        self.current_image_type = None
+        self.preview_image_url = None
+
+    def get_main_embed(self):
+        embed = discord.Embed(
+            title="🎴 Level Card Manager",
+            description="Configure your level card design and settings",
+            color=0x5865F2
+        )
+
+        # Show current configuration status
+        config_status = ""
+        if self.config.get("background_image"):
+            config_status += "🖼️ Background: Custom Image\n"
+        elif self.config.get("background_color"):
+            bg = self.config["background_color"]
+            config_status += f"🎨 Background: RGB({bg[0]}, {bg[1]}, {bg[2]})\n"
+        else:
+            config_status += "⚪ Background: Default\n"
+
+        if self.config.get("profile_outline", {}).get("enabled", True):
+            config_status += "🖼️ Profile Outline: ✅ Enabled\n"
+        else:
+            config_status += "🖼️ Profile Outline: ❌ Disabled\n"
+
+        embed.add_field(
+            name="Current Configuration",
+            value=config_status,
+            inline=False
+        )
+
+        # Add preview image if available
+        if hasattr(self, 'preview_image_url') and self.preview_image_url:
+            import time
+            timestamp = int(time.time())
+            if '?' in self.preview_image_url:
+                image_url = self.preview_image_url.split('?')[0] + f"?refresh={timestamp}"
+            else:
+                image_url = self.preview_image_url + f"?refresh={timestamp}"
+            embed.set_image(url=image_url)
+
+        embed.set_footer(text="Level Card Manager", icon_url=self.bot.user.display_avatar.url)
+        return embed
+
+    def get_leveling_bar_embed(self):
+        embed = discord.Embed(
+            title="📊 Leveling Bar Settings",
+            description="Configure the XP bar and related elements",
+            color=discord.Color.blue()
+        )
+
+        # Add preview image if available
+        if hasattr(self, 'preview_image_url') and self.preview_image_url:
+            embed.set_image(url=self.preview_image_url)
+
+        embed.set_footer(text="Leveling Bar Settings", icon_url=self.bot.user.display_avatar.url)
+        return embed
+
+    def get_xp_info_embed(self):
+        embed = discord.Embed(
+            title="ℹ️ XP Info Settings",
+            description="Configure the XP text display (X/Y XP)",
+            color=discord.Color.purple()
+        )
+
+        xp_color = self.config.get("xp_text_color", [255, 255, 255])
+        embed.add_field(
+            name="Current XP Text Color",
+            value=f"RGB({xp_color[0]}, {xp_color[1]}, {xp_color[2]})",
+            inline=False
+        )
+
+        if hasattr(self, 'preview_image_url') and self.preview_image_url:
+            embed.set_image(url=self.preview_image_url)
+
+        embed.set_footer(text="XP Info Settings", icon_url=self.bot.user.display_avatar.url)
+        return embed
+
+    def get_xp_bar_embed(self):
+        embed = discord.Embed(
+            title="📊 XP Bar Settings",
+            description="Configure the static XP bar background",
+            color=discord.Color.green()
+        )
+
+        if self.config.get("level_bar_image"):
+            embed.add_field(
+                name="Current XP Bar",
+                value="✅ Custom Image",
+                inline=False
+            )
+        else:
+            embed.add_field(
+                name="Current XP Bar",
+                value="❌ No Custom Image",
+                inline=False
+            )
+
+        if hasattr(self, 'preview_image_url') and self.preview_image_url:
+            embed.set_image(url=self.preview_image_url)
+
+        embed.set_footer(text="XP Bar Settings", icon_url=self.bot.user.display_avatar.url)
+        return embed
+
+    def get_xp_progress_embed(self):
+        embed = discord.Embed(
+            title="⚡ XP Progress Settings",
+            description="Configure the moving XP progress bar",
+            color=discord.Color.orange()
+        )
+
+        xp_bar_color = self.config.get("xp_bar_color", [245, 55, 48])
+        embed.add_field(
+            name="Current Progress Color",
+            value=f"RGB({xp_bar_color[0]}, {xp_bar_color[1]}, {xp_bar_color[2]})",
+            inline=False
+        )
+
+        if hasattr(self, 'preview_image_url') and self.preview_image_url:
+            embed.set_image(url=self.preview_image_url)
+
+        embed.set_footer(text="XP Progress Settings", icon_url=self.bot.user.display_avatar.url)
+        return embed
+
+    def get_background_embed(self):
+        embed = discord.Embed(
+            title="🖼️ Background Settings",
+            description="Configure the background of your level card",
+            color=discord.Color.blue()
+        )
+
+        if self.config.get("background_color"):
+            bg = self.config["background_color"]
+            embed.add_field(
+                name="Current Background",
+                value=f"Color: RGB({bg[0]}, {bg[1]}, {bg[2]})",
+                inline=False
+            )
+        elif self.config.get("background_image"):
+            embed.add_field(
+                name="Current Background",
+                value="Custom Image",
+                inline=False
+            )
+        else:
+            embed.add_field(
+                name="Current Background",
+                value="Default",
+                inline=False
+            )
+
+        if hasattr(self, 'preview_image_url') and self.preview_image_url:
+            embed.set_image(url=self.preview_image_url)
+
+        embed.set_footer(text="Background Settings", icon_url=self.bot.user.display_avatar.url)
+        return embed
+
+    def get_username_embed(self):
+        embed = discord.Embed(
+            title="👤 Username Settings",
+            description="Configure username and discriminator display",
+            color=discord.Color.purple()
+        )
+
+        username_color = self.config.get("username_color", [255, 255, 255])
+        embed.add_field(
+            name="Current Username Color",
+            value=f"RGB({username_color[0]}, {username_color[1]}, {username_color[2]})",
+            inline=False
+        )
+
+        if hasattr(self, 'preview_image_url') and self.preview_image_url:
+            embed.set_image(url=self.preview_image_url)
+
+        embed.set_footer(text="Username Settings", icon_url=self.bot.user.display_avatar.url)
+        return embed
+
+    def get_profile_outline_embed(self):
+        embed = discord.Embed(
+            title="🖼️ Profile Outline Settings",
+            description="Configure the profile picture outline",
+            color=discord.Color.orange()
+        )
+
+        profile_config = self.config.get("profile_outline", {})
+        enabled = profile_config.get("enabled", True)
+
+        status = "✅ Enabled" if enabled else "❌ Disabled"
+        embed.add_field(
+            name="Current Status",
+            value=status,
+            inline=False
+        )
+
+        if profile_config.get("color_override"):
+            color = profile_config["color_override"]
+            embed.add_field(
+                name="Color Override",
+                value=f"RGB({color[0]}, {color[1]}, {color[2]})",
+                inline=False
+            )
+        elif profile_config.get("custom_image"):
+            embed.add_field(
+                name="Custom Image",
+                value="✅ Custom outline image set",
+                inline=False
+            )
+        else:
+            embed.add_field(
+                name="Style",
+                value="Default outline",
+                inline=False
+            )
+
+        if hasattr(self, 'preview_image_url') and self.preview_image_url:
+            embed.set_image(url=self.preview_image_url)
+
+        embed.set_footer(text="Profile Outline Settings", icon_url=self.bot.user.display_avatar.url)
+        return embed
+
+    def get_waiting_image_embed(self):
+        embed = discord.Embed(
+            title="📤 Upload Image",
+            description="Please send an image file in this channel.\n\n**Only you can upload the image for security reasons.**",
+            color=discord.Color.blue()
+        )
+
+        embed.set_footer(text="Upload Image", icon_url=self.bot.user.display_avatar.url)
+        return embed
+
+    def save_config(self):
+        """Save the current configuration to JSON file"""
+        data = load_leveling_data()
+        data["leveling_settings"]["level_card"] = self.config
+        save_leveling_data(data)
+
+    async def generate_preview_image(self, interaction_user):
+        """Generate preview image and upload it to GitHub"""
+        try:
+            leveling_system = self.bot.get_cog('LevelingSystem')
+            if not leveling_system:
+                return False
+
+            preview_image = await leveling_system.create_level_card(interaction_user)
+
+            if preview_image:
+                # Save preview to temp file
+                os.makedirs('images', exist_ok=True)
+                import time
+                timestamp = int(time.time())
+
+                # Determine extension based on content
+                preview_image.seek(0)
+                file_header = preview_image.read(10)
+                preview_image.seek(0)
+
+                if file_header.startswith(b'GIF'):
+                    filename = f"level_preview_{self.user_id}_{timestamp}.gif"
+                else:
+                    filename = f"level_preview_{self.user_id}_{timestamp}.png"
+
+                file_path = os.path.join('images', filename)
+
+                with open(file_path, 'wb') as f:
+                    f.write(preview_image.getvalue())
+
+                # Upload to GitHub
+                try:
+                    from github_sync import GitHubSync
+                    github_sync = GitHubSync()
+                    sync_success = await github_sync.sync_image_to_pictures_repo(file_path)
+
+                    if sync_success:
+                        # Delete local file after successful sync
+                        try:
+                            os.remove(file_path)
+                        except:
+                            pass
+
+                        # Set GitHub raw URL
+                        filename = os.path.basename(file_path)
+                        self.preview_image_url = f"https://raw.githubusercontent.com/TheBlueEL/pictures/main/{filename}?t={timestamp}"
+                        return True
+                except ImportError:
+                    print("GitHub sync not available")
+
+        except Exception as e:
+            print(f"Error generating preview: {e}")
+
+        return False
+
+    def update_buttons(self):
+        self.clear_items()
+
+        if self.waiting_for_image:
+            back_button = discord.ui.Button(
+                label="Back",
+                style=discord.ButtonStyle.gray,
+                emoji="⬅️"
+            )
+            back_button.callback = self.back_from_image_upload
+            self.add_item(back_button)
+
+        elif self.mode == "leveling_bar":
+            # Leveling Bar main buttons
+            xp_info_button = discord.ui.Button(
+                label="XP Info",
+                style=discord.ButtonStyle.primary,
+                emoji="ℹ️"
+            )
+            xp_info_button.callback = self.xp_info_settings
+
+            xp_bar_button = discord.ui.Button(
+                label="XP Bar",
+                style=discord.ButtonStyle.secondary,
+                emoji="📊"
+            )
+            xp_bar_button.callback = self.xp_bar_settings
+
+            xp_progress_button = discord.ui.Button(
+                label="XP Progress",
+                style=discord.ButtonStyle.secondary,
+                emoji="⚡"
+            )
+            xp_progress_button.callback = self.xp_progress_settings
+
+            back_button = discord.ui.Button(
+                label="Back",
+                style=discord.ButtonStyle.gray,
+                emoji="⬅️"
+            )
+            back_button.callback = self.back_to_main
+
+            self.add_item(xp_info_button)
+            self.add_item(xp_bar_button)
+            self.add_item(xp_progress_button)
+            self.add_item(back_button)
+
+        elif self.mode in ["xp_info_color", "xp_progress_color", "background_color", "username_color", "profile_outline_color"]:
+            # Color selection buttons
+            hex_button = discord.ui.Button(
+                label="Hex Code",
+                style=discord.ButtonStyle.primary,
+                emoji="#️⃣"
+            )
+            hex_button.callback = self.hex_color
+
+            rgb_button = discord.ui.Button(
+                label="RGB Code",
+                style=discord.ButtonStyle.secondary,
+                emoji="🌈"
+            )
+            rgb_button.callback = self.rgb_color
+
+            reset_button = discord.ui.Button(
+                label="Reset",
+                style=discord.ButtonStyle.danger,
+                emoji="🔄"
+            )
+            reset_button.callback = self.reset_color
+
+            back_button = discord.ui.Button(
+                label="Back",
+                style=discord.ButtonStyle.gray,
+                emoji="⬅️"
+            )
+            back_button.callback = self.back_to_parent
+
+            self.add_item(hex_button)
+            self.add_item(rgb_button)
+            self.add_item(reset_button)
+            self.add_item(back_button)
+
+        elif self.mode in ["xp_bar_image", "background_image", "profile_outline_image"]:
+            # Image selection buttons
+            url_button = discord.ui.Button(
+                label="Set URL",
+                style=discord.ButtonStyle.primary,
+                emoji="🔗"
+            )
+            url_button.callback = self.image_url
+
+            upload_button = discord.ui.Button(
+                label="Upload Image",
+                style=discord.ButtonStyle.secondary,
+                emoji="📤"
+            )
+            upload_button.callback = self.upload_image
+
+            clear_button = discord.ui.Button(
+                label="Clear Image",
+                style=discord.ButtonStyle.danger,
+                emoji="🗑️"
+            )
+            clear_button.callback = self.clear_image
+
+            back_button = discord.ui.Button(
+                label="Back",
+                style=discord.ButtonStyle.gray,
+                emoji="⬅️"
+            )
+            back_button.callback = self.back_to_parent
+
+            self.add_item(url_button)
+            self.add_item(upload_button)
+            self.add_item(clear_button)
+            self.add_item(back_button)
+
+        elif self.mode in ["xp_info", "xp_progress", "background", "username"]:
+            # Sub-category buttons
+            color_button = discord.ui.Button(
+                label="Color",
+                style=discord.ButtonStyle.primary,
+                emoji="🎨"
+            )
+            color_button.callback = self.color_settings
+
+            if self.mode in ["background"]:
+                image_button = discord.ui.Button(
+                    label="Image",
+                    style=discord.ButtonStyle.secondary,
+                    emoji="🖼️"
+                )
+                image_button.callback = self.image_settings
+                self.add_item(image_button)
+
+            back_button = discord.ui.Button(
+                label="Back",
+                style=discord.ButtonStyle.gray,
+                emoji="⬅️"
+            )
+            back_button.callback = self.back_to_parent
+
+            self.add_item(color_button)
+            self.add_item(back_button)
+
+        elif self.mode == "xp_bar":
+            # XP Bar specific buttons
+            image_button = discord.ui.Button(
+                label="Image",
+                style=discord.ButtonStyle.primary,
+                emoji="🖼️"
+            )
+            image_button.callback = self.image_settings
+
+            back_button = discord.ui.Button(
+                label="Back",
+                style=discord.ButtonStyle.gray,
+                emoji="⬅️"
+            )
+            back_button.callback = self.back_to_parent
+
+            self.add_item(image_button)
+            self.add_item(back_button)
+
+        elif self.mode == "profile_outline":
+            # Profile outline main buttons
+            toggle_button = discord.ui.Button(
+                label="ON" if self.config.get("profile_outline", {}).get("enabled", True) else "OFF",
+                style=discord.ButtonStyle.success if self.config.get("profile_outline", {}).get("enabled", True) else discord.ButtonStyle.danger,
+                emoji="✅" if self.config.get("profile_outline", {}).get("enabled", True) else "❌"
+            )
+            toggle_button.callback = self.toggle_profile_outline
+
+            color_button = discord.ui.Button(
+                label="Color",
+                style=discord.ButtonStyle.primary,
+                emoji="🎨"
+            )
+            color_button.callback = self.color_settings
+
+            image_button = discord.ui.Button(
+                label="Image",
+                style=discord.ButtonStyle.secondary,
+                emoji="🖼️"
+            )
+            image_button.callback = self.image_settings
+
+            back_button = discord.ui.Button(
+                label="Back",
+                style=discord.ButtonStyle.gray,
+                emoji="⬅️"
+            )
+            back_button.callback = self.back_to_main
+
+            self.add_item(toggle_button)
+            self.add_item(color_button)
+            self.add_item(image_button)
+            self.add_item(back_button)
+
+        else:  # main mode
+            # Main buttons
+            leveling_bar_button = discord.ui.Button(
+                label="Leveling Bar",
+                style=discord.ButtonStyle.primary,
+                emoji="📊",
+                row=0
+            )
+            leveling_bar_button.callback = self.leveling_bar_settings
+
+            background_button = discord.ui.Button(
+                label="Background",
+                style=discord.ButtonStyle.secondary,
+                emoji="🖼️",
+                row=0
+            )
+            background_button.callback = self.background_settings
+
+            username_button = discord.ui.Button(
+                label="Username",
+                style=discord.ButtonStyle.secondary,
+                emoji="👤",
+                row=0
+            )
+            username_button.callback = self.username_settings
+
+            profile_outline_button = discord.ui.Button(
+                label="Profile Outline",
+                style=discord.ButtonStyle.secondary,
+                emoji="🖼️",
+                row=1
+            )
+            profile_outline_button.callback = self.profile_outline_settings
+
+            close_button = discord.ui.Button(
+                label="Close",
+                style=discord.ButtonStyle.danger,
+                emoji="❌",
+                row=1
+            )
+            close_button.callback = self.close_embed
+
+            self.add_item(leveling_bar_button)
+            self.add_item(background_button)
+            self.add_item(username_button)
+            self.add_item(profile_outline_button)
+            self.add_item(close_button)
+
+    # Main navigation callbacks
+    async def leveling_bar_settings(self, interaction: discord.Interaction):
+        self.mode = "leveling_bar"
+        embed = self.get_leveling_bar_embed()
+        self.update_buttons()
+        await interaction.response.edit_message(embed=embed, view=self)
+
+    async def background_settings(self, interaction: discord.Interaction):
+        self.mode = "background"
+        embed = self.get_background_embed()
+        self.update_buttons()
+        await interaction.response.edit_message(embed=embed, view=self)
+
+    async def username_settings(self, interaction: discord.Interaction):
+        self.mode = "username"
+        embed = self.get_username_embed()
+        self.update_buttons()
+        await interaction.response.edit_message(embed=embed, view=self)
+
+    async def profile_outline_settings(self, interaction: discord.Interaction):
+        self.mode = "profile_outline"
+        embed = self.get_profile_outline_embed()
+        self.update_buttons()
+        await interaction.response.edit_message(embed=embed, view=self)
+
+    # Sub-category callbacks
+    async def xp_info_settings(self, interaction: discord.Interaction):
+        self.mode = "xp_info"
+        embed = self.get_xp_info_embed()
+        self.update_buttons()
+        await interaction.response.edit_message(embed=embed, view=self)
+
+    async def xp_bar_settings(self, interaction: discord.Interaction):
+        self.mode = "xp_bar"
+        embed = self.get_xp_bar_embed()
+        self.update_buttons()
+        await interaction.response.edit_message(embed=embed, view=self)
+
+    async def xp_progress_settings(self, interaction: discord.Interaction):
+        self.mode = "xp_progress"
+        embed = self.get_xp_progress_embed()
+        self.update_buttons()
+        await interaction.response.edit_message(embed=embed, view=self)
+
+    # Color and Image callbacks
+    async def color_settings(self, interaction: discord.Interaction):
+        self.mode = self.mode + "_color"
+        if self.mode == "xp_info_color":
+            embed = self.get_xp_info_embed()
+            embed.title = "🎨 XP Info Color"
+            embed.description = "Choose how to set your XP text color"
+        elif self.mode == "xp_progress_color":
+            embed = self.get_xp_progress_embed()
+            embed.title = "🎨 XP Progress Color"
+            embed.description = "Choose how to set your XP progress bar color"
+        elif self.mode == "background_color":
+            embed = self.get_background_embed()
+            embed.title = "🎨 Background Color"
+            embed.description = "Choose how to set your background color"
+        elif self.mode == "username_color":
+            embed = self.get_username_embed()
+            embed.title = "🎨 Username Color"
+            embed.description = "Choose how to set your username color"
+        elif self.mode == "profile_outline_color":
+            embed = self.get_profile_outline_embed()
+            embed.title = "🎨 Profile Outline Color"
+            embed.description = "Choose how to set your profile outline color"
+        
+        self.update_buttons()
+        await interaction.response.edit_message(embed=embed, view=self)
+
+    async def image_settings(self, interaction: discord.Interaction):
+        self.mode = self.mode + "_image"
+        if self.mode == "xp_bar_image":
+            embed = self.get_xp_bar_embed()
+            embed.title = "🖼️ XP Bar Image"
+            embed.description = "Set a custom XP bar image"
+        elif self.mode == "background_image":
+            embed = self.get_background_embed()
+            embed.title = "🖼️ Background Image"
+            embed.description = "Set a custom background image"
+        elif self.mode == "profile_outline_image":
+            embed = self.get_profile_outline_embed()
+            embed.title = "🖼️ Profile Outline Image"
+            embed.description = "Set a custom profile outline image"
+        
+        self.update_buttons()
+        await interaction.response.edit_message(embed=embed, view=self)
+
+    # Modal callbacks
+    async def hex_color(self, interaction: discord.Interaction):
+        modal = LevelCardHexColorModal(self)
+        await interaction.response.send_modal(modal)
+
+    async def rgb_color(self, interaction: discord.Interaction):
+        modal = LevelCardRGBColorModal(self)
+        await interaction.response.send_modal(modal)
+
+    async def image_url(self, interaction: discord.Interaction):
+        modal = LevelCardImageURLModal(self)
+        await interaction.response.send_modal(modal)
+
+    async def upload_image(self, interaction: discord.Interaction):
+        self.waiting_for_image = True
+        self.current_image_type = self.mode.replace("_image", "")
+        embed = self.get_waiting_image_embed()
+        self.update_buttons()
+        await interaction.response.edit_message(embed=embed, view=self)
+
+    async def clear_image(self, interaction: discord.Interaction):
+        await interaction.response.defer()
+
+        if self.mode == "xp_bar_image":
+            self.config.pop("level_bar_image", None)
+        elif self.mode == "background_image":
+            self.config.pop("background_image", None)
+        elif self.mode == "profile_outline_image":
+            if "profile_outline" not in self.config:
+                self.config["profile_outline"] = {}
+            self.config["profile_outline"].pop("custom_image", None)
+
+        self.save_config()
+        await self.generate_preview_image(interaction.user)
+
+        # Go back to appropriate embed
+        if self.mode == "xp_bar_image":
+            embed = self.get_xp_bar_embed()
+        elif self.mode == "background_image":
+            embed = self.get_background_embed()
+            embed.title = "🖼️ Background Image"
+            embed.description = "Set a custom background image"
+        elif self.mode == "profile_outline_image":
+            embed = self.get_profile_outline_embed()
+            embed.title = "🖼️ Profile Outline Image"
+            embed.description = "Set a custom profile outline image"
+
+        self.update_buttons()
+        await interaction.edit_original_response(embed=embed, view=self)
+
+    async def reset_color(self, interaction: discord.Interaction):
+        await interaction.response.defer()
+
+        if self.mode == "xp_info_color":
+            self.config["xp_text_color"] = [255, 255, 255]
+        elif self.mode == "xp_progress_color":
+            self.config["xp_bar_color"] = [245, 55, 48]
+        elif self.mode == "background_color":
+            self.config["background_color"] = [15, 17, 16]
+        elif self.mode == "username_color":
+            self.config["username_color"] = [255, 255, 255]
+        elif self.mode == "profile_outline_color":
+            if "profile_outline" not in self.config:
+                self.config["profile_outline"] = {}
+            self.config["profile_outline"].pop("color_override", None)
+
+        self.save_config()
+        await self.generate_preview_image(interaction.user)
+
+        # Go back to appropriate embed
+        if self.mode == "xp_info_color":
+            embed = self.get_xp_info_embed()
+            embed.title = "🎨 XP Info Color"
+            embed.description = "Choose how to set your XP text color"
+        elif self.mode == "xp_progress_color":
+            embed = self.get_xp_progress_embed()
+            embed.title = "🎨 XP Progress Color"
+            embed.description = "Choose how to set your XP progress bar color"
+        elif self.mode == "background_color":
+            embed = self.get_background_embed()
+            embed.title = "🎨 Background Color"
+            embed.description = "Choose how to set your background color"
+        elif self.mode == "username_color":
+            embed = self.get_username_embed()
+            embed.title = "🎨 Username Color"
+            embed.description = "Choose how to set your username color"
+        elif self.mode == "profile_outline_color":
+            embed = self.get_profile_outline_embed()
+            embed.title = "🎨 Profile Outline Color"
+            embed.description = "Choose how to set your profile outline color"
+
+        self.update_buttons()
+        await interaction.edit_original_response(embed=embed, view=self)
+
+    async def toggle_profile_outline(self, interaction: discord.Interaction):
+        await interaction.response.defer()
+
+        if "profile_outline" not in self.config:
+            self.config["profile_outline"] = {}
+        current_state = self.config["profile_outline"].get("enabled", True)
+        self.config["profile_outline"]["enabled"] = not current_state
+        self.save_config()
+
+        await self.generate_preview_image(interaction.user)
+
+        embed = self.get_profile_outline_embed()
+        self.update_buttons()
+        await interaction.edit_original_response(embed=embed, view=self)
+
+    # Navigation callbacks
+    async def back_to_main(self, interaction: discord.Interaction):
+        self.mode = "main"
+        embed = self.get_main_embed()
+        self.update_buttons()
+        await interaction.response.edit_message(embed=embed, view=self)
+
+    async def back_to_parent(self, interaction: discord.Interaction):
+        if self.mode.endswith("_color") or self.mode.endswith("_image"):
+            self.mode = self.mode.replace("_color", "").replace("_image", "")
+        
+        if self.mode == "xp_info":
+            embed = self.get_xp_info_embed()
+        elif self.mode == "xp_bar":
+            embed = self.get_xp_bar_embed()
+        elif self.mode == "xp_progress":
+            embed = self.get_xp_progress_embed()
+        elif self.mode == "background":
+            embed = self.get_background_embed()
+        elif self.mode == "username":
+            embed = self.get_username_embed()
+        elif self.mode == "profile_outline":
+            embed = self.get_profile_outline_embed()
+        else:
+            self.mode = "leveling_bar"
+            embed = self.get_leveling_bar_embed()
+
+        self.update_buttons()
+        await interaction.response.edit_message(embed=embed, view=self)
+
+    async def back_from_image_upload(self, interaction: discord.Interaction):
+        self.waiting_for_image = False
+        self.mode = self.current_image_type + "_image"
+        
+        if self.mode == "xp_bar_image":
+            embed = self.get_xp_bar_embed()
+            embed.title = "🖼️ XP Bar Image"
+            embed.description = "Set a custom XP bar image"
+        elif self.mode == "background_image":
+            embed = self.get_background_embed()
+            embed.title = "🖼️ Background Image"
+            embed.description = "Set a custom background image"
+        elif self.mode == "profile_outline_image":
+            embed = self.get_profile_outline_embed()
+            embed.title = "🖼️ Profile Outline Image"
+            embed.description = "Set a custom profile outline image"
+
+        self.update_buttons()
+        await interaction.response.edit_message(embed=embed, view=self)
+
+    async def close_embed(self, interaction: discord.Interaction):
+        """Close the level card manager embed"""
+        await interaction.response.defer()
+        await interaction.delete_original_response()
+
+# Modal classes for Level Card
+class LevelCardHexColorModal(discord.ui.Modal):
+    def __init__(self, view):
+        super().__init__(title='🎨 Hex Color')
+        self.view = view
+
+        # Get current color value
+        current_color = ""
+        if self.view.mode == "xp_info_color" and self.view.config.get("xp_text_color"):
+            rgb = self.view.config["xp_text_color"]
+            current_color = f"#{rgb[0]:02x}{rgb[1]:02x}{rgb[2]:02x}"
+        elif self.view.mode == "xp_progress_color" and self.view.config.get("xp_bar_color"):
+            rgb = self.view.config["xp_bar_color"]
+            current_color = f"#{rgb[0]:02x}{rgb[1]:02x}{rgb[2]:02x}"
+        elif self.view.mode == "background_color" and self.view.config.get("background_color"):
+            rgb = self.view.config["background_color"]
+            current_color = f"#{rgb[0]:02x}{rgb[1]:02x}{rgb[2]:02x}"
+        elif self.view.mode == "username_color" and self.view.config.get("username_color"):
+            rgb = self.view.config["username_color"]
+            current_color = f"#{rgb[0]:02x}{rgb[1]:02x}{rgb[2]:02x}"
+        elif self.view.mode == "profile_outline_color":
+            profile_config = self.view.config.get("profile_outline", {})
+            if profile_config.get("color_override"):
+                rgb = profile_config["color_override"]
+                current_color = f"#{rgb[0]:02x}{rgb[1]:02x}{rgb[2]:02x}"
+
+        self.hex_input = discord.ui.TextInput(
+            label='Hex Color Code',
+            placeholder='#FFFFFF or FFFFFF',
+            required=True,
+            max_length=7,
+            default=current_color
+        )
+        self.add_item(self.hex_input)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        await interaction.response.defer()
+
+        hex_value = self.hex_input.value.strip()
+        if hex_value.startswith('#'):
+            hex_value = hex_value[1:]
+
+        try:
+            rgb = tuple(int(hex_value[i:i+2], 16) for i in (0, 2, 4))
+            
+            if self.view.mode == "xp_info_color":
+                self.view.config["xp_text_color"] = list(rgb)
+            elif self.view.mode == "xp_progress_color":
+                self.view.config["xp_bar_color"] = list(rgb)
+            elif self.view.mode == "background_color":
+                self.view.config["background_color"] = list(rgb)
+                self.view.config.pop("background_image", None)
+            elif self.view.mode == "username_color":
+                self.view.config["username_color"] = list(rgb)
+            elif self.view.mode == "profile_outline_color":
+                if "profile_outline" not in self.view.config:
+                    self.view.config["profile_outline"] = {}
+                self.view.config["profile_outline"]["color_override"] = list(rgb)
+                self.view.config["profile_outline"].pop("custom_image", None)
+
+            self.view.save_config()
+            await self.view.generate_preview_image(interaction.user)
+
+            # Return to appropriate embed
+            if self.view.mode == "xp_info_color":
+                embed = self.view.get_xp_info_embed()
+                embed.title = "🎨 XP Info Color"
+                embed.description = "Choose how to set your XP text color"
+            elif self.view.mode == "xp_progress_color":
+                embed = self.view.get_xp_progress_embed()
+                embed.title = "🎨 XP Progress Color"
+                embed.description = "Choose how to set your XP progress bar color"
+            elif self.view.mode == "background_color":
+                embed = self.view.get_background_embed()
+                embed.title = "🎨 Background Color"
+                embed.description = "Choose how to set your background color"
+            elif self.view.mode == "username_color":
+                embed = self.view.get_username_embed()
+                embed.title = "🎨 Username Color"
+                embed.description = "Choose how to set your username color"
+            elif self.view.mode == "profile_outline_color":
+                embed = self.view.get_profile_outline_embed()
+                embed.title = "🎨 Profile Outline Color"
+                embed.description = "Choose how to set your profile outline color"
+
+            self.view.update_buttons()
+            await interaction.edit_original_response(embed=embed, view=self.view)
+        except ValueError:
+            error_embed = discord.Embed(
+                title="❌ Invalid Hex Color",
+                description="Please enter a valid hex color code (e.g., #FF0000 or FF0000)",
+                color=discord.Color.red()
+            )
+            await interaction.followup.send(embed=error_embed, ephemeral=True)
+
+class LevelCardRGBColorModal(discord.ui.Modal):
+    def __init__(self, view):
+        super().__init__(title='🌈 RGB Color')
+        self.view = view
+
+        # Get current color values
+        current_r, current_g, current_b = "255", "255", "255"
+        if self.view.mode == "xp_info_color" and self.view.config.get("xp_text_color"):
+            rgb = self.view.config["xp_text_color"]
+            current_r, current_g, current_b = str(rgb[0]), str(rgb[1]), str(rgb[2])
+        elif self.view.mode == "xp_progress_color" and self.view.config.get("xp_bar_color"):
+            rgb = self.view.config["xp_bar_color"]
+            current_r, current_g, current_b = str(rgb[0]), str(rgb[1]), str(rgb[2])
+        elif self.view.mode == "background_color" and self.view.config.get("background_color"):
+            rgb = self.view.config["background_color"]
+            current_r, current_g, current_b = str(rgb[0]), str(rgb[1]), str(rgb[2])
+        elif self.view.mode == "username_color" and self.view.config.get("username_color"):
+            rgb = self.view.config["username_color"]
+            current_r, current_g, current_b = str(rgb[0]), str(rgb[1]), str(rgb[2])
+        elif self.view.mode == "profile_outline_color":
+            profile_config = self.view.config.get("profile_outline", {})
+            if profile_config.get("color_override"):
+                rgb = profile_config["color_override"]
+                current_r, current_g, current_b = str(rgb[0]), str(rgb[1]), str(rgb[2])
+
+        self.red_input = discord.ui.TextInput(
+            label='Red (0-255)',
+            placeholder='255',
+            required=True,
+            max_length=3,
+            default=current_r
+        )
+        self.green_input = discord.ui.TextInput(
+            label='Green (0-255)',
+            placeholder='255',
+            required=True,
+            max_length=3,
+            default=current_g
+        )
+        self.blue_input = discord.ui.TextInput(
+            label='Blue (0-255)',
+            placeholder='255',
+            required=True,
+            max_length=3,
+            default=current_b
+        )
+
+        self.add_item(self.red_input)
+        self.add_item(self.green_input)
+        self.add_item(self.blue_input)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        await interaction.response.defer()
+
+        try:
+            r = int(self.red_input.value)
+            g = int(self.green_input.value)
+            b = int(self.blue_input.value)
+
+            if not all(0 <= val <= 255 for val in [r, g, b]):
+                raise ValueError("Values must be between 0 and 255")
+
+            if self.view.mode == "xp_info_color":
+                self.view.config["xp_text_color"] = [r, g, b]
+            elif self.view.mode == "xp_progress_color":
+                self.view.config["xp_bar_color"] = [r, g, b]
+            elif self.view.mode == "background_color":
+                self.view.config["background_color"] = [r, g, b]
+                self.view.config.pop("background_image", None)
+            elif self.view.mode == "username_color":
+                self.view.config["username_color"] = [r, g, b]
+            elif self.view.mode == "profile_outline_color":
+                if "profile_outline" not in self.view.config:
+                    self.view.config["profile_outline"] = {}
+                self.view.config["profile_outline"]["color_override"] = [r, g, b]
+                self.view.config["profile_outline"].pop("custom_image", None)
+
+            self.view.save_config()
+            await self.view.generate_preview_image(interaction.user)
+
+            # Return to appropriate embed
+            if self.view.mode == "xp_info_color":
+                embed = self.view.get_xp_info_embed()
+                embed.title = "🎨 XP Info Color"
+                embed.description = "Choose how to set your XP text color"
+            elif self.view.mode == "xp_progress_color":
+                embed = self.view.get_xp_progress_embed()
+                embed.title = "🎨 XP Progress Color"
+                embed.description = "Choose how to set your XP progress bar color"
+            elif self.view.mode == "background_color":
+                embed = self.view.get_background_embed()
+                embed.title = "🎨 Background Color"
+                embed.description = "Choose how to set your background color"
+            elif self.view.mode == "username_color":
+                embed = self.view.get_username_embed()
+                embed.title = "🎨 Username Color"
+                embed.description = "Choose how to set your username color"
+            elif self.view.mode == "profile_outline_color":
+                embed = self.view.get_profile_outline_embed()
+                embed.title = "🎨 Profile Outline Color"
+                embed.description = "Choose how to set your profile outline color"
+
+            self.view.update_buttons()
+            await interaction.edit_original_response(embed=embed, view=self.view)
+        except ValueError:
+            error_embed = discord.Embed(
+                title="❌ Invalid RGB Values",
+                description="Please enter valid RGB values (0-255 for each color)",
+                color=discord.Color.red()
+            )
+            await interaction.followup.send(embed=error_embed, ephemeral=True)
+
+class LevelCardImageURLModal(discord.ui.Modal):
+    def __init__(self, view):
+        super().__init__(title='🖼️ Image URL')
+        self.view = view
+
+        self.url_input = discord.ui.TextInput(
+            label='Image URL',
+            placeholder='https://example.com/image.png',
+            required=True,
+            max_length=500
+        )
+        self.add_item(self.url_input)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        await interaction.response.defer()
+
+        url = self.url_input.value.strip()
+        if not url.startswith(('http://', 'https://')):
+            error_embed = discord.Embed(
+                title="❌ Invalid URL",
+                description="Please enter a valid HTTP or HTTPS URL",
+                color=discord.Color.red()
+            )
+            await interaction.followup.send(embed=error_embed, ephemeral=True)
+            return
+
+        if self.view.mode == "xp_bar_image":
+            self.view.config["level_bar_image"] = url
+        elif self.view.mode == "background_image":
+            self.view.config["background_image"] = url
+            self.view.config.pop("background_color", None)
+        elif self.view.mode == "profile_outline_image":
+            if "profile_outline" not in self.view.config:
+                self.view.config["profile_outline"] = {}
+            self.view.config["profile_outline"]["custom_image"] = url
+            self.view.config["profile_outline"].pop("color_override", None)
+
+        self.view.save_config()
+        await self.view.generate_preview_image(interaction.user)
+
+        # Return to appropriate embed
+        if self.view.mode == "xp_bar_image":
+            embed = self.view.get_xp_bar_embed()
+            embed.title = "🖼️ XP Bar Image"
+            embed.description = "Set a custom XP bar image"
+        elif self.view.mode == "background_image":
+            embed = self.view.get_background_embed()
+            embed.title = "🖼️ Background Image"
+            embed.description = "Set a custom background image"
+        elif self.view.mode == "profile_outline_image":
+            embed = self.view.get_profile_outline_embed()
+            embed.title = "🖼️ Profile Outline Image"
+            embed.description = "Set a custom profile outline image"
+
+        self.view.update_buttons()
+        await interaction.edit_original_response(embed=embed, view=self.view)
 
 async def setup(bot):
     await bot.add_cog(LevelingSystem(bot))
