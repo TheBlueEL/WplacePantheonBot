@@ -1,4 +1,3 @@
-
 import discord
 from discord.ext import commands
 from discord import app_commands
@@ -28,7 +27,12 @@ def load_leveling_data():
                     "profile_position": {"x": 50, "y": 50, "size": 150},
                     "username_position": {"x": 220, "y": 80, "font_size": 60},
                     "level_position": {"x": 220, "y": 140, "font_size": 40},
-                    "xp_bar_position": {"x": 30, "y": 726, "width": 1988, "height": 30}
+                    "xp_bar_position": {"x": 30, "y": 726, "width": 1988, "height": 30},
+                    "username_color": [0, 0, 0],  # Default username color (black)
+                    "level_color": [245, 55, 48], # Default level color (red)
+                    "xp_bar_color": [245, 55, 48], # Default XP bar color (red)
+                    "background_color": [245, 55, 48], # Default background color (red)
+                    "xp_text_color": [154, 154, 154] # Default XP text color (gray)
                 }
             },
             "user_data": {}
@@ -95,11 +99,11 @@ class LevelingSystem(commands.Cog):
             data = load_leveling_data()
             user_data = data["user_data"].get(str(user.id), {"xp": 0, "level": 1})
             config = data["leveling_settings"]["level_card"]
-            
+
             # Get background size from config
             bg_width = config.get("background_size", {}).get("width", 2048)
             bg_height = config.get("background_size", {}).get("height", 540)
-            
+
             # Variables pour gérer les GIFs animés
             is_animated_gif = False
             frames = []
@@ -111,7 +115,7 @@ class LevelingSystem(commands.Cog):
                 bg_data = await self.download_image(config["background_image"])
                 if bg_data:
                     original_bg = Image.open(io.BytesIO(bg_data))
-                    
+
                     # Vérifier si c'est un GIF animé
                     if hasattr(original_bg, 'is_animated') and original_bg.is_animated:
                         is_animated_gif = True
@@ -119,11 +123,11 @@ class LevelingSystem(commands.Cog):
                         for frame_idx in range(original_bg.n_frames):
                             original_bg.seek(frame_idx)
                             frame = original_bg.copy().convert("RGBA")
-                            
+
                             # Calculate aspect ratios
                             original_ratio = frame.width / frame.height
                             target_ratio = bg_width / bg_height
-                            
+
                             if original_ratio > target_ratio:
                                 # Image is wider, crop width
                                 new_height = frame.height
@@ -136,11 +140,11 @@ class LevelingSystem(commands.Cog):
                                 new_height = int(new_width / target_ratio)
                                 top = (frame.height - new_height) // 2
                                 cropped = frame.crop((0, top, new_width, top + new_height))
-                            
+
                             # Resize to final size
                             processed_frame = cropped.resize((bg_width, bg_height), Image.Resampling.LANCZOS)
                             frames.append(processed_frame)
-                            
+
                             # Récupérer la durée de la frame
                             try:
                                 duration = original_bg.info.get('duration', 100)
@@ -150,11 +154,11 @@ class LevelingSystem(commands.Cog):
                     else:
                         # Image statique
                         original_bg = original_bg.convert("RGBA")
-                        
+
                         # Calculate aspect ratios
                         original_ratio = original_bg.width / original_bg.height
                         target_ratio = bg_width / bg_height
-                        
+
                         if original_ratio > target_ratio:
                             # Image is wider, crop width
                             new_height = original_bg.height
@@ -167,24 +171,29 @@ class LevelingSystem(commands.Cog):
                             new_height = int(new_width / target_ratio)
                             top = (original_bg.height - new_height) // 2
                             cropped = original_bg.crop((0, top, new_width, top + new_height))
-                        
+
                         # Resize to final size
                         background = cropped.resize((bg_width, bg_height), Image.Resampling.LANCZOS)
                 else:
-                    background = Image.new("RGBA", (bg_width, bg_height), (255, 255, 255, 255))
+                    # Fallback to background color if image download fails
+                    default_bg_color = config.get("background_color", [245, 55, 48]) # Default red as per user request
+                    bg_color = tuple(default_bg_color) + (255,)
+                    background = Image.new("RGBA", (bg_width, bg_height), bg_color)
             elif config.get("background_color") and config["background_color"] != "None":
                 # Use background color
                 if isinstance(config["background_color"], list) and len(config["background_color"]) == 3:
                     bg_color = tuple(config["background_color"]) + (255,)
                 else:
-                    bg_color = (255, 255, 255, 255)  # Default white
+                    bg_color = (255, 255, 255, 255)  # Default white if format is incorrect
                 background = Image.new("RGBA", (bg_width, bg_height), bg_color)
             else:
-                # Default white background
-                background = Image.new("RGBA", (bg_width, bg_height), (255, 255, 255, 255))
-            
+                # Default to the specified background color in the config
+                default_bg_color = config.get("background_color", [245, 55, 48]) # Default red as per user request
+                bg_color = tuple(default_bg_color) + (255,)
+                background = Image.new("RGBA", (bg_width, bg_height), bg_color)
+
             # Download and add level bar image
-            levelbar_data = await self.download_image(config["level_bar_image"])
+            levelbar_data = await self.download_image(config.get("level_bar_image", "https://raw.githubusercontent.com/TheBlueEL/pictures/refs/heads/main/LevelBar.png")) # Default level bar image
             if levelbar_data:
                 levelbar = Image.open(io.BytesIO(levelbar_data)).convert("RGBA")
                 # Position level bar using config or bottom right with 30px margin
@@ -200,34 +209,23 @@ class LevelingSystem(commands.Cog):
                     levelbar_x = bg_width - levelbar.width - 30
                     levelbar_y = bg_height - levelbar.height - 30
                 background.paste(levelbar, (levelbar_x, levelbar_y), levelbar)
-                
+
                 # Create XP progress bar overlay
                 xp_needed, current_xp_in_level = get_xp_for_next_level(user_data["xp"])
                 if xp_needed > 0:
                     progress = current_xp_in_level / xp_needed
                 else:
                     progress = 1.0
-                
-                # Create darker version of level bar for XP progress
-                xp_bar = levelbar.copy()
-                # Convert to darker color (darker gray)
-                xp_data = list(xp_bar.getdata())
-                new_xp_data = []
-                for pixel in xp_data:
-                    if len(pixel) == 4 and pixel[3] > 0:  # Si le pixel n'est pas transparent
-                        # Appliquer une couleur plus foncée (gris foncé)
-                        new_xp_data.append((100, 100, 100, pixel[3]))
-                    else:
-                        new_xp_data.append(pixel)
-                xp_bar.putdata(new_xp_data)
-                
-                # Crop XP bar to show only progress percentage
-                if progress > 0:
-                    crop_width = int(levelbar.width * progress)
-                    if crop_width > 0:
-                        xp_bar_cropped = xp_bar.crop((0, 0, crop_width, levelbar.height))
-                        background.paste(xp_bar_cropped, (levelbar_x, levelbar_y), xp_bar_cropped)
-            
+
+                # Create XP bar color based on config
+                xp_bar_color_rgb = config.get("xp_bar_color", [245, 55, 48]) # Default red
+                xp_bar_color = tuple(xp_bar_color_rgb) + (255,)
+
+                # Create XP progress bar using the specified color
+                xp_progress_bar = Image.new("RGBA", (int(levelbar.width * progress), levelbar.height), xp_bar_color)
+                background.paste(xp_progress_bar, (levelbar_x, levelbar_y), xp_progress_bar)
+
+
             # Download user avatar
             avatar_url = user.display_avatar.url
             avatar_data = await self.download_image(avatar_url)
@@ -235,99 +233,99 @@ class LevelingSystem(commands.Cog):
                 avatar = Image.open(io.BytesIO(avatar_data)).convert("RGBA")
                 size = config["profile_position"]["size"]
                 avatar = avatar.resize((size, size), Image.Resampling.LANCZOS)
-                
+
                 # Make avatar circular
                 mask = self.create_circle_mask((size, size))
                 avatar.putalpha(mask)
-                
+
                 # Paste avatar
                 background.paste(avatar, (config["profile_position"]["x"], config["profile_position"]["y"]), avatar)
-            
+
             # Draw text
             draw = ImageDraw.Draw(background)
-            
+
             try:
                 font_username = ImageFont.truetype("PlayPretend.otf", config["username_position"]["font_size"])
                 font_level = ImageFont.truetype("PlayPretend.otf", config["level_position"]["font_size"])
-            except:
+            except IOError:
                 # Fallback vers les polices système si PlayPretend.otf n'est pas disponible
                 try:
                     font_username = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", config["username_position"]["font_size"])
                     font_level = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", config["level_position"]["font_size"])
-                except:
+                except IOError:
                     font_username = ImageFont.load_default()
                     font_level = ImageFont.load_default()
-            
-            # Draw username (en noir sur fond blanc)
-            username = user.name  # Use username instead of display_name
-            draw.text((config["username_position"]["x"], config["username_position"]["y"]), 
-                     username, font=font_username, fill=(0, 0, 0))
-            
-            # Draw level (en gris)
+
+            # Draw username with configurable color
+            username = user.name
+            username_color = config.get("username_color", [0, 0, 0]) # Default black
+            draw.text((config["username_position"]["x"], config["username_position"]["y"]),
+                     username, font=font_username, fill=tuple(username_color))
+
+            # Draw level with configurable color
             level_text = f"LEVEL {user_data['level']}"
-            draw.text((config["level_position"]["x"], config["level_position"]["y"]), 
-                     level_text, font=font_level, fill=(154, 154, 154))
-            
+            level_color = config.get("level_color", [245, 55, 48]) # Default red
+            draw.text((config["level_position"]["x"], config["level_position"]["y"]),
+                     level_text, font=font_level, fill=tuple(level_color))
+
             # Draw XP progress text
             xp_needed, current_xp_in_level = get_xp_for_next_level(user_data["xp"])
             xp_text = f"{current_xp_in_level}/{xp_needed} XP"
-            
+
             try:
                 font_xp = ImageFont.truetype("PlayPretend.otf", config["xp_text_position"]["font_size"])
-            except:
+            except IOError:
                 # Fallback vers les polices système
                 try:
                     font_xp = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", config["xp_text_position"]["font_size"])
-                except:
+                except IOError:
                     font_xp = ImageFont.load_default()
-            
+
             # Position XP text using config
             xp_text_x = config["xp_text_position"]["x"]
             xp_text_y = config["xp_text_position"]["y"]
-            draw.text((xp_text_x, xp_text_y), xp_text, font=font_xp, fill=(100, 100, 100))
-            
-            # Si c'est un GIF animé, traiter toutes les frames
+            xp_text_color = config.get("xp_text_color", [154, 154, 154]) # Default gray
+            draw.text((xp_text_x, xp_text_y), xp_text, font=font_xp, fill=tuple(xp_text_color))
+
+
+            # If it's an animated GIF, process all frames
             if is_animated_gif:
                 final_frames = []
-                
+
                 for frame_idx, bg_frame in enumerate(frames):
-                    # Utiliser bg_frame comme background pour cette frame
+                    # Use bg_frame as background for this frame
                     current_background = bg_frame.copy()
-                    
-                    # Ajouter la barre de niveau sur cette frame
+
+                    # Add level bar to this frame
                     if levelbar_data:
                         current_background.paste(levelbar, (levelbar_x, levelbar_y), levelbar)
-                        
-                        # Ajouter la barre de progression XP
+
+                        # Add XP progress bar
                         if progress > 0:
-                            crop_width = int(levelbar.width * progress)
-                            if crop_width > 0:
-                                xp_bar_cropped = xp_bar.crop((0, 0, crop_width, levelbar.height))
-                                current_background.paste(xp_bar_cropped, (levelbar_x, levelbar_y), xp_bar_cropped)
-                    
-                    # Ajouter l'avatar
+                            xp_progress_bar_frame = Image.new("RGBA", (int(levelbar.width * progress), levelbar.height), xp_bar_color)
+                            current_background.paste(xp_progress_bar_frame, (levelbar_x, levelbar_y), xp_progress_bar_frame)
+
+                    # Add avatar
                     if avatar_data:
                         current_background.paste(avatar, (config["profile_position"]["x"], config["profile_position"]["y"]), avatar)
-                    
-                    # Ajouter le texte sur cette frame
+
+                    # Add text to this frame
                     draw = ImageDraw.Draw(current_background)
-                    
+
                     # Draw username
-                    username = user.name
-                    draw.text((config["username_position"]["x"], config["username_position"]["y"]), 
-                             username, font=font_username, fill=(0, 0, 0))
-                    
+                    draw.text((config["username_position"]["x"], config["username_position"]["y"]),
+                             username, font=font_username, fill=tuple(username_color))
+
                     # Draw level
-                    level_text = f"LEVEL {user_data['level']}"
-                    draw.text((config["level_position"]["x"], config["level_position"]["y"]), 
-                             level_text, font=font_level, fill=(154, 154, 154))
-                    
+                    draw.text((config["level_position"]["x"], config["level_position"]["y"]),
+                             level_text, font=font_level, fill=tuple(level_color))
+
                     # Draw XP progress text
-                    draw.text((xp_text_x, xp_text_y), xp_text, font=font_xp, fill=(100, 100, 100))
-                    
+                    draw.text((xp_text_x, xp_text_y), xp_text, font=font_xp, fill=tuple(xp_text_color))
+
                     final_frames.append(current_background)
-                
-                # Sauvegarder le GIF animé
+
+                # Save the animated GIF
                 output = io.BytesIO()
                 final_frames[0].save(
                     output,
@@ -335,23 +333,28 @@ class LevelingSystem(commands.Cog):
                     save_all=True,
                     append_images=final_frames[1:],
                     duration=durations,
-                    loop=0  # Boucle infinie
+                    loop=0  # Infinite loop
                 )
                 output.seek(0)
                 return output
             else:
-                # Image statique - s'assurer que background est défini
-                if not 'background' in locals():
-                    if frames:
-                        background = frames[0]
-                    else:
-                        background = Image.new("RGBA", (bg_width, bg_height), (255, 255, 255, 255))
-                
+                # Static image - use the first frame if it was a static GIF
+                if frames:
+                    background = frames[0]
+
+                # If background is still not defined, create a default image
+                if 'background' not in locals():
+                    # Use the specified background color in the config or default to red
+                    default_bg_color = config.get("background_color", [245, 55, 48])
+                    bg_color = tuple(default_bg_color) + (255,)
+                    background = Image.new("RGBA", (bg_width, bg_height), bg_color)
+
+
                 output = io.BytesIO()
                 background.save(output, format='PNG')
                 output.seek(0)
                 return output
-            
+
         except Exception as e:
             print(f"Error creating level card: {e}")
             return None
@@ -361,55 +364,55 @@ class LevelingSystem(commands.Cog):
         """Handle XP gain from messages"""
         if message.author.bot:
             return
-            
+
         data = load_leveling_data()
         if not data["leveling_settings"]["enabled"]:
             return
-            
+
         user_id = str(message.author.id)
         current_time = time.time()
-        
+
         # Initialize user data
         if user_id not in data["user_data"]:
             data["user_data"][user_id] = {"xp": 0, "level": 1, "last_message": 0}
-        
+
         user_data = data["user_data"][user_id]
         xp_settings = data["leveling_settings"]["xp_settings"]
-        
+
         xp_gained = 0
-        
+
         # Message XP
         if xp_settings["messages"]["enabled"]:
             if current_time - user_data.get("last_message", 0) >= xp_settings["messages"]["cooldown"]:
                 xp_gained += xp_settings["messages"]["xp_per_message"]
                 user_data["last_message"] = current_time
-        
+
         # Character XP
         if xp_settings["characters"]["enabled"]:
             char_count = len(message.content.replace(" ", ""))
             cooldown_key = f"{user_id}_char"
-            
+
             if cooldown_key not in self.user_cooldowns:
                 self.user_cooldowns[cooldown_key] = {"count": 0, "time": current_time}
-            
+
             char_data = self.user_cooldowns[cooldown_key]
-            
+
             if current_time - char_data["time"] >= xp_settings["characters"]["cooldown"]:
                 char_data["count"] = 0
                 char_data["time"] = current_time
-            
+
             if char_data["count"] + char_count <= xp_settings["characters"]["character_limit"]:
                 xp_gained += char_count * xp_settings["characters"]["xp_per_character"]
                 char_data["count"] += char_count
-        
+
         if xp_gained > 0:
             old_level = get_level_from_xp(user_data["xp"])
             user_data["xp"] += xp_gained
             new_level = get_level_from_xp(user_data["xp"])
             user_data["level"] = new_level
-            
+
             save_leveling_data(data)
-            
+
             # Check for role rewards
             if new_level > old_level:
                 await self.check_level_rewards(message.author, new_level)
@@ -418,7 +421,7 @@ class LevelingSystem(commands.Cog):
         """Check and assign level rewards"""
         data = load_leveling_data()
         role_rewards = data["leveling_settings"]["rewards"]["roles"]
-        
+
         for reward_id, reward_data in role_rewards.items():
             if reward_data["level"] == level:
                 try:
@@ -439,45 +442,23 @@ class LevelingSystem(commands.Cog):
     @app_commands.command(name="level", description="View your level card")
     async def level_command(self, interaction: discord.Interaction):
         """Show user's level card"""
-        try:
-            await interaction.response.defer()
-            
-            level_card = await self.create_level_card(interaction.user)
-            if level_card:
-                # Déterminer l'extension du fichier
-                level_card.seek(0)
-                file_header = level_card.read(6)
-                level_card.seek(0)
-                
-                # Vérifier si c'est un GIF
-                is_gif = file_header.startswith(b'GIF87a') or file_header.startswith(b'GIF89a')
-                filename = "level_card.gif" if is_gif else "level_card.png"
-                
-                file = discord.File(level_card, filename=filename)
-                await interaction.followup.send(file=file)
-            else:
-                await interaction.followup.send("❌ Error creating level card!", ephemeral=True)
-        except discord.NotFound:
-            # Interaction has expired, try sending a regular message
-            level_card = await self.create_level_card(interaction.user)
-            if level_card:
-                level_card.seek(0)
-                file_header = level_card.read(6)
-                level_card.seek(0)
-                
-                is_gif = file_header.startswith(b'GIF87a') or file_header.startswith(b'GIF89a')
-                filename = "level_card.gif" if is_gif else "level_card.png"
-                
-                file = discord.File(level_card, filename=filename)
-                await interaction.channel.send(f"{interaction.user.mention}, here's your level card:", file=file)
-            else:
-                await interaction.channel.send(f"{interaction.user.mention}, ❌ Error creating level card!")
-        except Exception as e:
-            print(f"Error in level command: {e}")
-            try:
-                await interaction.followup.send("❌ An error occurred!", ephemeral=True)
-            except:
-                await interaction.channel.send(f"{interaction.user.mention}, ❌ An error occurred!")
+        await interaction.response.defer()
+
+        level_card = await self.create_level_card(interaction.user)
+        if level_card:
+            # Determine file extension
+            level_card.seek(0)
+            file_header = level_card.read(6)
+            level_card.seek(0)
+
+            # Check if it's a GIF
+            is_gif = file_header.startswith(b'GIF87a') or file_header.startswith(b'GIF89a')
+            filename = "level_card.gif" if is_gif else "level_card.png"
+
+            file = discord.File(level_card, filename=filename)
+            await interaction.followup.send(file=file)
+        else:
+            await interaction.followup.send("❌ Error creating level card!", ephemeral=True)
 
 # Views and UI Components
 class LevelSystemMainView(discord.ui.View):
@@ -488,16 +469,16 @@ class LevelSystemMainView(discord.ui.View):
     def get_main_embed(self):
         data = load_leveling_data()
         settings = data["leveling_settings"]
-        
+
         embed = discord.Embed(
             title="📊 Level System Management",
             description=f"Welcome back {self.user.mention}!\n\nManage your server's leveling system below:",
             color=0x5865f2
         )
-        
+
         status = "🟢 Enabled" if settings["enabled"] else "🔴 Disabled"
         embed.add_field(name="System Status", value=status, inline=True)
-        
+
         return embed
 
     @discord.ui.button(label="Reward Settings", style=discord.ButtonStyle.secondary, emoji="🎁")
@@ -528,7 +509,7 @@ class LevelSystemMainView(discord.ui.View):
         data = load_leveling_data()
         data["leveling_settings"]["enabled"] = not data["leveling_settings"]["enabled"]
         save_leveling_data(data)
-        
+
         embed = self.get_main_embed()
         await interaction.response.edit_message(embed=embed, view=self)
 
@@ -571,13 +552,13 @@ class RoleRewardsView(discord.ui.View):
     def get_embed(self):
         data = load_leveling_data()
         role_rewards = data["leveling_settings"]["rewards"]["roles"]
-        
+
         embed = discord.Embed(
             title="👑 Role Rewards",
             description="Manage role rewards for leveling up:",
             color=0x5865f2
         )
-        
+
         if role_rewards:
             reward_list = []
             for reward_id, reward_data in role_rewards.items():
@@ -586,7 +567,7 @@ class RoleRewardsView(discord.ui.View):
             embed.add_field(name="Current Rewards", value="\n".join(reward_list), inline=False)
         else:
             embed.add_field(name="Current Rewards", value="No role rewards configured", inline=False)
-        
+
         return embed
 
     @discord.ui.button(label="Add", style=discord.ButtonStyle.success, emoji="➕")
@@ -626,13 +607,13 @@ class AddRoleRewardView(discord.ui.View):
             description="Select a role and level for the reward:",
             color=0x5865f2
         )
-        
+
         if self.selected_role:
             embed.add_field(name="Selected Role", value=self.selected_role.mention, inline=False)
-        
+
         if self.level:
             embed.add_field(name="Level", value=str(self.level), inline=False)
-        
+
         return embed
 
     @discord.ui.select(cls=discord.ui.RoleSelect, placeholder="Select a role...")
@@ -642,7 +623,7 @@ class AddRoleRewardView(discord.ui.View):
             self.level_button = discord.ui.Button(label="Set Level", style=discord.ButtonStyle.secondary, emoji="📊")
             self.level_button.callback = self.set_level
             self.add_item(self.level_button)
-        
+
         embed = self.get_embed()
         await interaction.response.edit_message(embed=embed, view=self)
 
@@ -665,7 +646,7 @@ class AddRoleRewardView(discord.ui.View):
             "level": self.level
         }
         save_leveling_data(data)
-        
+
         embed = discord.Embed(
             title="✅ Role Reward Added",
             description=f"Role {self.selected_role.mention} will be given at level {self.level}!",
@@ -729,7 +710,7 @@ class EditRoleRewardSelect(discord.ui.Select):
     def __init__(self):
         data = load_leveling_data()
         role_rewards = data["leveling_settings"]["rewards"]["roles"]
-        
+
         options = []
         for reward_id, reward_data in role_rewards.items():
             options.append(discord.SelectOption(
@@ -737,16 +718,16 @@ class EditRoleRewardSelect(discord.ui.Select):
                 description=f"LEVEL {reward_data['level']}",
                 value=reward_id
             ))
-        
+
         if not options:
             options.append(discord.SelectOption(label="No rewards", description="No rewards to edit", value="none"))
-        
+
         super().__init__(placeholder="Select a reward to edit...", options=options)
 
     async def callback(self, interaction: discord.Interaction):
         if self.values[0] == "none":
             return
-        
+
         # Implementation for editing would go here
         await interaction.response.send_message("Edit functionality coming soon!", ephemeral=True)
 
@@ -774,7 +755,7 @@ class RemoveRoleRewardSelect(discord.ui.Select):
     def __init__(self):
         data = load_leveling_data()
         role_rewards = data["leveling_settings"]["rewards"]["roles"]
-        
+
         options = []
         for reward_id, reward_data in role_rewards.items():
             options.append(discord.SelectOption(
@@ -782,16 +763,16 @@ class RemoveRoleRewardSelect(discord.ui.Select):
                 description=f"LEVEL {reward_data['level']}",
                 value=reward_id
             ))
-        
+
         if not options:
             options.append(discord.SelectOption(label="No rewards", description="No rewards to remove", value="none"))
-        
+
         super().__init__(placeholder="Select a reward to remove...", options=options)
 
     async def callback(self, interaction: discord.Interaction):
         if self.values[0] == "none":
             return
-        
+
         # Show confirmation
         embed = discord.Embed(
             title="⚠️ Confirm Removal",
@@ -812,7 +793,7 @@ class ConfirmRemoveView(discord.ui.View):
         if self.reward_id in data["leveling_settings"]["rewards"]["roles"]:
             del data["leveling_settings"]["rewards"]["roles"][self.reward_id]
             save_leveling_data(data)
-        
+
         embed = discord.Embed(
             title="✅ Reward Removed",
             description="The role reward has been successfully removed!",
@@ -879,18 +860,18 @@ class MessageXPView(discord.ui.View):
     def get_embed(self):
         data = load_leveling_data()
         msg_settings = data["leveling_settings"]["xp_settings"]["messages"]
-        
+
         embed = discord.Embed(
             title="💬 Message XP Settings",
             description="Configure XP gain from messages:",
             color=0x5865f2
         )
-        
+
         embed.add_field(name="XP per Message", value=str(msg_settings["xp_per_message"]), inline=True)
         embed.add_field(name="Cooldown (seconds)", value=str(msg_settings["cooldown"]), inline=True)
         status = "🟢 Enabled" if msg_settings["enabled"] else "🔴 Disabled"
         embed.add_field(name="Status", value=status, inline=True)
-        
+
         return embed
 
     @discord.ui.button(label="XP", style=discord.ButtonStyle.secondary, emoji="⚡")
@@ -908,7 +889,7 @@ class MessageXPView(discord.ui.View):
         data = load_leveling_data()
         data["leveling_settings"]["xp_settings"]["messages"]["enabled"] = not data["leveling_settings"]["xp_settings"]["messages"]["enabled"]
         save_leveling_data(data)
-        
+
         embed = self.get_embed()
         await interaction.response.edit_message(embed=embed, view=self)
 
@@ -974,19 +955,19 @@ class CharacterXPView(discord.ui.View):
     def get_embed(self):
         data = load_leveling_data()
         char_settings = data["leveling_settings"]["xp_settings"]["characters"]
-        
+
         embed = discord.Embed(
             title="📝 Character XP Settings",
             description="Configure XP gain from characters:",
             color=0x5865f2
         )
-        
+
         embed.add_field(name="XP per Character", value=str(char_settings["xp_per_character"]), inline=True)
         embed.add_field(name="Character Limit", value=str(char_settings["character_limit"]), inline=True)
         embed.add_field(name="Cooldown (seconds)", value=str(char_settings["cooldown"]), inline=True)
         status = "🟢 Enabled" if char_settings["enabled"] else "🔴 Disabled"
         embed.add_field(name="Status", value=status, inline=True)
-        
+
         return embed
 
     @discord.ui.button(label="XP", style=discord.ButtonStyle.secondary, emoji="⚡")
@@ -1004,7 +985,7 @@ class CharacterXPView(discord.ui.View):
         data = load_leveling_data()
         data["leveling_settings"]["xp_settings"]["characters"]["enabled"] = not data["leveling_settings"]["xp_settings"]["characters"]["enabled"]
         save_leveling_data(data)
-        
+
         embed = self.get_embed()
         await interaction.response.edit_message(embed=embed, view=self)
 
@@ -1048,7 +1029,7 @@ class CharacterCooldownModal(discord.ui.Modal):
         min_length=1,
         max_length=5
     )
-    
+
     cooldown = discord.ui.TextInput(
         label="Cooldown (seconds)",
         placeholder="Cooldown duration in seconds...",
@@ -1060,7 +1041,7 @@ class CharacterCooldownModal(discord.ui.Modal):
         try:
             char_limit = int(self.character_limit.value)
             cooldown_value = int(self.cooldown.value)
-            
+
             if char_limit >= 0 and cooldown_value >= 0:
                 data = load_leveling_data()
                 data["leveling_settings"]["xp_settings"]["characters"]["character_limit"] = char_limit
