@@ -1240,12 +1240,79 @@ class CustomRewardsView(discord.ui.View):
         self.user = user
 
     def get_embed(self):
+        data = load_leveling_data()
+        custom_rewards = data["leveling_settings"]["rewards"]["custom"]
+        xp_settings = data["leveling_settings"]["xp_settings"]
+
         embed = discord.Embed(
-            title="✨ Custom Rewards",
-            description="Custom reward system is currently in development.\nComing soon!",
+            title="✨ Custom Rewards & XP Settings",
+            description="Manage custom rewards and XP configurations:",
             color=0x5865f2
         )
+
+        # Messages XP Settings
+        msg_settings = xp_settings["messages"]
+        embed.add_field(
+            name="💬 Messages XP",
+            value=f"**Status:** {'🟢 Enabled' if msg_settings['enabled'] else '🔴 Disabled'}\n"
+                  f"**XP per Message:** {msg_settings['xp_per_message']}\n"
+                  f"**Cooldown:** {msg_settings['cooldown']}s",
+            inline=True
+        )
+
+        # Characters XP Settings
+        char_settings = xp_settings["characters"]
+        embed.add_field(
+            name="📝 Characters XP",
+            value=f"**Status:** {'🟢 Enabled' if char_settings['enabled'] else '🔴 Disabled'}\n"
+                  f"**XP per Character:** {char_settings['xp_per_character']}\n"
+                  f"**Character Limit:** {char_settings['character_limit']}\n"
+                  f"**Cooldown:** {char_settings['cooldown']}s",
+            inline=True
+        )
+
+        # Custom Rewards
+        if custom_rewards:
+            reward_list = []
+            for reward_id, reward_data in custom_rewards.items():
+                reward_list.append(f"• **{reward_data.get('name', 'Custom Reward')}** - Level {reward_data.get('level', 'N/A')}")
+            embed.add_field(
+                name="🎁 Custom Rewards",
+                value="\n".join(reward_list) if reward_list else "No custom rewards configured",
+                inline=False
+            )
+        else:
+            embed.add_field(
+                name="🎁 Custom Rewards",
+                value="No custom rewards configured",
+                inline=False
+            )
+
         return embed
+
+    @discord.ui.button(label="Message XP", style=discord.ButtonStyle.secondary, emoji="💬")
+    async def message_xp_settings(self, interaction: discord.Interaction, button: discord.ui.Button):
+        view = MessageXPDetailView(self.bot, self.user)
+        embed = view.get_embed()
+        await interaction.response.edit_message(embed=embed, view=view)
+
+    @discord.ui.button(label="Character XP", style=discord.ButtonStyle.secondary, emoji="📝")
+    async def character_xp_settings(self, interaction: discord.Interaction, button: discord.ui.Button):
+        view = CharacterXPDetailView(self.bot, self.user)
+        embed = view.get_embed()
+        await interaction.response.edit_message(embed=embed, view=view)
+
+    @discord.ui.button(label="Custom Rewards", style=discord.ButtonStyle.secondary, emoji="🎁")
+    async def custom_rewards_management(self, interaction: discord.Interaction, button: discord.ui.Button):
+        view = CustomRewardsManagementView(self.bot, self.user)
+        embed = view.get_embed()
+        await interaction.response.edit_message(embed=embed, view=view)
+
+    @discord.ui.button(label="Cooldown Settings", style=discord.ButtonStyle.secondary, emoji="⏰")
+    async def cooldown_settings(self, interaction: discord.Interaction, button: discord.ui.Button):
+        view = CooldownSettingsView(self.bot, self.user)
+        embed = view.get_embed()
+        await interaction.response.edit_message(embed=embed, view=view)
 
     @discord.ui.button(label="Back", style=discord.ButtonStyle.danger, emoji="↩️")
     async def back(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -1730,6 +1797,483 @@ class LevelCardManagerView(discord.ui.View):
         embed = discord.Embed(
             title="📤 Upload Image",
             description="Please send an image file in this channel.\n\n**Only you can upload the image for security reasons.**",
+
+
+class MessageXPDetailView(discord.ui.View):
+    def __init__(self, bot, user):
+        super().__init__(timeout=300)
+        self.bot = bot
+        self.user = user
+
+    def get_embed(self):
+        data = load_leveling_data()
+        msg_settings = data["leveling_settings"]["xp_settings"]["messages"]
+
+        embed = discord.Embed(
+            title="💬 Message XP Settings",
+            description="Configure detailed settings for message XP gain:",
+            color=0x5865f2
+        )
+
+        embed.add_field(name="Status", value="🟢 Enabled" if msg_settings["enabled"] else "🔴 Disabled", inline=True)
+        embed.add_field(name="XP per Message", value=str(msg_settings["xp_per_message"]), inline=True)
+        embed.add_field(name="Cooldown (seconds)", value=str(msg_settings["cooldown"]), inline=True)
+
+        return embed
+
+    @discord.ui.button(label="Toggle ON/OFF", style=discord.ButtonStyle.success, emoji="🔄")
+    async def toggle_messages(self, interaction: discord.Interaction, button: discord.ui.Button):
+        data = load_leveling_data()
+        current_state = data["leveling_settings"]["xp_settings"]["messages"]["enabled"]
+        data["leveling_settings"]["xp_settings"]["messages"]["enabled"] = not current_state
+        save_leveling_data(data)
+
+        embed = self.get_embed()
+        await interaction.response.edit_message(embed=embed, view=self)
+
+    @discord.ui.button(label="Set XP Amount", style=discord.ButtonStyle.secondary, emoji="⚡")
+    async def set_xp_amount(self, interaction: discord.Interaction, button: discord.ui.Button):
+        modal = MessageXPAmountModal()
+        await interaction.response.send_modal(modal)
+
+    @discord.ui.button(label="Set Cooldown", style=discord.ButtonStyle.secondary, emoji="⏰")
+    async def set_cooldown(self, interaction: discord.Interaction, button: discord.ui.Button):
+        modal = MessageCooldownDetailModal()
+        await interaction.response.send_modal(modal)
+
+    @discord.ui.button(label="Back", style=discord.ButtonStyle.danger, emoji="↩️")
+    async def back(self, interaction: discord.Interaction, button: discord.ui.Button):
+        view = CustomRewardsView(self.bot, self.user)
+        embed = view.get_embed()
+        await interaction.response.edit_message(embed=embed, view=view)
+
+class CharacterXPDetailView(discord.ui.View):
+    def __init__(self, bot, user):
+        super().__init__(timeout=300)
+        self.bot = bot
+        self.user = user
+
+    def get_embed(self):
+        data = load_leveling_data()
+        char_settings = data["leveling_settings"]["xp_settings"]["characters"]
+
+        embed = discord.Embed(
+            title="📝 Character XP Settings",
+            description="Configure detailed settings for character-based XP gain:",
+            color=0x5865f2
+        )
+
+        embed.add_field(name="Status", value="🟢 Enabled" if char_settings["enabled"] else "🔴 Disabled", inline=True)
+        embed.add_field(name="XP per Character", value=str(char_settings["xp_per_character"]), inline=True)
+        embed.add_field(name="Character Limit", value=str(char_settings["character_limit"]), inline=True)
+        embed.add_field(name="Cooldown (seconds)", value=str(char_settings["cooldown"]), inline=True)
+
+        return embed
+
+    @discord.ui.button(label="Toggle ON/OFF", style=discord.ButtonStyle.success, emoji="🔄")
+    async def toggle_characters(self, interaction: discord.Interaction, button: discord.ui.Button):
+        data = load_leveling_data()
+        current_state = data["leveling_settings"]["xp_settings"]["characters"]["enabled"]
+        data["leveling_settings"]["xp_settings"]["characters"]["enabled"] = not current_state
+        save_leveling_data(data)
+
+        embed = self.get_embed()
+        await interaction.response.edit_message(embed=embed, view=self)
+
+    @discord.ui.button(label="Set XP per Char", style=discord.ButtonStyle.secondary, emoji="⚡")
+    async def set_xp_per_char(self, interaction: discord.Interaction, button: discord.ui.Button):
+        modal = CharacterXPAmountModal()
+        await interaction.response.send_modal(modal)
+
+    @discord.ui.button(label="Set Char Limit", style=discord.ButtonStyle.secondary, emoji="📊")
+    async def set_char_limit(self, interaction: discord.Interaction, button: discord.ui.Button):
+        modal = CharacterLimitModal()
+        await interaction.response.send_modal(modal)
+
+    @discord.ui.button(label="Set Cooldown", style=discord.ButtonStyle.secondary, emoji="⏰")
+    async def set_cooldown(self, interaction: discord.Interaction, button: discord.ui.Button):
+        modal = CharacterCooldownDetailModal()
+        await interaction.response.send_modal(modal)
+
+    @discord.ui.button(label="Back", style=discord.ButtonStyle.danger, emoji="↩️")
+    async def back(self, interaction: discord.Interaction, button: discord.ui.Button):
+        view = CustomRewardsView(self.bot, self.user)
+        embed = view.get_embed()
+        await interaction.response.edit_message(embed=embed, view=view)
+
+class CustomRewardsManagementView(discord.ui.View):
+    def __init__(self, bot, user):
+        super().__init__(timeout=300)
+        self.bot = bot
+        self.user = user
+
+    def get_embed(self):
+        data = load_leveling_data()
+        custom_rewards = data["leveling_settings"]["rewards"]["custom"]
+
+        embed = discord.Embed(
+            title="🎁 Custom Rewards Management",
+            description="Manage your custom level rewards:",
+            color=0x5865f2
+        )
+
+        if custom_rewards:
+            reward_list = []
+            for reward_id, reward_data in custom_rewards.items():
+                name = reward_data.get('name', 'Unnamed Reward')
+                level = reward_data.get('level', 'N/A')
+                description = reward_data.get('description', 'No description')
+                reward_list.append(f"**{name}** (Level {level})\n└ {description}")
+            embed.add_field(name="Current Custom Rewards", value="\n\n".join(reward_list), inline=False)
+        else:
+            embed.add_field(name="Current Custom Rewards", value="No custom rewards configured", inline=False)
+
+        return embed
+
+    @discord.ui.button(label="Add Custom Reward", style=discord.ButtonStyle.success, emoji="➕")
+    async def add_custom_reward(self, interaction: discord.Interaction, button: discord.ui.Button):
+        modal = AddCustomRewardModal(self)
+        await interaction.response.send_modal(modal)
+
+    @discord.ui.button(label="Edit Reward", style=discord.ButtonStyle.secondary, emoji="✏️")
+    async def edit_custom_reward(self, interaction: discord.Interaction, button: discord.ui.Button):
+        # Implementation pour éditer une récompense personnalisée
+        await interaction.response.send_message("🚧 Edit functionality coming soon!", ephemeral=True)
+
+    @discord.ui.button(label="Remove Reward", style=discord.ButtonStyle.danger, emoji="🗑️")
+    async def remove_custom_reward(self, interaction: discord.Interaction, button: discord.ui.Button):
+        # Implementation pour supprimer une récompense personnalisée
+        await interaction.response.send_message("🚧 Remove functionality coming soon!", ephemeral=True)
+
+    @discord.ui.button(label="Back", style=discord.ButtonStyle.danger, emoji="↩️")
+    async def back(self, interaction: discord.Interaction, button: discord.ui.Button):
+        view = CustomRewardsView(self.bot, self.user)
+        embed = view.get_embed()
+        await interaction.response.edit_message(embed=embed, view=view)
+
+class CooldownSettingsView(discord.ui.View):
+    def __init__(self, bot, user):
+        super().__init__(timeout=300)
+        self.bot = bot
+        self.user = user
+
+    def get_embed(self):
+        data = load_leveling_data()
+        xp_settings = data["leveling_settings"]["xp_settings"]
+
+        embed = discord.Embed(
+            title="⏰ Cooldown Settings",
+            description="Configure all cooldown settings for XP gain:",
+            color=0x5865f2
+        )
+
+        # Message cooldown
+        msg_cooldown = xp_settings["messages"]["cooldown"]
+        embed.add_field(
+            name="💬 Message Cooldown",
+            value=f"{msg_cooldown} seconds",
+            inline=True
+        )
+
+        # Character cooldown
+        char_cooldown = xp_settings["characters"]["cooldown"]
+        embed.add_field(
+            name="📝 Character Cooldown",
+            value=f"{char_cooldown} seconds",
+            inline=True
+        )
+
+        # Character limit
+        char_limit = xp_settings["characters"]["character_limit"]
+        embed.add_field(
+            name="📊 Character Limit",
+            value=f"{char_limit} characters",
+            inline=True
+        )
+
+        return embed
+
+    @discord.ui.button(label="Message Cooldown", style=discord.ButtonStyle.secondary, emoji="💬")
+    async def set_message_cooldown(self, interaction: discord.Interaction, button: discord.ui.Button):
+        modal = MessageCooldownGlobalModal()
+        await interaction.response.send_modal(modal)
+
+    @discord.ui.button(label="Character Cooldown", style=discord.ButtonStyle.secondary, emoji="📝")
+    async def set_character_cooldown(self, interaction: discord.Interaction, button: discord.ui.Button):
+        modal = CharacterCooldownGlobalModal()
+        await interaction.response.send_modal(modal)
+
+    @discord.ui.button(label="Character Limit", style=discord.ButtonStyle.secondary, emoji="📊")
+    async def set_character_limit(self, interaction: discord.Interaction, button: discord.ui.Button):
+        modal = CharacterLimitGlobalModal()
+        await interaction.response.send_modal(modal)
+
+    @discord.ui.button(label="Reset All", style=discord.ButtonStyle.danger, emoji="🔄")
+    async def reset_all_cooldowns(self, interaction: discord.Interaction, button: discord.ui.Button):
+        data = load_leveling_data()
+        data["leveling_settings"]["xp_settings"]["messages"]["cooldown"] = 10
+        data["leveling_settings"]["xp_settings"]["characters"]["cooldown"] = 10
+        data["leveling_settings"]["xp_settings"]["characters"]["character_limit"] = 20
+        save_leveling_data(data)
+
+        embed = self.get_embed()
+        await interaction.response.edit_message(embed=embed, view=self)
+
+    @discord.ui.button(label="Back", style=discord.ButtonStyle.danger, emoji="↩️")
+    async def back(self, interaction: discord.Interaction, button: discord.ui.Button):
+        view = CustomRewardsView(self.bot, self.user)
+        embed = view.get_embed()
+        await interaction.response.edit_message(embed=embed, view=view)
+
+# Modals pour les nouveaux paramètres
+class MessageXPAmountModal(discord.ui.Modal):
+    def __init__(self):
+        super().__init__(title="Set Message XP Amount")
+
+    xp_amount = discord.ui.TextInput(
+        label="XP per Message",
+        placeholder="Enter XP amount (0-1000)...",
+        min_length=1,
+        max_length=4
+    )
+
+    async def on_submit(self, interaction: discord.Interaction):
+        try:
+            xp_value = int(self.xp_amount.value)
+            if 0 <= xp_value <= 1000:
+                data = load_leveling_data()
+                data["leveling_settings"]["xp_settings"]["messages"]["xp_per_message"] = xp_value
+                save_leveling_data(data)
+                await interaction.response.send_message(f"✅ Message XP set to {xp_value}!", ephemeral=True)
+            else:
+                await interaction.response.send_message("❌ XP must be between 0 and 1000!", ephemeral=True)
+        except ValueError:
+            await interaction.response.send_message("❌ Please enter a valid number!", ephemeral=True)
+
+class MessageCooldownDetailModal(discord.ui.Modal):
+    def __init__(self):
+        super().__init__(title="Set Message Cooldown")
+
+    cooldown = discord.ui.TextInput(
+        label="Cooldown (seconds)",
+        placeholder="Enter cooldown in seconds (0-3600)...",
+        min_length=1,
+        max_length=4
+    )
+
+    async def on_submit(self, interaction: discord.Interaction):
+        try:
+            cooldown_value = int(self.cooldown.value)
+            if 0 <= cooldown_value <= 3600:
+                data = load_leveling_data()
+                data["leveling_settings"]["xp_settings"]["messages"]["cooldown"] = cooldown_value
+                save_leveling_data(data)
+                await interaction.response.send_message(f"✅ Message cooldown set to {cooldown_value} seconds!", ephemeral=True)
+            else:
+                await interaction.response.send_message("❌ Cooldown must be between 0 and 3600 seconds!", ephemeral=True)
+        except ValueError:
+            await interaction.response.send_message("❌ Please enter a valid number!", ephemeral=True)
+
+class CharacterXPAmountModal(discord.ui.Modal):
+    def __init__(self):
+        super().__init__(title="Set Character XP Amount")
+
+    xp_amount = discord.ui.TextInput(
+        label="XP per Character",
+        placeholder="Enter XP amount per character (0-10)...",
+        min_length=1,
+        max_length=2
+    )
+
+    async def on_submit(self, interaction: discord.Interaction):
+        try:
+            xp_value = int(self.xp_amount.value)
+            if 0 <= xp_value <= 10:
+                data = load_leveling_data()
+                data["leveling_settings"]["xp_settings"]["characters"]["xp_per_character"] = xp_value
+                save_leveling_data(data)
+                await interaction.response.send_message(f"✅ Character XP set to {xp_value}!", ephemeral=True)
+            else:
+                await interaction.response.send_message("❌ XP must be between 0 and 10!", ephemeral=True)
+        except ValueError:
+            await interaction.response.send_message("❌ Please enter a valid number!", ephemeral=True)
+
+class CharacterLimitModal(discord.ui.Modal):
+    def __init__(self):
+        super().__init__(title="Set Character Limit")
+
+    char_limit = discord.ui.TextInput(
+        label="Character Limit",
+        placeholder="Maximum characters before cooldown (1-1000)...",
+        min_length=1,
+        max_length=4
+    )
+
+    async def on_submit(self, interaction: discord.Interaction):
+        try:
+            limit_value = int(self.char_limit.value)
+            if 1 <= limit_value <= 1000:
+                data = load_leveling_data()
+                data["leveling_settings"]["xp_settings"]["characters"]["character_limit"] = limit_value
+                save_leveling_data(data)
+                await interaction.response.send_message(f"✅ Character limit set to {limit_value}!", ephemeral=True)
+            else:
+                await interaction.response.send_message("❌ Character limit must be between 1 and 1000!", ephemeral=True)
+        except ValueError:
+            await interaction.response.send_message("❌ Please enter a valid number!", ephemeral=True)
+
+class CharacterCooldownDetailModal(discord.ui.Modal):
+    def __init__(self):
+        super().__init__(title="Set Character Cooldown")
+
+    cooldown = discord.ui.TextInput(
+        label="Cooldown (seconds)",
+        placeholder="Enter cooldown in seconds (0-3600)...",
+        min_length=1,
+        max_length=4
+    )
+
+    async def on_submit(self, interaction: discord.Interaction):
+        try:
+            cooldown_value = int(self.cooldown.value)
+            if 0 <= cooldown_value <= 3600:
+                data = load_leveling_data()
+                data["leveling_settings"]["xp_settings"]["characters"]["cooldown"] = cooldown_value
+                save_leveling_data(data)
+                await interaction.response.send_message(f"✅ Character cooldown set to {cooldown_value} seconds!", ephemeral=True)
+            else:
+                await interaction.response.send_message("❌ Cooldown must be between 0 and 3600 seconds!", ephemeral=True)
+        except ValueError:
+            await interaction.response.send_message("❌ Please enter a valid number!", ephemeral=True)
+
+class AddCustomRewardModal(discord.ui.Modal):
+    def __init__(self, parent_view):
+        super().__init__(title="Add Custom Reward")
+        self.parent_view = parent_view
+
+    reward_name = discord.ui.TextInput(
+        label="Reward Name",
+        placeholder="Enter reward name...",
+        min_length=1,
+        max_length=50
+    )
+
+    reward_level = discord.ui.TextInput(
+        label="Required Level",
+        placeholder="Enter level requirement (1-100)...",
+        min_length=1,
+        max_length=3
+    )
+
+    reward_description = discord.ui.TextInput(
+        label="Description",
+        placeholder="Enter reward description...",
+        style=discord.TextStyle.paragraph,
+        min_length=1,
+        max_length=200
+    )
+
+    async def on_submit(self, interaction: discord.Interaction):
+        try:
+            level_value = int(self.reward_level.value)
+            if 1 <= level_value <= 100:
+                data = load_leveling_data()
+                reward_id = str(len(data["leveling_settings"]["rewards"]["custom"]) + 1)
+                data["leveling_settings"]["rewards"]["custom"][reward_id] = {
+                    "name": self.reward_name.value,
+                    "level": level_value,
+                    "description": self.reward_description.value
+                }
+                save_leveling_data(data)
+                
+                embed = discord.Embed(
+                    title="✅ Custom Reward Added",
+                    description=f"**{self.reward_name.value}** will be available at level {level_value}!",
+                    color=0x00ff00
+                )
+                
+                # Update the parent view
+                view = CustomRewardsManagementView(self.parent_view.bot, self.parent_view.user)
+                await interaction.response.edit_message(embed=embed, view=view)
+            else:
+                await interaction.response.send_message("❌ Level must be between 1 and 100!", ephemeral=True)
+        except ValueError:
+            await interaction.response.send_message("❌ Please enter a valid level number!", ephemeral=True)
+
+# Modals globaux pour les cooldowns
+class MessageCooldownGlobalModal(discord.ui.Modal):
+    def __init__(self):
+        super().__init__(title="Set Global Message Cooldown")
+
+    cooldown = discord.ui.TextInput(
+        label="Cooldown (seconds)",
+        placeholder="Enter cooldown in seconds (0-3600)...",
+        min_length=1,
+        max_length=4
+    )
+
+    async def on_submit(self, interaction: discord.Interaction):
+        try:
+            cooldown_value = int(self.cooldown.value)
+            if 0 <= cooldown_value <= 3600:
+                data = load_leveling_data()
+                data["leveling_settings"]["xp_settings"]["messages"]["cooldown"] = cooldown_value
+                save_leveling_data(data)
+                await interaction.response.send_message(f"✅ Global message cooldown set to {cooldown_value} seconds!", ephemeral=True)
+            else:
+                await interaction.response.send_message("❌ Cooldown must be between 0 and 3600 seconds!", ephemeral=True)
+        except ValueError:
+            await interaction.response.send_message("❌ Please enter a valid number!", ephemeral=True)
+
+class CharacterCooldownGlobalModal(discord.ui.Modal):
+    def __init__(self):
+        super().__init__(title="Set Global Character Cooldown")
+
+    cooldown = discord.ui.TextInput(
+        label="Cooldown (seconds)",
+        placeholder="Enter cooldown in seconds (0-3600)...",
+        min_length=1,
+        max_length=4
+    )
+
+    async def on_submit(self, interaction: discord.Interaction):
+        try:
+            cooldown_value = int(self.cooldown.value)
+            if 0 <= cooldown_value <= 3600:
+                data = load_leveling_data()
+                data["leveling_settings"]["xp_settings"]["characters"]["cooldown"] = cooldown_value
+                save_leveling_data(data)
+                await interaction.response.send_message(f"✅ Global character cooldown set to {cooldown_value} seconds!", ephemeral=True)
+            else:
+                await interaction.response.send_message("❌ Cooldown must be between 0 and 3600 seconds!", ephemeral=True)
+        except ValueError:
+            await interaction.response.send_message("❌ Please enter a valid number!", ephemeral=True)
+
+class CharacterLimitGlobalModal(discord.ui.Modal):
+    def __init__(self):
+        super().__init__(title="Set Global Character Limit")
+
+    char_limit = discord.ui.TextInput(
+        label="Character Limit",
+        placeholder="Maximum characters before cooldown (1-1000)...",
+        min_length=1,
+        max_length=4
+    )
+
+    async def on_submit(self, interaction: discord.Interaction):
+        try:
+            limit_value = int(self.char_limit.value)
+            if 1 <= limit_value <= 1000:
+                data = load_leveling_data()
+                data["leveling_settings"]["xp_settings"]["characters"]["character_limit"] = limit_value
+                save_leveling_data(data)
+                await interaction.response.send_message(f"✅ Global character limit set to {limit_value}!", ephemeral=True)
+            else:
+                await interaction.response.send_message("❌ Character limit must be between 1 and 1000!", ephemeral=True)
+        except ValueError:
+            await interaction.response.send_message("❌ Please enter a valid number!", ephemeral=True)
+
+
             color=discord.Color.blue()
         )
 
