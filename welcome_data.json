@@ -7,13 +7,13 @@
     ],
     "avatar_position": {
       "x": 105,
-      "y": 72,
+      "y": 70,
       "diameter": 705
     },
     "default_profile": {
       "url": "https://raw.githubusercontent.com/TheBlueEL/pictures/refs/heads/main/DefaultProfile.png",
       "x": 105,
-      "y": 72,
+      "y": 70,
       "enabled": true
     },
     "profile_decoration": {
