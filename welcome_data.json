@@ -6,37 +6,37 @@
       240
     ],
     "avatar_position": {
-      "x": 100,
-      "y": 75,
-      "diameter": 705
+      "x": 55,
+      "y": 50,
+      "diameter": 120
     },
     "default_profile": {
       "url": "https://raw.githubusercontent.com/TheBlueEL/pictures/refs/heads/main/DefaultProfile.png",
-      "x": 100,
-      "y": 75,
+      "x": 55,
+      "y": 50,
       "enabled": true
     },
     "profile_decoration": {
       "url": "https://raw.githubusercontent.com/TheBlueEL/pictures/refs/heads/main/ProfileOutline.png",
-      "x": 100,
-      "y": 75,
+      "x": 55,
+      "y": 50,
       "enabled": true
     },
     "text_config": {
       "welcome_text": {
-        "x_offset": 50,
-        "y_offset": 200,
-        "font_size": 72,
+        "x_offset": 20,
+        "y_offset": 20,
+        "font_size": 28,
         "font_path": "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
         "text": "WELCOME, TO THE SERVER"
       },
       "username_text": {
-        "x_offset": 50,
-        "y_offset": 300,
-        "font_size_max": 175,
-        "font_size_min": 50,
+        "x_offset": 20,
+        "y_offset": 60,
+        "font_size_max": 32,
+        "font_size_min": 16,
         "font_path": "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
-        "margin_right": 25
+        "margin_right": 20
       },
       "text_color": [
         255,
@@ -50,7 +50,7 @@
         0,
         128
       ],
-      "shadow_offset": 5
+      "shadow_offset": 2
     }
   }
 }
