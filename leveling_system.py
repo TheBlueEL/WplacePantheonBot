@@ -105,8 +105,27 @@ class LevelingSystem(commands.Cog):
                 # Download and use background image
                 bg_data = await self.download_image(config["background_image"])
                 if bg_data:
-                    background = Image.open(io.BytesIO(bg_data)).convert("RGBA")
-                    background = background.resize((bg_width, bg_height), Image.Resampling.LANCZOS)
+                    original_bg = Image.open(io.BytesIO(bg_data)).convert("RGBA")
+                    
+                    # Calculate aspect ratios
+                    original_ratio = original_bg.width / original_bg.height
+                    target_ratio = bg_width / bg_height
+                    
+                    if original_ratio > target_ratio:
+                        # Image is wider, crop width
+                        new_height = original_bg.height
+                        new_width = int(new_height * target_ratio)
+                        left = (original_bg.width - new_width) // 2
+                        cropped = original_bg.crop((left, 0, left + new_width, new_height))
+                    else:
+                        # Image is taller, crop height
+                        new_width = original_bg.width
+                        new_height = int(new_width / target_ratio)
+                        top = (original_bg.height - new_height) // 2
+                        cropped = original_bg.crop((0, top, new_width, top + new_height))
+                    
+                    # Resize to final size
+                    background = cropped.resize((bg_width, bg_height), Image.Resampling.LANCZOS)
                 else:
                     background = Image.new("RGBA", (bg_width, bg_height), (255, 255, 255, 255))
             elif config.get("background_color") and config["background_color"] != "None":
