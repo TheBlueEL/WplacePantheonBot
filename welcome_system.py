@@ -293,11 +293,6 @@ class WelcomeSystem(commands.Cog):
             except:
                 font_welcome = ImageFont.load_default()
 
-            draw.text((text_x + shadow_offset, text_y_welcome + shadow_offset), 
-                     welcome_config["text"], font=font_welcome, fill=shadow_color)
-            draw.text((text_x, text_y_welcome), 
-                     welcome_config["text"], font=font_welcome, fill=text_color)
-
             # Deuxième zone: "[USERNAME]" avec taille adaptative
             username_text = user.display_name.upper()
 
@@ -333,11 +328,56 @@ class WelcomeSystem(commands.Cog):
                 except:
                     font_username = ImageFont.load_default()
 
-            # Dessiner le nom d'utilisateur avec l'ombre
-            draw.text((text_x + shadow_offset, text_y_username + shadow_offset), 
-                     username_text, font=font_username, fill=shadow_color)
-            draw.text((text_x, text_y_username), 
-                     username_text, font=font_username, fill=text_color)
+            # Vérifier si une image de texture de texte est définie
+            text_texture_image = None
+            default_profile_config = self.config.get("default_profile", {})
+            if default_profile_config.get("custom_image_url"):
+                try:
+                    texture_data = await self.download_image(default_profile_config["custom_image_url"])
+                    if texture_data:
+                        text_texture_image = Image.open(io.BytesIO(texture_data)).convert("RGBA")
+                        print(f"✅ Image de texture de texte chargée: {text_texture_image.size}")
+                except Exception as e:
+                    print(f"❌ Erreur lors du chargement de la texture de texte: {e}")
+
+            if text_texture_image:
+                # Créer un masque pour le texte
+                text_mask = Image.new('L', template.size, 0)
+                mask_draw = ImageDraw.Draw(text_mask)
+
+                # Dessiner le texte sur le masque en blanc (visible)
+                mask_draw.text((text_x + shadow_offset, text_y_welcome + shadow_offset), 
+                             welcome_config["text"], font=font_welcome, fill=255)
+                mask_draw.text((text_x, text_y_welcome), 
+                             welcome_config["text"], font=font_welcome, fill=255)
+                mask_draw.text((text_x + shadow_offset, text_y_username + shadow_offset), 
+                             username_text, font=font_username, fill=255)
+                mask_draw.text((text_x, text_y_username), 
+                             username_text, font=font_username, fill=255)
+
+                # Redimensionner l'image de texture pour couvrir toute la zone de texte
+                texture_resized = text_texture_image.resize(template.size, Image.Resampling.LANCZOS)
+
+                # Créer une image avec la texture appliquée uniquement sur le texte
+                textured_text = Image.new("RGBA", template.size, (0, 0, 0, 0))
+                textured_text.paste(texture_resized, (0, 0))
+                textured_text.putalpha(text_mask)
+
+                # Coller l'image texturée sur le template
+                template = Image.alpha_composite(template, textured_text)
+                print(f"✅ Texture appliquée sur le texte")
+            else:
+                # Dessiner le texte normalement avec les couleurs
+                draw.text((text_x + shadow_offset, text_y_welcome + shadow_offset), 
+                         welcome_config["text"], font=font_welcome, fill=shadow_color)
+                draw.text((text_x, text_y_welcome), 
+                         welcome_config["text"], font=font_welcome, fill=text_color)
+
+                # Dessiner le nom d'utilisateur avec l'ombre
+                draw.text((text_x + shadow_offset, text_y_username + shadow_offset), 
+                         username_text, font=font_username, fill=shadow_color)
+                draw.text((text_x, text_y_username), 
+                         username_text, font=font_username, fill=text_color)
 
             # Convertir en bytes pour l'envoi Discord
             output = io.BytesIO()
