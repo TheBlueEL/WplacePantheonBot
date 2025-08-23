@@ -100,13 +100,13 @@ class WelcomeSystem(commands.Cog):
             
             # Télécharger DefaultProfile si activée
             default_profile_data = None
-            if self.config.get("default_profile", {}).get("enabled", False):
+            if self.config.get("default_profile", {}).get("enabled", True):
                 default_profile_url = self.config["default_profile"]["url"]
                 default_profile_data = await self.download_image(default_profile_url)
             
             # Télécharger la décoration de profil si activée
             decoration_data = None
-            if self.config.get("profile_decoration", {}).get("enabled", False):
+            if self.config.get("profile_decoration", {}).get("enabled", True):
                 decoration_url = self.config["profile_decoration"]["url"]
                 decoration_data = await self.download_image(decoration_url)
             
@@ -141,7 +141,7 @@ class WelcomeSystem(commands.Cog):
             avatar_circle.putalpha(mask)
             
             # Ajouter DefaultProfile derrière l'avatar si disponible
-            if default_profile and self.config.get("default_profile", {}).get("enabled", False):
+            if default_profile and self.config.get("default_profile", {}).get("enabled", True):
                 default_profile_config = self.config["default_profile"]
                 default_profile_x = default_profile_config["x"]
                 default_profile_y = default_profile_config["y"]
@@ -153,7 +153,7 @@ class WelcomeSystem(commands.Cog):
             template.paste(avatar_circle, (circle_x, circle_y), avatar_circle)
             
             # Ajouter la décoration de profil par-dessus l'avatar si disponible
-            if decoration and self.config.get("profile_decoration", {}).get("enabled", False):
+            if decoration and self.config.get("profile_decoration", {}).get("enabled", True):
                 decoration_config = self.config["profile_decoration"]
                 decoration_x = decoration_config["x"]
                 decoration_y = decoration_config["y"]
