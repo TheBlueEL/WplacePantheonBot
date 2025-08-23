@@ -1284,7 +1284,7 @@ class CustomRewardsView(discord.ui.View):
         
         embed = discord.Embed(
             title="<:TotalLOGO:1408245313755545752> Custom Rewards",
-            description="Manage custom rewards and advanced XP settings:",
+            description="Create and manage custom rewards for reaching specific levels:",
             color=0xFFFFFF
         )
 
@@ -1298,31 +1298,13 @@ class CustomRewardsView(discord.ui.View):
 
         return embed
 
-    @discord.ui.button(label="Messages XP", style=discord.ButtonStyle.primary, emoji="💬", row=0)
-    async def message_xp_custom(self, interaction: discord.Interaction, button: discord.ui.Button):
-        view = CustomMessageXPView(self.bot, self.user)
-        embed = view.get_embed()
-        await interaction.response.edit_message(embed=embed, view=view)
-
-    @discord.ui.button(label="Characters XP", style=discord.ButtonStyle.secondary, emoji="<:DescriptionLOGO:1407733417172533299>", row=0)
-    async def character_xp_custom(self, interaction: discord.Interaction, button: discord.ui.Button):
-        view = CustomCharacterXPView(self.bot, self.user)
-        embed = view.get_embed()
-        await interaction.response.edit_message(embed=embed, view=view)
-
-    @discord.ui.button(label="Cooldowns", style=discord.ButtonStyle.secondary, emoji="⏰", row=0)
-    async def cooldown_settings(self, interaction: discord.Interaction, button: discord.ui.Button):
-        view = CustomCooldownView(self.bot, self.user)
-        embed = view.get_embed()
-        await interaction.response.edit_message(embed=embed, view=view)
-
-    @discord.ui.button(label="Add Custom", style=discord.ButtonStyle.success, emoji="<:CreateLOGO:1407071205026168853>", row=1)
+    @discord.ui.button(label="Add Custom", style=discord.ButtonStyle.success, emoji="<:CreateLOGO:1407071205026168853>", row=0)
     async def add_custom_reward(self, interaction: discord.Interaction, button: discord.ui.Button):
         view = AddCustomRewardView(self.bot, self.user)
         embed = view.get_embed()
         await interaction.response.edit_message(embed=embed, view=view)
 
-    @discord.ui.button(label="Edit Custom", style=discord.ButtonStyle.primary, emoji="<:EditLOGO:1407071307022995508>", row=1)
+    @discord.ui.button(label="Edit Custom", style=discord.ButtonStyle.primary, emoji="<:EditLOGO:1407071307022995508>", row=0)
     async def edit_custom_reward(self, interaction: discord.Interaction, button: discord.ui.Button):
         data = load_leveling_data()
         custom_rewards = data["leveling_settings"]["rewards"]["custom"]
@@ -1338,7 +1320,7 @@ class CustomRewardsView(discord.ui.View):
         embed = view.get_embed()
         await interaction.response.edit_message(embed=embed, view=view)
 
-    @discord.ui.button(label="Remove Custom", style=discord.ButtonStyle.danger, emoji="<:DeleteLOGO:1407071421363916841>", row=1)
+    @discord.ui.button(label="Remove Custom", style=discord.ButtonStyle.danger, emoji="<:DeleteLOGO:1407071421363916841>", row=0)
     async def remove_custom_reward(self, interaction: discord.Interaction, button: discord.ui.Button):
         data = load_leveling_data()
         custom_rewards = data["leveling_settings"]["rewards"]["custom"]
@@ -1354,7 +1336,7 @@ class CustomRewardsView(discord.ui.View):
         embed = view.get_embed()
         await interaction.response.edit_message(embed=embed, view=view)
 
-    @discord.ui.button(label="Back", style=discord.ButtonStyle.gray, emoji="<:BackLOGO:1407071474233114766>", row=2)
+    @discord.ui.button(label="Back", style=discord.ButtonStyle.gray, emoji="<:BackLOGO:1407071474233114766>", row=1)
     async def back(self, interaction: discord.Interaction, button: discord.ui.Button):
         view = RewardSettingsView(self.bot, self.user)
         embed = view.get_embed()
@@ -1367,26 +1349,53 @@ class XPSettingsView(discord.ui.View):
         self.user = user
 
     def get_embed(self):
+        data = load_leveling_data()
+        msg_settings = data["leveling_settings"]["xp_settings"]["messages"]
+        char_settings = data["leveling_settings"]["xp_settings"]["characters"]
+        
         embed = discord.Embed(
             title="<:SettingLOGO:1407071854593839239> XP Settings",
             description="Configure how users gain experience:",
             color=0xFFFFFF
         )
+        
+        # Message XP Status
+        msg_status = "<:OnLOGO:1407072463883472978> Enabled" if msg_settings["enabled"] else "<:OffLOGO:1407072621836894380> Disabled"
+        embed.add_field(
+            name="💬 Message XP",
+            value=f"{msg_status}\nXP: {msg_settings['xp_per_message']}/message\nCooldown: {msg_settings['cooldown']}s",
+            inline=True
+        )
+        
+        # Character XP Status
+        char_status = "<:OnLOGO:1407072463883472978> Enabled" if char_settings["enabled"] else "<:OffLOGO:1407072621836894380> Disabled"
+        embed.add_field(
+            name="<:DescriptionLOGO:1407733417172533299> Character XP",
+            value=f"{char_status}\nXP: {char_settings['xp_per_character']}/char\nLimit: {char_settings['character_limit']}\nCooldown: {char_settings['cooldown']}s",
+            inline=True
+        )
+        
         return embed
 
-    @discord.ui.button(label="Messages", style=discord.ButtonStyle.secondary, emoji="💬")
+    @discord.ui.button(label="Messages XP", style=discord.ButtonStyle.primary, emoji="💬", row=0)
     async def message_xp(self, interaction: discord.Interaction, button: discord.ui.Button):
         view = MessageXPView(self.user)
         embed = view.get_embed()
         await interaction.response.edit_message(embed=embed, view=view)
 
-    @discord.ui.button(label="Characters XP", style=discord.ButtonStyle.secondary, emoji="<:DescriptionLOGO:1407733417172533299>")
+    @discord.ui.button(label="Characters XP", style=discord.ButtonStyle.secondary, emoji="<:DescriptionLOGO:1407733417172533299>", row=0)
     async def character_xp(self, interaction: discord.Interaction, button: discord.ui.Button):
         view = CharacterXPView(self.user)
         embed = view.get_embed()
         await interaction.response.edit_message(embed=embed, view=view)
 
-    @discord.ui.button(label="Back", style=discord.ButtonStyle.gray, emoji="<:BackLOGO:1407071474233114766>")
+    @discord.ui.button(label="Cooldowns", style=discord.ButtonStyle.secondary, emoji="⏰", row=0)
+    async def cooldown_settings(self, interaction: discord.Interaction, button: discord.ui.Button):
+        view = CooldownSettingsView(self.bot, self.user)
+        embed = view.get_embed()
+        await interaction.response.edit_message(embed=embed, view=view)
+
+    @discord.ui.button(label="Back", style=discord.ButtonStyle.gray, emoji="<:BackLOGO:1407071474233114766>", row=1)
     async def back(self, interaction: discord.Interaction, button: discord.ui.Button):
         view = LevelSystemMainView(self.bot, self.user)
         embed = view.get_main_embed()
@@ -1396,29 +1405,6 @@ class MessageXPView(discord.ui.View):
     def __init__(self, user):
         super().__init__(timeout=300)
         self.user = user
-
-        # Set initial button state based on current settings
-        data = load_leveling_data()
-        enabled = data["leveling_settings"]["xp_settings"]["messages"]["enabled"]
-
-        # Add buttons with correct initial states
-        self.add_item(discord.ui.Button(label="XP", style=discord.ButtonStyle.secondary, emoji="⚡"))
-        self.add_item(discord.ui.Button(label="Cooldown", style=discord.ButtonStyle.secondary, emoji="⏰"))
-
-        toggle_button = discord.ui.Button(
-            label="ON" if enabled else "OFF",
-            style=discord.ButtonStyle.success if enabled else discord.ButtonStyle.danger,
-            emoji="<:OnLOGO:1407072463883472978>" if enabled else "<:OffLOGO:1407072621836894380>"
-        )
-        toggle_button.callback = self.toggle
-        self.add_item(toggle_button)
-
-        self.add_item(discord.ui.Button(label="Back", style=discord.ButtonStyle.gray, emoji="<:BackLOGO:1407071474233114766>"))
-
-        # Set callbacks for other buttons
-        self.children[0].callback = self.set_xp
-        self.children[1].callback = self.set_cooldown
-        self.children[3].callback = self.back
 
     def get_embed(self):
         data = load_leveling_data()
@@ -1437,41 +1423,28 @@ class MessageXPView(discord.ui.View):
 
         return embed
 
-    @discord.ui.button(label="XP", style=discord.ButtonStyle.secondary, emoji="⚡")
+    @discord.ui.button(label="Set XP", style=discord.ButtonStyle.primary, emoji="⚡")
     async def set_xp(self, interaction: discord.Interaction, button: discord.ui.Button):
         modal = MessageXPModal()
         await interaction.response.send_modal(modal)
 
-    @discord.ui.button(label="Cooldown", style=discord.ButtonStyle.secondary, emoji="⏰")
+    @discord.ui.button(label="Set Cooldown", style=discord.ButtonStyle.secondary, emoji="⏰")
     async def set_cooldown(self, interaction: discord.Interaction, button: discord.ui.Button):
         modal = MessageCooldownModal()
         await interaction.response.send_modal(modal)
 
-    async def toggle(self, interaction: discord.Interaction):
+    @discord.ui.button(label="Toggle", style=discord.ButtonStyle.success, emoji="🔄")
+    async def toggle(self, interaction: discord.Interaction, button: discord.ui.Button):
         data = load_leveling_data()
         current_state = data["leveling_settings"]["xp_settings"]["messages"]["enabled"]
         data["leveling_settings"]["xp_settings"]["messages"]["enabled"] = not current_state
         save_leveling_data(data)
 
-        # Find the toggle button and update its appearance
-        for item in self.children:
-            if hasattr(item, 'callback') and item.callback == self.toggle:
-                if data["leveling_settings"]["xp_settings"]["messages"]["enabled"]:
-                    item.label = "ON"
-                    item.style = discord.ButtonStyle.success
-                    item.emoji = "<:OnLOGO:1407072463883472978>"
-                else:
-                    item.label = "OFF"
-                    item.style = discord.ButtonStyle.danger
-                    item.emoji = "<:OffLOGO:1407072621836894380>"
-                break
-
         embed = self.get_embed()
         await interaction.response.edit_message(embed=embed, view=self)
 
     @discord.ui.button(label="Back", style=discord.ButtonStyle.gray, emoji="<:BackLOGO:1407071474233114766>")
-    async def back(self, interaction: discord.Interaction):
-        from leveling_system import LevelingSystem
+    async def back(self, interaction: discord.Interaction, button: discord.ui.Button):
         bot = interaction.client
         view = XPSettingsView(bot, self.user)
         embed = view.get_embed()
@@ -1530,29 +1503,6 @@ class CharacterXPView(discord.ui.View):
         super().__init__(timeout=300)
         self.user = user
 
-        # Set initial button state based on current settings
-        data = load_leveling_data()
-        enabled = data["leveling_settings"]["xp_settings"]["characters"]["enabled"]
-
-        # Add buttons with correct initial states
-        self.add_item(discord.ui.Button(label="XP", style=discord.ButtonStyle.secondary, emoji="⚡"))
-        self.add_item(discord.ui.Button(label="Cooldown", style=discord.ButtonStyle.secondary, emoji="⏰"))
-
-        toggle_button = discord.ui.Button(
-            label="ON" if enabled else "OFF",
-            style=discord.ButtonStyle.success if enabled else discord.ButtonStyle.danger,
-            emoji="<:OnLOGO:1407072463883472978>" if enabled else "<:OffLOGO:1407072621836894380>"
-        )
-        toggle_button.callback = self.toggle
-        self.add_item(toggle_button)
-
-        self.add_item(discord.ui.Button(label="Back", style=discord.ButtonStyle.gray, emoji="<:BackLOGO:1407071474233114766>"))
-
-        # Set callbacks for other buttons
-        self.children[0].callback = self.set_xp
-        self.children[1].callback = self.set_cooldown
-        self.children[3].callback = self.back
-
     def get_embed(self):
         data = load_leveling_data()
         char_settings = data["leveling_settings"]["xp_settings"]["characters"]
@@ -1571,41 +1521,33 @@ class CharacterXPView(discord.ui.View):
 
         return embed
 
-    @discord.ui.button(label="XP", style=discord.ButtonStyle.secondary, emoji="⚡")
+    @discord.ui.button(label="Set XP", style=discord.ButtonStyle.primary, emoji="⚡")
     async def set_xp(self, interaction: discord.Interaction, button: discord.ui.Button):
         modal = CharacterXPModal()
         await interaction.response.send_modal(modal)
 
-    @discord.ui.button(label="Cooldown", style=discord.ButtonStyle.secondary, emoji="⏰")
+    @discord.ui.button(label="Set Limit", style=discord.ButtonStyle.secondary, emoji="📝")
+    async def set_limit(self, interaction: discord.Interaction, button: discord.ui.Button):
+        modal = CharacterLimitModal()
+        await interaction.response.send_modal(modal)
+
+    @discord.ui.button(label="Set Cooldown", style=discord.ButtonStyle.secondary, emoji="⏰")
     async def set_cooldown(self, interaction: discord.Interaction, button: discord.ui.Button):
         modal = CharacterCooldownModal()
         await interaction.response.send_modal(modal)
 
-    async def toggle(self, interaction: discord.Interaction):
+    @discord.ui.button(label="Toggle", style=discord.ButtonStyle.success, emoji="🔄")
+    async def toggle(self, interaction: discord.Interaction, button: discord.ui.Button):
         data = load_leveling_data()
         current_state = data["leveling_settings"]["xp_settings"]["characters"]["enabled"]
         data["leveling_settings"]["xp_settings"]["characters"]["enabled"] = not current_state
         save_leveling_data(data)
 
-        # Find the toggle button and update its appearance
-        for item in self.children:
-            if hasattr(item, 'callback') and item.callback == self.toggle:
-                if data["leveling_settings"]["xp_settings"]["characters"]["enabled"]:
-                    item.label = "ON"
-                    item.style = discord.ButtonStyle.success
-                    item.emoji = "<:OnLOGO:1407072463883472978>"
-                else:
-                    item.label = "OFF"
-                    item.style = discord.ButtonStyle.danger
-                    item.emoji = "<:OffLOGO:1407072621836894380>"
-                break
-
         embed = self.get_embed()
         await interaction.response.edit_message(embed=embed, view=self)
 
     @discord.ui.button(label="Back", style=discord.ButtonStyle.gray, emoji="<:BackLOGO:1407071474233114766>")
-    async def back(self, interaction: discord.Interaction):
-        from leveling_system import LevelingSystem
+    async def back(self, interaction: discord.Interaction, button: discord.ui.Button):
         bot = interaction.client
         view = XPSettingsView(bot, self.user)
         embed = view.get_embed()
@@ -2850,7 +2792,7 @@ class CustomCharacterXPView(discord.ui.View):
         embed = view.get_embed()
         await interaction.response.edit_message(embed=embed, view=view)
 
-class CustomCooldownView(discord.ui.View):
+class CooldownSettingsView(discord.ui.View):
     def __init__(self, bot, user):
         super().__init__(timeout=300)
         self.bot = bot
@@ -2862,24 +2804,24 @@ class CustomCooldownView(discord.ui.View):
         char_cooldown = data["leveling_settings"]["xp_settings"]["characters"]["cooldown"]
 
         embed = discord.Embed(
-            title="<:SettingLOGO:1407071854593839239> Custom Cooldown Settings",
+            title="<:SettingLOGO:1407071854593839239> Cooldown Settings",
             description="Manage all cooldown settings in one place:",
             color=0xFFFFFF
         )
 
-        embed.add_field(name="Message Cooldown", value=f"{msg_cooldown} seconds", inline=True)
-        embed.add_field(name="Character Cooldown", value=f"{char_cooldown} seconds", inline=True)
+        embed.add_field(name="💬 Message Cooldown", value=f"{msg_cooldown} seconds", inline=True)
+        embed.add_field(name="<:DescriptionLOGO:1407733417172533299> Character Cooldown", value=f"{char_cooldown} seconds", inline=True)
         
         return embed
 
     @discord.ui.button(label="Message Cooldown", style=discord.ButtonStyle.primary, emoji="💬")
     async def message_cooldown(self, interaction: discord.Interaction, button: discord.ui.Button):
-        modal = CustomMessageCooldownModal()
+        modal = MessageCooldownModal()
         await interaction.response.send_modal(modal)
 
     @discord.ui.button(label="Character Cooldown", style=discord.ButtonStyle.secondary, emoji="<:DescriptionLOGO:1407733417172533299>")
     async def character_cooldown(self, interaction: discord.Interaction, button: discord.ui.Button):
-        modal = CustomCharacterCooldownModal()
+        modal = CharacterCooldownModal()
         await interaction.response.send_modal(modal)
 
     @discord.ui.button(label="Reset All", style=discord.ButtonStyle.danger, emoji="<:UpdateLOGO:1407072818214080695>")
@@ -2894,7 +2836,7 @@ class CustomCooldownView(discord.ui.View):
 
     @discord.ui.button(label="Back", style=discord.ButtonStyle.gray, emoji="<:BackLOGO:1407071474233114766>")
     async def back(self, interaction: discord.Interaction, button: discord.ui.Button):
-        view = CustomRewardsView(self.bot, self.user)
+        view = XPSettingsView(self.bot, self.user)
         embed = view.get_embed()
         await interaction.response.edit_message(embed=embed, view=view)
 
@@ -3279,3 +3221,28 @@ class CustomRewardDescriptionModal(discord.ui.Modal):
 async def setup(bot):
     await bot.add_cog(LevelingSystem(bot))
     print("LevelingSystem cog loaded successfully!")
+<line_number>3142</line_number>
+class CharacterLimitModal(discord.ui.Modal):
+    def __init__(self):
+        super().__init__(title="Set Character Limit")
+
+    limit = discord.ui.TextInput(
+        label="Character Limit",
+        placeholder="Maximum characters before cooldown...",
+        min_length=1,
+        max_length=5
+    )
+
+    async def on_submit(self, interaction: discord.Interaction):
+        try:
+            limit_value = int(self.limit.value)
+            if limit_value >= 0:
+                data = load_leveling_data()
+                data["leveling_settings"]["xp_settings"]["characters"]["character_limit"] = limit_value
+                save_leveling_data(data)
+                await interaction.response.send_message(f"<:SucessLOGO:1407071637840592977> Character limit set to {limit_value}!", ephemeral=True)
+            else:
+                await interaction.response.send_message("<:ErrorLOGO:1407071682031648850> Limit must be 0 or higher!", ephemeral=True)
+        except ValueError:
+            await interaction.response.send_message("<:ErrorLOGO:1407071682031648850> Please enter a valid number!", ephemeral=True)
+
