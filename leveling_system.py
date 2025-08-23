@@ -100,32 +100,76 @@ class LevelingSystem(commands.Cog):
             bg_width = config.get("background_size", {}).get("width", 2048)
             bg_height = config.get("background_size", {}).get("height", 540)
             
+            # Variables pour gérer les GIFs animés
+            is_animated_gif = False
+            frames = []
+            durations = []
+
             # Create background based on configuration
             if config.get("background_image") and config["background_image"] != "None":
                 # Download and use background image
                 bg_data = await self.download_image(config["background_image"])
                 if bg_data:
-                    original_bg = Image.open(io.BytesIO(bg_data)).convert("RGBA")
+                    original_bg = Image.open(io.BytesIO(bg_data))
                     
-                    # Calculate aspect ratios
-                    original_ratio = original_bg.width / original_bg.height
-                    target_ratio = bg_width / bg_height
-                    
-                    if original_ratio > target_ratio:
-                        # Image is wider, crop width
-                        new_height = original_bg.height
-                        new_width = int(new_height * target_ratio)
-                        left = (original_bg.width - new_width) // 2
-                        cropped = original_bg.crop((left, 0, left + new_width, new_height))
+                    # Vérifier si c'est un GIF animé
+                    if hasattr(original_bg, 'is_animated') and original_bg.is_animated:
+                        is_animated_gif = True
+                        # Traiter chaque frame du GIF
+                        for frame_idx in range(original_bg.n_frames):
+                            original_bg.seek(frame_idx)
+                            frame = original_bg.copy().convert("RGBA")
+                            
+                            # Calculate aspect ratios
+                            original_ratio = frame.width / frame.height
+                            target_ratio = bg_width / bg_height
+                            
+                            if original_ratio > target_ratio:
+                                # Image is wider, crop width
+                                new_height = frame.height
+                                new_width = int(new_height * target_ratio)
+                                left = (frame.width - new_width) // 2
+                                cropped = frame.crop((left, 0, left + new_width, new_height))
+                            else:
+                                # Image is taller, crop height
+                                new_width = frame.width
+                                new_height = int(new_width / target_ratio)
+                                top = (frame.height - new_height) // 2
+                                cropped = frame.crop((0, top, new_width, top + new_height))
+                            
+                            # Resize to final size
+                            processed_frame = cropped.resize((bg_width, bg_height), Image.Resampling.LANCZOS)
+                            frames.append(processed_frame)
+                            
+                            # Récupérer la durée de la frame
+                            try:
+                                duration = original_bg.info.get('duration', 100)
+                                durations.append(duration)
+                            except:
+                                durations.append(100)  # 100ms par défaut
                     else:
-                        # Image is taller, crop height
-                        new_width = original_bg.width
-                        new_height = int(new_width / target_ratio)
-                        top = (original_bg.height - new_height) // 2
-                        cropped = original_bg.crop((0, top, new_width, top + new_height))
-                    
-                    # Resize to final size
-                    background = cropped.resize((bg_width, bg_height), Image.Resampling.LANCZOS)
+                        # Image statique
+                        original_bg = original_bg.convert("RGBA")
+                        
+                        # Calculate aspect ratios
+                        original_ratio = original_bg.width / original_bg.height
+                        target_ratio = bg_width / bg_height
+                        
+                        if original_ratio > target_ratio:
+                            # Image is wider, crop width
+                            new_height = original_bg.height
+                            new_width = int(new_height * target_ratio)
+                            left = (original_bg.width - new_width) // 2
+                            cropped = original_bg.crop((left, 0, left + new_width, new_height))
+                        else:
+                            # Image is taller, crop height
+                            new_width = original_bg.width
+                            new_height = int(new_width / target_ratio)
+                            top = (original_bg.height - new_height) // 2
+                            cropped = original_bg.crop((0, top, new_width, top + new_height))
+                        
+                        # Resize to final size
+                        background = cropped.resize((bg_width, bg_height), Image.Resampling.LANCZOS)
                 else:
                     background = Image.new("RGBA", (bg_width, bg_height), (255, 255, 255, 255))
             elif config.get("background_color") and config["background_color"] != "None":
@@ -242,12 +286,65 @@ class LevelingSystem(commands.Cog):
             xp_text_y = config["xp_text_position"]["y"]
             draw.text((xp_text_x, xp_text_y), xp_text, font=font_xp, fill=(100, 100, 100))
             
-            # Convert to bytes
-            output = io.BytesIO()
-            background.save(output, format='PNG')
-            output.seek(0)
-            
-            return output
+            # Si c'est un GIF animé, traiter toutes les frames
+            if is_animated_gif:
+                final_frames = []
+                
+                for frame_idx, bg_frame in enumerate(frames):
+                    # Utiliser bg_frame comme background pour cette frame
+                    current_background = bg_frame.copy()
+                    
+                    # Ajouter la barre de niveau sur cette frame
+                    if levelbar_data:
+                        current_background.paste(levelbar, (levelbar_x, levelbar_y), levelbar)
+                        
+                        # Ajouter la barre de progression XP
+                        if progress > 0:
+                            crop_width = int(levelbar.width * progress)
+                            if crop_width > 0:
+                                xp_bar_cropped = xp_bar.crop((0, 0, crop_width, levelbar.height))
+                                current_background.paste(xp_bar_cropped, (levelbar_x, levelbar_y), xp_bar_cropped)
+                    
+                    # Ajouter l'avatar
+                    if avatar_data:
+                        current_background.paste(avatar, (config["profile_position"]["x"], config["profile_position"]["y"]), avatar)
+                    
+                    # Ajouter le texte sur cette frame
+                    draw = ImageDraw.Draw(current_background)
+                    
+                    # Draw username
+                    username = user.name
+                    draw.text((config["username_position"]["x"], config["username_position"]["y"]), 
+                             username, font=font_username, fill=(0, 0, 0))
+                    
+                    # Draw level
+                    level_text = f"LEVEL {user_data['level']}"
+                    draw.text((config["level_position"]["x"], config["level_position"]["y"]), 
+                             level_text, font=font_level, fill=(154, 154, 154))
+                    
+                    # Draw XP progress text
+                    draw.text((xp_text_x, xp_text_y), xp_text, font=font_xp, fill=(100, 100, 100))
+                    
+                    final_frames.append(current_background)
+                
+                # Sauvegarder le GIF animé
+                output = io.BytesIO()
+                final_frames[0].save(
+                    output,
+                    format='GIF',
+                    save_all=True,
+                    append_images=final_frames[1:],
+                    duration=durations,
+                    loop=0  # Boucle infinie
+                )
+                output.seek(0)
+                return output
+            else:
+                # Image statique
+                output = io.BytesIO()
+                background.save(output, format='PNG')
+                output.seek(0)
+                return output
             
         except Exception as e:
             print(f"Error creating level card: {e}")
@@ -340,10 +437,17 @@ class LevelingSystem(commands.Cog):
         
         level_card = await self.create_level_card(interaction.user)
         if level_card:
-            file = discord.File(level_card, filename="level_card.png")
-            embed = discord.Embed(title=f"{interaction.user.display_name}'s Level Card", color=0x5865f2)
-            embed.set_image(url="attachment://level_card.png")
-            await interaction.followup.send(embed=embed, file=file)
+            # Déterminer l'extension du fichier
+            level_card.seek(0)
+            file_header = level_card.read(6)
+            level_card.seek(0)
+            
+            # Vérifier si c'est un GIF
+            is_gif = file_header.startswith(b'GIF87a') or file_header.startswith(b'GIF89a')
+            filename = "level_card.gif" if is_gif else "level_card.png"
+            
+            file = discord.File(level_card, filename=filename)
+            await interaction.followup.send(file=file)
         else:
             await interaction.followup.send("❌ Error creating level card!", ephemeral=True)
 
