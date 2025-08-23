@@ -323,7 +323,7 @@ class WelcomeSystem(commands.Cog):
             await interaction.response.send_message(embed=embed, ephemeral=True)
             return
 
-        await interaction.response.defer(ephemeral=True)
+        await interaction.response.defer()
 
         view = WelcomeSystemManagerView(self.bot, interaction.user.id)
         view.guild = interaction.guild
