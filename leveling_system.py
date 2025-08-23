@@ -1009,13 +1009,13 @@ class RoleRewardsView(discord.ui.View):
 
         return embed
 
-    @discord.ui.button(label="Add", style=discord.ButtonStyle.success, emoji="➕")
+    @discord.ui.button(label="Add", style=discord.ButtonStyle.success, emoji="<:CreateLOGO:1407071205026168853>")
     async def add_role_reward(self, interaction: discord.Interaction, button: discord.ui.Button):
         view = AddRoleRewardView(self.bot, self.user)
         embed = view.get_embed()
         await interaction.response.edit_message(embed=embed, view=view)
 
-    @discord.ui.button(label="Edit", style=discord.ButtonStyle.secondary, emoji="✏️")
+    @discord.ui.button(label="Edit", style=discord.ButtonStyle.secondary, emoji="<:EditLOGO:1407071307022995508>")
     async def edit_role_reward(self, interaction: discord.Interaction, button: discord.ui.Button):
         view = EditRoleRewardView(self.bot, self.user)
         embed = view.get_embed()
@@ -1272,7 +1272,7 @@ class XPSettingsView(discord.ui.View):
 
     def get_embed(self):
         embed = discord.Embed(
-            title="⚡ XP Settings",
+            title="<:SettingLOGO:1407071854593839239> XP Settings",
             description="Configure how users gain experience:",
             color=0xFFFFFF
         )
@@ -1329,7 +1329,7 @@ class MessageXPView(discord.ui.View):
         msg_settings = data["leveling_settings"]["xp_settings"]["messages"]
 
         embed = discord.Embed(
-            title="💬 Message XP Settings",
+            title="<:SettingLOGO:1407071854593839239> Message XP Settings",
             description="Configure XP gain from messages:",
             color=0xFFFFFF
         )
@@ -1462,7 +1462,7 @@ class CharacterXPView(discord.ui.View):
         char_settings = data["leveling_settings"]["xp_settings"]["characters"]
 
         embed = discord.Embed(
-            title="📝 Character XP Settings",
+            title="<:SettingLOGO:1407071854593839239> Character XP Settings",
             description="Configure XP gain from characters:",
             color=0xFFFFFF
         )
@@ -1639,7 +1639,7 @@ class LevelCardManagerView(discord.ui.View):
 
     def get_leveling_bar_embed(self):
         embed = discord.Embed(
-            title="📊 Leveling Bar Settings",
+            title="<:SettingLOGO:1407071854593839239> Leveling Bar Settings",
             description="Configure the XP bar and related elements",
             color=discord.Color.blue()
         )
@@ -1653,7 +1653,7 @@ class LevelCardManagerView(discord.ui.View):
 
     def get_xp_info_embed(self):
         embed = discord.Embed(
-            title="ℹ️ XP Info Settings",
+            title="<:SettingLOGO:1407071854593839239> XP Info Settings",
             description="Configure the XP text display (X/Y XP)",
             color=discord.Color.purple()
         )
@@ -1673,7 +1673,7 @@ class LevelCardManagerView(discord.ui.View):
 
     def get_xp_bar_embed(self):
         embed = discord.Embed(
-            title="📊 XP Bar Settings",
+            title="<:SettingLOGO:1407071854593839239> XP Bar Settings",
             description="Configure the static XP bar background",
             color=discord.Color.green()
         )
@@ -1699,7 +1699,7 @@ class LevelCardManagerView(discord.ui.View):
 
     def get_xp_progress_embed(self):
         embed = discord.Embed(
-            title="⚡ XP Progress Settings",
+            title="<:SettingLOGO:1407071854593839239> XP Progress Settings",
             description="Configure the moving XP progress bar",
             color=discord.Color.orange()
         )
@@ -1752,7 +1752,7 @@ class LevelCardManagerView(discord.ui.View):
 
     def get_username_embed(self):
         embed = discord.Embed(
-            title="👤 Username Settings",
+            title="<:SettingLOGO:1407071854593839239> Username Settings",
             description="Configure username and discriminator display",
             color=discord.Color.purple()
         )
@@ -2104,7 +2104,7 @@ class LevelCardManagerView(discord.ui.View):
             username_button = discord.ui.Button(
                 label="Username",
                 style=discord.ButtonStyle.secondary,
-                emoji="👤",
+                emoji="<:ParticipantsLOGO:1407733929389199460>",
                 row=0
             )
             username_button.callback = self.username_settings
