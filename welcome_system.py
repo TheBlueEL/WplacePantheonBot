@@ -1191,6 +1191,13 @@ class WelcomeSystemManagerView(discord.ui.View):
             )
             rgb_button.callback = self.background_rgb_color
 
+            reset_button = discord.ui.Button(
+                label="Reset",
+                style=discord.ButtonStyle.danger,
+                emoji="🔄"
+            )
+            reset_button.callback = self.reset_background_color
+
             back_button = discord.ui.Button(
                 label="Back",
                 style=discord.ButtonStyle.gray,
@@ -1200,6 +1207,7 @@ class WelcomeSystemManagerView(discord.ui.View):
 
             self.add_item(hex_button)
             self.add_item(rgb_button)
+            self.add_item(reset_button)
             self.add_item(back_button)
 
         elif self.mode == "background":
@@ -1245,6 +1253,13 @@ class WelcomeSystemManagerView(discord.ui.View):
             )
             rgb_button.callback = self.profile_outline_rgb_color
 
+            reset_button = discord.ui.Button(
+                label="Reset",
+                style=discord.ButtonStyle.danger,
+                emoji="🔄"
+            )
+            reset_button.callback = self.reset_profile_outline_color
+
             back_button = discord.ui.Button(
                 label="Back",
                 style=discord.ButtonStyle.gray,
@@ -1254,6 +1269,7 @@ class WelcomeSystemManagerView(discord.ui.View):
 
             self.add_item(hex_button)
             self.add_item(rgb_button)
+            self.add_item(reset_button)
             self.add_item(back_button)
 
         elif self.mode == "profile_outline_image":
@@ -1334,6 +1350,13 @@ class WelcomeSystemManagerView(discord.ui.View):
             )
             rgb_button.callback = self.content_rgb_color
 
+            reset_button = discord.ui.Button(
+                label="Reset",
+                style=discord.ButtonStyle.danger,
+                emoji="🔄"
+            )
+            reset_button.callback = self.reset_content_color
+
             back_button = discord.ui.Button(
                 label="Back",
                 style=discord.ButtonStyle.gray,
@@ -1343,6 +1366,7 @@ class WelcomeSystemManagerView(discord.ui.View):
 
             self.add_item(hex_button)
             self.add_item(rgb_button)
+            self.add_item(reset_button)
             self.add_item(back_button)
 
         elif self.mode == "content_image":
@@ -1500,6 +1524,19 @@ class WelcomeSystemManagerView(discord.ui.View):
         self.update_buttons()
         await interaction.response.edit_message(embed=embed, view=self)
 
+    async def reset_background_color(self, interaction: discord.Interaction):
+        self.config.pop("background_color", None)
+        self.config.pop("background_image", None)
+        self.save_config()
+
+        # Generate new preview avec la couleur par défaut
+        print("🔄 Régénération de la prévisualisation après reset couleur de fond...")
+        await self.generate_preview_image(interaction.user)
+
+        embed = self.get_background_color_embed()
+        self.update_buttons()
+        await interaction.response.edit_message(embed=embed, view=self)
+
     # Content callbacks
     async def content_settings(self, interaction: discord.Interaction):
         self.mode = "content"
@@ -1549,6 +1586,20 @@ class WelcomeSystemManagerView(discord.ui.View):
         await self.generate_preview_image(interaction.user)
 
         embed = self.get_content_image_embed()
+        self.update_buttons()
+        await interaction.response.edit_message(embed=embed, view=self)
+
+    async def reset_content_color(self, interaction: discord.Interaction):
+        if "text_config" not in self.config:
+            self.config["text_config"] = {}
+        self.config["text_config"].pop("text_color", None)
+        self.save_config()
+
+        # Generate new preview avec la couleur par défaut (rouge)
+        print("🔄 Régénération de la prévisualisation après reset couleur de texte...")
+        await self.generate_preview_image(interaction.user)
+
+        embed = self.get_content_color_embed()
         self.update_buttons()
         await interaction.response.edit_message(embed=embed, view=self)
 
@@ -1628,6 +1679,21 @@ class WelcomeSystemManagerView(discord.ui.View):
 
         # Generate new preview après suppression de l'image de profile outline
         print("🔄 Régénération de la prévisualisation après suppression de l'image de profile outline...")
+        await self.generate_preview_image(interaction.user)
+
+        embed = self.get_profile_outline_embed()
+        self.update_buttons()
+        await interaction.response.edit_message(embed=embed, view=self)
+
+    async def reset_profile_outline_color(self, interaction: discord.Interaction):
+        if "profile_decoration" not in self.config:
+            self.config["profile_decoration"] = {}
+        self.config["profile_decoration"].pop("color_override", None)
+        self.config["profile_decoration"].pop("custom_image", None)
+        self.save_config()
+
+        # Generate new preview avec l'outline par défaut
+        print("🔄 Régénération de la prévisualisation après reset couleur profile outline...")
         await self.generate_preview_image(interaction.user)
 
         embed = self.get_profile_outline_embed()
