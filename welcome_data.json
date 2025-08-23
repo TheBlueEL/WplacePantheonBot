@@ -15,7 +15,12 @@
       "url": "https://raw.githubusercontent.com/TheBlueEL/pictures/refs/heads/main/ProfileOutline.png",
       "x": 60,
       "y": 135,
-      "enabled": true
+      "enabled": true,
+      "color_override": [
+        0,
+        255,
+        255
+      ]
     },
     "text_config": {
       "welcome_text": {
