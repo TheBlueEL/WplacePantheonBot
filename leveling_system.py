@@ -94,11 +94,28 @@ class LevelingSystem(commands.Cog):
             user_data = data["user_data"].get(str(user.id), {"xp": 0, "level": 1})
             config = data["leveling_settings"]["level_card"]
             
-            # Create white background (2048x756)
-            background = Image.new("RGBA", (2048, 756), (255, 255, 255, 255))
+            # Create background based on configuration
+            if config.get("background_image") and config["background_image"] != "None":
+                # Download and use background image
+                bg_data = await self.download_image(config["background_image"])
+                if bg_data:
+                    background = Image.open(io.BytesIO(bg_data)).convert("RGBA")
+                    background = background.resize((2048, 756), Image.Resampling.LANCZOS)
+                else:
+                    background = Image.new("RGBA", (2048, 756), (255, 255, 255, 255))
+            elif config.get("background_color") and config["background_color"] != "None":
+                # Use background color
+                if isinstance(config["background_color"], list) and len(config["background_color"]) == 3:
+                    bg_color = tuple(config["background_color"]) + (255,)
+                else:
+                    bg_color = (255, 255, 255, 255)  # Default white
+                background = Image.new("RGBA", (2048, 756), bg_color)
+            else:
+                # Default white background
+                background = Image.new("RGBA", (2048, 756), (255, 255, 255, 255))
             
             # Download and add level bar image
-            levelbar_data = await self.download_image(config["background_image"])
+            levelbar_data = await self.download_image(config["level_bar_image"])
             if levelbar_data:
                 levelbar = Image.open(io.BytesIO(levelbar_data)).convert("RGBA")
                 # Position level bar in bottom right with 30px margin
@@ -181,17 +198,17 @@ class LevelingSystem(commands.Cog):
             xp_text = f"{current_xp_in_level}/{total_xp_for_next} XP"
             
             try:
-                font_xp = ImageFont.truetype("PlayPretend.otf", 40)
+                font_xp = ImageFont.truetype("PlayPretend.otf", config["xp_text_position"]["font_size"])
             except:
                 # Fallback vers les polices système
                 try:
-                    font_xp = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 40)
+                    font_xp = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", config["xp_text_position"]["font_size"])
                 except:
                     font_xp = ImageFont.load_default()
             
-            # Position XP text above the level bar (so it's visible)
-            xp_text_x = config["xp_bar_position"]["x"]
-            xp_text_y = config["xp_bar_position"]["y"] - 50  # 50px above the level bar
+            # Position XP text using config
+            xp_text_x = config["xp_text_position"]["x"]
+            xp_text_y = config["xp_text_position"]["y"]
             draw.text((xp_text_x, xp_text_y), xp_text, font=font_xp, fill=(100, 100, 100))
             
             # Convert to bytes
