@@ -25,8 +25,8 @@
       "level_bar_image": "https://raw.githubusercontent.com/TheBlueEL/pictures/refs/heads/main/LevelBar.png",
       "username_color": [255, 255, 255],
       "level_color": [245, 55, 48],
-      "xp_text_color": [255, 255, 255],
-      "xp_bar_color": [227,62,65],
+      "xp_text_color": [65,65,69],
+      "xp_bar_color": [225,66,53],
       "profile_position": {
         "x": 50,
         "y": 50,
@@ -59,16 +59,16 @@
         "height": 540
       },
       "ranking_position": {
-        "x": 50,
-        "y": 350,
-        "font_size": 60,
+        "x": 1350,
+        "y": 35,
+        "font_size": 120,
         "color": [255, 255, 255],
         "background_color": [245, 55, 48],
         "background_image": "None"
       },
       "discriminator_position": {
-        "x": 900,
-        "y": 275,
+        "x": 1050,
+        "y": 295,
         "font_size": 50,
         "color": [200, 200, 200],
         "background_color": [0, 0, 0],
