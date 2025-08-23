@@ -202,10 +202,7 @@ class LevelingSystem(commands.Cog):
             
             # Draw level (en gris)
             level_text = f"LEVEL {user_data['level']}"
-            username_bbox = draw.textbbox((0, 0), username, font=font_username)
-            level_x_offset = config.get("level_text_x_offset", 20)
-            level_x = config["username_position"]["x"] + username_bbox[2] + level_x_offset
-            draw.text((level_x, config["level_position"]["y"]), 
+            draw.text((config["level_position"]["x"], config["level_position"]["y"]), 
                      level_text, font=font_level, fill=(154, 154, 154))
             
             # Draw XP progress text
