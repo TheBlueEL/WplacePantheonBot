@@ -961,7 +961,7 @@ class RewardSettingsView(discord.ui.View):
 
     @discord.ui.button(label="Custom", style=discord.ButtonStyle.secondary, emoji="✨")
     async def custom_rewards(self, interaction: discord.Interaction, button: discord.ui.Button):
-        view = CustomRewardsView(self.user)
+        view = CustomRewardsView(self.bot, self.user)
         embed = view.get_embed()
         await interaction.response.edit_message(embed=embed, view=view)
 
@@ -1000,19 +1000,19 @@ class RoleRewardsView(discord.ui.View):
 
     @discord.ui.button(label="Add", style=discord.ButtonStyle.success, emoji="➕")
     async def add_role_reward(self, interaction: discord.Interaction, button: discord.ui.Button):
-        view = AddRoleRewardView(self.user)
+        view = AddRoleRewardView(self.bot, self.user)
         embed = view.get_embed()
         await interaction.response.edit_message(embed=embed, view=view)
 
     @discord.ui.button(label="Edit", style=discord.ButtonStyle.secondary, emoji="✏️")
     async def edit_role_reward(self, interaction: discord.Interaction, button: discord.ui.Button):
-        view = EditRoleRewardView(self.user)
+        view = EditRoleRewardView(self.bot, self.user)
         embed = view.get_embed()
         await interaction.response.edit_message(embed=embed, view=view)
 
     @discord.ui.button(label="Remove", style=discord.ButtonStyle.danger, emoji="🗑️")
     async def remove_role_reward(self, interaction: discord.Interaction, button: discord.ui.Button):
-        view = RemoveRoleRewardView(self.user)
+        view = RemoveRoleRewardView(self.bot, self.user)
         embed = view.get_embed()
         await interaction.response.edit_message(embed=embed, view=view)
 
@@ -1023,8 +1023,9 @@ class RoleRewardsView(discord.ui.View):
         await interaction.response.edit_message(embed=embed, view=view)
 
 class AddRoleRewardView(discord.ui.View):
-    def __init__(self, user):
+    def __init__(self, bot, user):
         super().__init__(timeout=300)
+        self.bot = bot
         self.user = user
         self.selected_role = None
         self.level = None
@@ -1115,8 +1116,9 @@ class LevelModal(discord.ui.Modal):
             await interaction.response.send_message("❌ Please enter a valid number!", ephemeral=True)
 
 class EditRoleRewardView(discord.ui.View):
-    def __init__(self, user):
+    def __init__(self, bot, user):
         super().__init__(timeout=300)
+        self.bot = bot
         self.user = user
         self.add_item(EditRoleRewardSelect())
 
@@ -1160,8 +1162,9 @@ class EditRoleRewardSelect(discord.ui.Select):
         await interaction.response.send_message("Edit functionality coming soon!", ephemeral=True)
 
 class RemoveRoleRewardView(discord.ui.View):
-    def __init__(self, user):
+    def __init__(self, bot, user):
         super().__init__(timeout=300)
+        self.bot = bot
         self.user = user
         self.add_item(RemoveRoleRewardSelect())
 
@@ -1231,8 +1234,9 @@ class ConfirmRemoveView(discord.ui.View):
         await interaction.response.edit_message(embed=embed, view=view)
 
 class CustomRewardsView(discord.ui.View):
-    def __init__(self, user):
+    def __init__(self, bot, user):
         super().__init__(timeout=300)
+        self.bot = bot
         self.user = user
 
     def get_embed(self):
@@ -2026,19 +2030,19 @@ class LevelCardManagerView(discord.ui.View):
             )
             profile_outline_button.callback = self.profile_outline_settings
 
-            close_button = discord.ui.Button(
-                label="Close",
+            back_button = discord.ui.Button(
+                label="Back",
                 style=discord.ButtonStyle.danger,
-                emoji="❌",
+                emoji="↩️",
                 row=1
             )
-            close_button.callback = self.close_embed
+            back_button.callback = self.back_to_level_system
 
             self.add_item(leveling_bar_button)
             self.add_item(background_button)
             self.add_item(username_button)
             self.add_item(profile_outline_button)
-            self.add_item(close_button)
+            self.add_item(back_button)
 
     # Main navigation callbacks
     async def leveling_bar_settings(self, interaction: discord.Interaction):
@@ -2288,10 +2292,11 @@ class LevelCardManagerView(discord.ui.View):
         self.update_buttons()
         await interaction.response.edit_message(embed=embed, view=self)
 
-    async def close_embed(self, interaction: discord.Interaction):
-        """Close the level card manager embed"""
-        await interaction.response.defer()
-        await interaction.delete_original_response()
+    async def back_to_level_system(self, interaction: discord.Interaction):
+        """Go back to the main level system menu"""
+        view = LevelSystemMainView(self.bot, interaction.user)
+        embed = view.get_main_embed()
+        await interaction.response.edit_message(embed=embed, view=view)
 
 # Modal classes for Level Card
 class LevelCardHexColorModal(discord.ui.Modal):
