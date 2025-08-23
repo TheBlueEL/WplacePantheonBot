@@ -1272,6 +1272,13 @@ class WelcomeSystemManagerView(discord.ui.View):
             )
             upload_button.callback = self.upload_profile_outline_image
 
+            clear_button = discord.ui.Button(
+                label="Clear Image",
+                style=discord.ButtonStyle.danger,
+                emoji="<:DeleteLOGO:1407071421363916841>"
+            )
+            clear_button.callback = self.clear_profile_outline_image
+
             back_button = discord.ui.Button(
                 label="Back",
                 style=discord.ButtonStyle.gray,
@@ -1281,6 +1288,7 @@ class WelcomeSystemManagerView(discord.ui.View):
 
             self.add_item(url_button)
             self.add_item(upload_button)
+            self.add_item(clear_button)
             self.add_item(back_button)
 
         elif self.mode == "content":
@@ -1430,9 +1438,17 @@ class WelcomeSystemManagerView(discord.ui.View):
             )
             profile_outline_button.callback = self.profile_outline_settings
 
+            close_button = discord.ui.Button(
+                label="Close",
+                style=discord.ButtonStyle.danger,
+                emoji="<:CloseLOGO:1391531593524318271>"
+            )
+            close_button.callback = self.close_embed
+
             self.add_item(background_button)
             self.add_item(content_button)
             self.add_item(profile_outline_button)
+            self.add_item(close_button)
 
     # Background callbacks
     async def background_settings(self, interaction: discord.Interaction):
@@ -1603,6 +1619,21 @@ class WelcomeSystemManagerView(discord.ui.View):
         self.update_buttons()
         await interaction.response.edit_message(embed=embed, view=self)
 
+    async def clear_profile_outline_image(self, interaction: discord.Interaction):
+        if "profile_decoration" not in self.config:
+            self.config["profile_decoration"] = {}
+        self.config["profile_decoration"].pop("custom_image", None)
+        self.config["profile_decoration"].pop("color_override", None)
+        self.save_config()
+
+        # Generate new preview après suppression de l'image de profile outline
+        print("🔄 Régénération de la prévisualisation après suppression de l'image de profile outline...")
+        await self.generate_preview_image(interaction.user)
+
+        embed = self.get_profile_outline_embed()
+        self.update_buttons()
+        await interaction.response.edit_message(embed=embed, view=self)
+
     # Back navigation callbacks
     async def back_to_main(self, interaction: discord.Interaction):
         self.mode = "main"
@@ -1689,6 +1720,22 @@ class WelcomeSystemManagerView(discord.ui.View):
                 color=discord.Color.red()
             )
             await interaction.followup.send(embed=error_embed, ephemeral=True)
+
+    async def close_embed(self, interaction: discord.Interaction):
+        """Close the welcome system embed"""
+        embed = discord.Embed(
+            title="<:SucessLOGO:1407071637840592977> Welcome System Closed",
+            description="The welcome system manager has been closed.",
+            color=discord.Color.green()
+        )
+        
+        # Clear view and disable all components
+        self.clear_items()
+        await interaction.response.edit_message(embed=embed, view=self)
+        
+        # Remove from active managers
+        if interaction.user.id in self.bot.get_cog('WelcomeSystem').active_managers:
+            del self.bot.get_cog('WelcomeSystem').active_managers[interaction.user.id]
 
 
 # Modal classes for color and URL inputs
