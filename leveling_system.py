@@ -165,15 +165,24 @@ class LevelingSystem(commands.Cog):
             
             # Calculate positions from right to left (XP has priority)
             # XP text position (pushes from right)
-            xp_x = bg_width - margin - xp_width
+            default_xp_x = config["xp_text_position"]["x"]
+            xp_x = min(default_xp_x, bg_width - margin - xp_width)
             xp_y = config["xp_text_position"]["y"]
             
-            # Level text position (pushes from right, but gives way to XP)
-            level_x = min(config["level_position"]["x"], xp_x - level_width - min_spacing)
+            # Level text position (pushes from right, but gives way to XP only if needed)
+            default_level_x = config["level_position"]["x"]
+            if default_level_x + level_width + min_spacing > xp_x:
+                level_x = xp_x - level_width - min_spacing
+            else:
+                level_x = default_level_x
             level_y = config["level_position"]["y"]
             
-            # Ranking position (pushes from right, but gives way to level)
-            ranking_x = min(config.get("ranking_position", {}).get("x", 1350), level_x - ranking_width - min_spacing)
+            # Ranking position (pushes from right, but gives way to level only if needed)
+            default_ranking_x = config.get("ranking_position", {}).get("x", 1350)
+            if default_ranking_x + ranking_width + min_spacing > level_x:
+                ranking_x = level_x - ranking_width - min_spacing
+            else:
+                ranking_x = default_ranking_x
             ranking_y = config.get("ranking_position", {}).get("y", 35)
             
             # Username and discriminator (push from left, but give way to XP)
