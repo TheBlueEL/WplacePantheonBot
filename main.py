@@ -64,6 +64,12 @@ async def on_ready():
     except Exception as e:
         print(f'Failed to load welcome_system: {e}')
 
+    try:
+        await client.load_extension('leveling_system')
+        print('Leveling system loaded!')
+    except Exception as e:
+        print(f'Failed to load leveling_system: {e}')
+
     # Setup du système de tickets
     try:
         from ticket_bot import setup_ticket_system, setup_persistent_views
