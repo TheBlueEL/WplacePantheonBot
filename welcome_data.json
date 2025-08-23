@@ -1,4 +1,9 @@
 {
+  "welcome_settings": {
+    "enabled": false,
+    "channel_id": null,
+    "welcome_message": "Welcome {user}!"
+  },
   "template_config": {
     "avatar_position": {
       "x": 101,
