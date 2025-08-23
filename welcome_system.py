@@ -1072,6 +1072,11 @@ class WelcomeSystemManagerView(discord.ui.View):
         embed = self.get_background_color_embed()  # Reuse color embed design
         embed.title = "🎨 Profile Outline Color"
         embed.description = "Choose how to set your profile outline color"
+
+        # Add preview image if available
+        if hasattr(self, 'preview_image_url') and self.preview_image_url:
+            embed.set_image(url=self.preview_image_url)
+
         self.update_buttons()
         await interaction.response.edit_message(embed=embed, view=self)
 
@@ -1080,6 +1085,11 @@ class WelcomeSystemManagerView(discord.ui.View):
         embed = self.get_background_image_embed()  # Reuse image embed design
         embed.title = "🖼️ Profile Outline Image"
         embed.description = "Set a custom profile outline image"
+
+        # Add preview image if available
+        if hasattr(self, 'preview_image_url') and self.preview_image_url:
+            embed.set_image(url=self.preview_image_url)
+
         self.update_buttons()
         await interaction.response.edit_message(embed=embed, view=self)
 
@@ -1131,6 +1141,11 @@ class WelcomeSystemManagerView(discord.ui.View):
             embed = self.get_background_image_embed()
             embed.title = "🖼️ Profile Outline Image"
             embed.description = "Set a custom profile outline image"
+
+            # Add preview image if available
+            if hasattr(self, 'preview_image_url') and self.preview_image_url:
+                embed.set_image(url=self.preview_image_url)
+
         self.update_buttons()
         await interaction.response.edit_message(embed=embed, view=self)
 
