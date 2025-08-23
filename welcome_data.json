@@ -33,11 +33,6 @@
         "font_path": "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
         "margin_right": 25
       },
-      "text_color": [
-        255,
-        0,
-        0
-      ],
       "shadow_color": [
         0,
         0,
