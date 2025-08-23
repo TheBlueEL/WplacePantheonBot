@@ -831,13 +831,13 @@ class WelcomeSystemManagerView(discord.ui.View):
         if self.config.get("background_image"):
             embed.add_field(
                 name="Current Image",
-                value="<:SucessLOGO:1407071637840592977> Custom image set",
+                value="<:SucessLOGO:1407071637840592977> Custom Image",
                 inline=False
             )
         else:
             embed.add_field(
                 name="Current Image",
-                value="<:ErrorLOGO:1407071682031648850> No custom image",
+                value="<:ErrorLOGO:1407071682031648850> No Custom image",
                 inline=False
             )
 
@@ -993,7 +993,7 @@ class WelcomeSystemManagerView(discord.ui.View):
         if default_profile.get("custom_image_url"):
             embed.add_field(
                 name="Current Image",
-                value="<:SucessLOGO:1407071637840592977> Custom image set",
+                value="<:SucessLOGO:1407071637840592977> Custom Image",
                 inline=False
             )
         else:
