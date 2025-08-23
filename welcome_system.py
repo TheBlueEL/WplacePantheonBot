@@ -86,16 +86,39 @@ class WelcomeSystem(commands.Cog):
             # Recharger la configuration pour les modifications en temps réel
             self.config = load_welcome_data()["template_config"]
 
+            # Taille cible pour le template
+            target_width, target_height = 2048, 1080
+            target_ratio = target_width / target_height
+
             # Créer un template avec couleur de fond ou image personnalisée
             if self.config.get("background_image"):
                 template_data = await self.download_image(self.config["background_image"])
                 if not template_data:
                     return None
-                template = Image.open(io.BytesIO(template_data)).convert("RGBA")
+                
+                # Traitement de l'image de fond
+                bg_image = Image.open(io.BytesIO(template_data)).convert("RGBA")
+                orig_width, orig_height = bg_image.size
+                orig_ratio = orig_width / orig_height
+                
+                # Rogner l'image pour maintenir les bonnes proportions
+                if orig_ratio > target_ratio:
+                    # Image trop large, rogner sur les côtés
+                    new_width = int(orig_height * target_ratio)
+                    left = (orig_width - new_width) // 2
+                    bg_image = bg_image.crop((left, 0, left + new_width, orig_height))
+                elif orig_ratio < target_ratio:
+                    # Image trop haute, rogner en haut et en bas
+                    new_height = int(orig_width / target_ratio)
+                    top = (orig_height - new_height) // 2
+                    bg_image = bg_image.crop((0, top, orig_width, top + new_height))
+                
+                # Redimensionner à la taille exacte
+                template = bg_image.resize((target_width, target_height), Image.Resampling.LANCZOS)
             else:
                 # Créer une image avec couleur de fond
                 bg_color = self.config.get("background_color", [255, 255, 255])
-                template = Image.new("RGBA", (1920, 1080), tuple(bg_color + [255]))
+                template = Image.new("RGBA", (target_width, target_height), tuple(bg_color + [255]))
 
             # Télécharger l'avatar de l'utilisateur
             avatar_url = user.display_avatar.url
@@ -141,6 +164,17 @@ class WelcomeSystem(commands.Cog):
                 try:
                     decoration = Image.open(io.BytesIO(decoration_data)).convert("RGBA")
                     print(f"✅ ProfileOutline chargée: {decoration.size}")
+                    
+                    # Traitement de l'image de décoration pour la rendre carrée si nécessaire
+                    dec_width, dec_height = decoration.size
+                    if dec_width != dec_height:
+                        # Rogner pour faire un carré depuis le centre
+                        min_dimension = min(dec_width, dec_height)
+                        left = (dec_width - min_dimension) // 2
+                        top = (dec_height - min_dimension) // 2
+                        decoration = decoration.crop((left, top, left + min_dimension, top + min_dimension))
+                        print(f"✅ ProfileOutline rognée au format carré: {decoration.size}")
+                        
                 except Exception as e:
                     print(f"❌ Erreur lors du traitement de ProfileOutline: {e}")
 
@@ -192,6 +226,16 @@ class WelcomeSystem(commands.Cog):
                     custom_decoration_data = await self.download_image(decoration_config["custom_image"])
                     if custom_decoration_data:
                         decoration = Image.open(io.BytesIO(custom_decoration_data)).convert("RGBA")
+                        
+                        # Traitement de l'image personnalisée pour la rendre carrée si nécessaire
+                        dec_width, dec_height = decoration.size
+                        if dec_width != dec_height:
+                            # Rogner pour faire un carré depuis le centre
+                            min_dimension = min(dec_width, dec_height)
+                            left = (dec_width - min_dimension) // 2
+                            top = (dec_height - min_dimension) // 2
+                            decoration = decoration.crop((left, top, left + min_dimension, top + min_dimension))
+                            print(f"✅ Image personnalisée de ProfileOutline rognée au format carré: {decoration.size}")
 
                 # Coller la décoration à sa taille d'origine (par-dessus l'avatar)
                 template.paste(decoration, (decoration_x, decoration_y), decoration)
@@ -487,6 +531,10 @@ class WelcomeSystem(commands.Cog):
             bottom = top + min_dimension
 
             square_image = image.crop((left, top, right, bottom))
+
+            # Redimensionner à une taille standard pour éviter les problèmes de taille
+            standard_size = 1024  # Taille standard pour les decorations
+            square_image = square_image.resize((standard_size, standard_size), Image.Resampling.LANCZOS)
 
             # Save processed image
             os.makedirs('images', exist_ok=True)
