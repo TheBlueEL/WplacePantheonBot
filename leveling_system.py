@@ -423,7 +423,7 @@ class AddRoleRewardView(discord.ui.View):
         
         return embed
 
-    @discord.ui.role_select(placeholder="Select a role...")
+    @discord.ui.select(cls=discord.ui.RoleSelect, placeholder="Select a role...")
     async def role_select(self, interaction: discord.Interaction, select: discord.ui.RoleSelect):
         self.selected_role = select.values[0]
         if not hasattr(self, 'level_button'):
@@ -872,3 +872,4 @@ class BackToMainButton(discord.ui.Button):
 
 async def setup(bot):
     await bot.add_cog(LevelingSystem(bot))
+    print("LevelingSystem cog loaded successfully!")
