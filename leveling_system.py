@@ -61,7 +61,9 @@ def get_xp_for_next_level(current_xp):
     current_level = get_level_from_xp(current_xp)
     next_level_xp = calculate_xp_for_level(current_level + 1)
     current_level_xp = calculate_xp_for_level(current_level)
-    return next_level_xp - current_level_xp, current_xp - current_level_xp
+    xp_needed_for_next = next_level_xp - current_level_xp
+    current_xp_in_level = current_xp - current_level_xp
+    return xp_needed_for_next, current_xp_in_level
 
 class LevelingSystem(commands.Cog):
     def __init__(self, bot):
@@ -94,33 +96,46 @@ class LevelingSystem(commands.Cog):
             user_data = data["user_data"].get(str(user.id), {"xp": 0, "level": 1})
             config = data["leveling_settings"]["level_card"]
             
+            # Get background size from config
+            bg_width = config.get("background_size", {}).get("width", 2048)
+            bg_height = config.get("background_size", {}).get("height", 540)
+            
             # Create background based on configuration
             if config.get("background_image") and config["background_image"] != "None":
                 # Download and use background image
                 bg_data = await self.download_image(config["background_image"])
                 if bg_data:
                     background = Image.open(io.BytesIO(bg_data)).convert("RGBA")
-                    background = background.resize((2048, 756), Image.Resampling.LANCZOS)
+                    background = background.resize((bg_width, bg_height), Image.Resampling.LANCZOS)
                 else:
-                    background = Image.new("RGBA", (2048, 756), (255, 255, 255, 255))
+                    background = Image.new("RGBA", (bg_width, bg_height), (255, 255, 255, 255))
             elif config.get("background_color") and config["background_color"] != "None":
                 # Use background color
                 if isinstance(config["background_color"], list) and len(config["background_color"]) == 3:
                     bg_color = tuple(config["background_color"]) + (255,)
                 else:
                     bg_color = (255, 255, 255, 255)  # Default white
-                background = Image.new("RGBA", (2048, 756), bg_color)
+                background = Image.new("RGBA", (bg_width, bg_height), bg_color)
             else:
                 # Default white background
-                background = Image.new("RGBA", (2048, 756), (255, 255, 255, 255))
+                background = Image.new("RGBA", (bg_width, bg_height), (255, 255, 255, 255))
             
             # Download and add level bar image
             levelbar_data = await self.download_image(config["level_bar_image"])
             if levelbar_data:
                 levelbar = Image.open(io.BytesIO(levelbar_data)).convert("RGBA")
-                # Position level bar in bottom right with 30px margin
-                levelbar_x = 2048 - levelbar.width - 30
-                levelbar_y = 756 - levelbar.height - 30
+                # Position level bar using config or bottom right with 30px margin
+                xp_bar_config = config.get("xp_bar_position", {})
+                if "x" in xp_bar_config and "y" in xp_bar_config:
+                    # Use custom position and resize if width/height specified
+                    if "width" in xp_bar_config and "height" in xp_bar_config:
+                        levelbar = levelbar.resize((xp_bar_config["width"], xp_bar_config["height"]), Image.Resampling.LANCZOS)
+                    levelbar_x = xp_bar_config["x"]
+                    levelbar_y = xp_bar_config["y"]
+                else:
+                    # Default positioning in bottom right with 30px margin
+                    levelbar_x = bg_width - levelbar.width - 30
+                    levelbar_y = bg_height - levelbar.height - 30
                 background.paste(levelbar, (levelbar_x, levelbar_y), levelbar)
                 
                 # Create XP progress bar overlay
@@ -181,21 +196,21 @@ class LevelingSystem(commands.Cog):
                     font_level = ImageFont.load_default()
             
             # Draw username (en noir sur fond blanc)
-            username = user.display_name
+            username = user.name  # Use username instead of display_name
             draw.text((config["username_position"]["x"], config["username_position"]["y"]), 
                      username, font=font_username, fill=(0, 0, 0))
             
             # Draw level (en gris)
             level_text = f"LEVEL {user_data['level']}"
             username_bbox = draw.textbbox((0, 0), username, font=font_username)
-            level_x = config["username_position"]["x"] + username_bbox[2] + 20
+            level_x_offset = config.get("level_text_x_offset", 20)
+            level_x = config["username_position"]["x"] + username_bbox[2] + level_x_offset
             draw.text((level_x, config["level_position"]["y"]), 
                      level_text, font=font_level, fill=(154, 154, 154))
             
             # Draw XP progress text
             xp_needed, current_xp_in_level = get_xp_for_next_level(user_data["xp"])
-            total_xp_for_next = current_xp_in_level + xp_needed
-            xp_text = f"{current_xp_in_level}/{total_xp_for_next} XP"
+            xp_text = f"{current_xp_in_level}/{xp_needed} XP"
             
             try:
                 font_xp = ImageFont.truetype("PlayPretend.otf", config["xp_text_position"]["font_size"])
