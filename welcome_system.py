@@ -1197,15 +1197,24 @@ class BackgroundHexColorModal(discord.ui.Modal):
         super().__init__(title='🎨 Background Hex Color')
         self.view = view
 
+        # Get current color value
+        current_color = ""
+        if self.view.config.get("background_color"):
+            rgb = self.view.config["background_color"]
+            current_color = f"#{rgb[0]:02x}{rgb[1]:02x}{rgb[2]:02x}"
+
         self.hex_input = discord.ui.TextInput(
             label='Hex Color Code',
             placeholder='#FFFFFF or FFFFFF',
             required=True,
-            max_length=7
+            max_length=7,
+            default=current_color
         )
         self.add_item(self.hex_input)
 
     async def on_submit(self, interaction: discord.Interaction):
+        await interaction.response.defer()
+        
         hex_value = self.hex_input.value.strip()
         if hex_value.startswith('#'):
             hex_value = hex_value[1:]
@@ -1221,37 +1230,46 @@ class BackgroundHexColorModal(discord.ui.Modal):
 
             embed = self.view.get_background_color_embed()
             self.view.update_buttons()
-            await interaction.response.edit_message(embed=embed, view=self.view)
+            await interaction.edit_original_response(embed=embed, view=self.view)
         except ValueError:
             error_embed = discord.Embed(
                 title="<:ErrorLOGO:1407071682031648850> Invalid Hex Color",
                 description="Please enter a valid hex color code (e.g., #FF0000 or FF0000)",
                 color=discord.Color.red()
             )
-            await interaction.response.send_message(embed=error_embed, ephemeral=True)
+            await interaction.followup.send(embed=error_embed, ephemeral=True)
 
 class BackgroundRGBColorModal(discord.ui.Modal):
     def __init__(self, view):
         super().__init__(title='🌈 Background RGB Color')
         self.view = view
 
+        # Get current color values
+        current_r, current_g, current_b = "0", "0", "0"
+        if self.view.config.get("background_color"):
+            rgb = self.view.config["background_color"]
+            current_r, current_g, current_b = str(rgb[0]), str(rgb[1]), str(rgb[2])
+
         self.red_input = discord.ui.TextInput(
             label='Red (0-255)',
             placeholder='255',
             required=True,
-            max_length=3
+            max_length=3,
+            default=current_r
         )
         self.green_input = discord.ui.TextInput(
             label='Green (0-255)',
             placeholder='255',
             required=True,
-            max_length=3
+            max_length=3,
+            default=current_g
         )
         self.blue_input = discord.ui.TextInput(
             label='Blue (0-255)',
             placeholder='255',
             required=True,
-            max_length=3
+            max_length=3,
+            default=current_b
         )
 
         self.add_item(self.red_input)
@@ -1259,6 +1277,8 @@ class BackgroundRGBColorModal(discord.ui.Modal):
         self.add_item(self.blue_input)
 
     async def on_submit(self, interaction: discord.Interaction):
+        await interaction.response.defer()
+        
         try:
             r = int(self.red_input.value)
             g = int(self.green_input.value)
@@ -1276,14 +1296,14 @@ class BackgroundRGBColorModal(discord.ui.Modal):
 
             embed = self.view.get_background_color_embed()
             self.view.update_buttons()
-            await interaction.response.edit_message(embed=embed, view=self.view)
+            await interaction.edit_original_response(embed=embed, view=self.view)
         except ValueError:
             error_embed = discord.Embed(
                 title="<:ErrorLOGO:1407071682031648850> Invalid RGB Values",
                 description="Please enter valid RGB values (0-255 for each color)",
                 color=discord.Color.red()
             )
-            await interaction.response.send_message(embed=error_embed, ephemeral=True)
+            await interaction.followup.send(embed=error_embed, ephemeral=True)
 
 class BackgroundImageURLModal(discord.ui.Modal):
     def __init__(self, view):
@@ -1299,6 +1319,8 @@ class BackgroundImageURLModal(discord.ui.Modal):
         self.add_item(self.url_input)
 
     async def on_submit(self, interaction: discord.Interaction):
+        await interaction.response.defer()
+        
         url = self.url_input.value.strip()
         if not url.startswith(('http://', 'https://')):
             error_embed = discord.Embed(
@@ -1306,7 +1328,7 @@ class BackgroundImageURLModal(discord.ui.Modal):
                 description="Please enter a valid HTTP or HTTPS URL",
                 color=discord.Color.red()
             )
-            await interaction.response.send_message(embed=error_embed, ephemeral=True)
+            await interaction.followup.send(embed=error_embed, ephemeral=True)
             return
 
         self.view.config["background_image"] = url
@@ -1318,22 +1340,32 @@ class BackgroundImageURLModal(discord.ui.Modal):
 
         embed = self.view.get_background_image_embed()
         self.view.update_buttons()
-        await interaction.response.edit_message(embed=embed, view=self.view)
+        await interaction.edit_original_response(embed=embed, view=self.view)
 
 class ProfileOutlineHexColorModal(discord.ui.Modal):
     def __init__(self, view):
         super().__init__(title='🎨 Profile Outline Hex Color')
         self.view = view
 
+        # Get current color value
+        current_color = ""
+        profile_config = self.view.config.get("profile_decoration", {})
+        if profile_config.get("color_override"):
+            rgb = profile_config["color_override"]
+            current_color = f"#{rgb[0]:02x}{rgb[1]:02x}{rgb[2]:02x}"
+
         self.hex_input = discord.ui.TextInput(
             label='Hex Color Code',
             placeholder='#FFFFFF or FFFFFF',
             required=True,
-            max_length=7
+            max_length=7,
+            default=current_color
         )
         self.add_item(self.hex_input)
 
     async def on_submit(self, interaction: discord.Interaction):
+        await interaction.response.defer()
+        
         hex_value = self.hex_input.value.strip()
         if hex_value.startswith('#'):
             hex_value = hex_value[1:]
@@ -1351,37 +1383,47 @@ class ProfileOutlineHexColorModal(discord.ui.Modal):
 
             embed = self.view.get_profile_outline_embed()
             self.view.update_buttons()
-            await interaction.response.edit_message(embed=embed, view=self.view)
+            await interaction.edit_original_response(embed=embed, view=self.view)
         except ValueError:
             error_embed = discord.Embed(
                 title="<:ErrorLOGO:1407071682031648850> Invalid Hex Color",
                 description="Please enter a valid hex color code (e.g., #FF0000 or FF0000)",
                 color=discord.Color.red()
             )
-            await interaction.response.send_message(embed=error_embed, ephemeral=True)
+            await interaction.followup.send(embed=error_embed, ephemeral=True)
 
 class ProfileOutlineRGBColorModal(discord.ui.Modal):
     def __init__(self, view):
         super().__init__(title='🌈 Profile Outline RGB Color')
         self.view = view
 
+        # Get current color values
+        current_r, current_g, current_b = "0", "0", "0"
+        profile_config = self.view.config.get("profile_decoration", {})
+        if profile_config.get("color_override"):
+            rgb = profile_config["color_override"]
+            current_r, current_g, current_b = str(rgb[0]), str(rgb[1]), str(rgb[2])
+
         self.red_input = discord.ui.TextInput(
             label='Red (0-255)',
             placeholder='255',
             required=True,
-            max_length=3
+            max_length=3,
+            default=current_r
         )
         self.green_input = discord.ui.TextInput(
             label='Green (0-255)',
             placeholder='255',
             required=True,
-            max_length=3
+            max_length=3,
+            default=current_g
         )
         self.blue_input = discord.ui.TextInput(
             label='Blue (0-255)',
             placeholder='255',
             required=True,
-            max_length=3
+            max_length=3,
+            default=current_b
         )
 
         self.add_item(self.red_input)
@@ -1389,6 +1431,8 @@ class ProfileOutlineRGBColorModal(discord.ui.Modal):
         self.add_item(self.blue_input)
 
     async def on_submit(self, interaction: discord.Interaction):
+        await interaction.response.defer()
+        
         try:
             r = int(self.red_input.value)
             g = int(self.green_input.value)
@@ -1408,14 +1452,14 @@ class ProfileOutlineRGBColorModal(discord.ui.Modal):
 
             embed = self.view.get_profile_outline_embed()
             self.view.update_buttons()
-            await interaction.response.edit_message(embed=embed, view=self.view)
+            await interaction.edit_original_response(embed=embed, view=self.view)
         except ValueError:
             error_embed = discord.Embed(
                 title="<:ErrorLOGO:1407071682031648850> Invalid RGB Values",
                 description="Please enter valid RGB values (0-255 for each color)",
                 color=discord.Color.red()
             )
-            await interaction.response.send_message(embed=error_embed, ephemeral=True)
+            await interaction.followup.send(embed=error_embed, ephemeral=True)
 
 class ProfileOutlineImageURLModal(discord.ui.Modal):
     def __init__(self, view):
@@ -1431,6 +1475,8 @@ class ProfileOutlineImageURLModal(discord.ui.Modal):
         self.add_item(self.url_input)
 
     async def on_submit(self, interaction: discord.Interaction):
+        await interaction.response.defer()
+        
         url = self.url_input.value.strip()
         if not url.startswith(('http://', 'https://')):
             error_embed = discord.Embed(
@@ -1438,7 +1484,7 @@ class ProfileOutlineImageURLModal(discord.ui.Modal):
                 description="Please enter a valid HTTP or HTTPS URL",
                 color=discord.Color.red()
             )
-            await interaction.response.send_message(embed=error_embed, ephemeral=True)
+            await interaction.followup.send(embed=error_embed, ephemeral=True)
             return
 
         if "profile_decoration" not in self.view.config:
@@ -1452,7 +1498,7 @@ class ProfileOutlineImageURLModal(discord.ui.Modal):
 
         embed = self.view.get_profile_outline_embed()
         self.view.update_buttons()
-        await interaction.response.edit_message(embed=embed, view=self.view)
+        await interaction.edit_original_response(embed=embed, view=self.view)
 
 async def setup(bot):
     await bot.add_cog(WelcomeSystem(bot))
