@@ -1324,7 +1324,6 @@ class AutoRankSystem(commands.Cog):
             for autorank_id, autorank in autoranks.items():
                 if autorank["type"] == "new_members":
                     await self.give_role_to_new_member(autorank, member)
-                    print(f"🎯 Nouveau membre {member.display_name} - Rôle attribué immédiatement")
         except Exception as e:
             print(f"❌ Erreur on_member_join: {e}")
 
