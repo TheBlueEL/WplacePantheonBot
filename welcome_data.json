@@ -16,11 +16,7 @@
       "x": 60,
       "y": 135,
       "enabled": true,
-      "color_override": [
-        0,
-        0,
-        255
-      ]
+      "custom_image": "https://raw.githubusercontent.com/TheBlueEL/pictures/main/76ee22ff-3d5c-4d79-9fda-a51cbd696f4e_square.png"
     },
     "text_config": {
       "welcome_text": {
@@ -51,6 +47,7 @@
         128
       ],
       "shadow_offset": 2
-    }
+    },
+    "background_image": "https://raw.githubusercontent.com/TheBlueEL/pictures/main/7cef47cc-bc30-405f-8d86-ea4964de9a34.png"
   }
 }
