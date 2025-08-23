@@ -2,17 +2,17 @@
   "template_config": {
     "background_color": [
       0,
-      0,
+      100,
       0
     ],
     "avatar_position": {
-      "x": 100,
+      "x": 102,
       "y": 75,
       "diameter": 705
     },
     "default_profile": {
       "url": "https://raw.githubusercontent.com/TheBlueEL/pictures/refs/heads/main/DefaultProfile.png",
-      "x": 100,
+      "x": 102,
       "y": 75,
       "enabled": true
     },
