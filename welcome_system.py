@@ -341,17 +341,26 @@ class WelcomeSystem(commands.Cog):
                     print(f"❌ Erreur lors du chargement de la texture de texte: {e}")
 
             if text_texture_image:
-                # Créer un masque pour le texte
+                # Créer une fine bordure noire autour du texte pour la lisibilité
+                border_thickness = 3
+                draw = ImageDraw.Draw(template)
+                
+                # Dessiner la bordure noire (plusieurs passes pour épaissir)
+                for adj in range(-border_thickness, border_thickness + 1):
+                    for adj_y in range(-border_thickness, border_thickness + 1):
+                        if adj != 0 or adj_y != 0:
+                            draw.text((text_x + adj, text_y_welcome + adj_y), 
+                                     welcome_config["text"], font=font_welcome, fill=(0, 0, 0, 255))
+                            draw.text((text_x + adj, text_y_username + adj_y), 
+                                     username_text, font=font_username, fill=(0, 0, 0, 255))
+
+                # Créer un masque pour le texte (sans bordure)
                 text_mask = Image.new('L', template.size, 0)
                 mask_draw = ImageDraw.Draw(text_mask)
 
-                # Dessiner le texte sur le masque en blanc (visible)
-                mask_draw.text((text_x + shadow_offset, text_y_welcome + shadow_offset), 
-                             welcome_config["text"], font=font_welcome, fill=255)
+                # Dessiner le texte sur le masque en blanc (visible) - seulement le texte principal, pas la bordure
                 mask_draw.text((text_x, text_y_welcome), 
                              welcome_config["text"], font=font_welcome, fill=255)
-                mask_draw.text((text_x + shadow_offset, text_y_username + shadow_offset), 
-                             username_text, font=font_username, fill=255)
                 mask_draw.text((text_x, text_y_username), 
                              username_text, font=font_username, fill=255)
 
@@ -363,9 +372,9 @@ class WelcomeSystem(commands.Cog):
                 textured_text.paste(texture_resized, (0, 0))
                 textured_text.putalpha(text_mask)
 
-                # Coller l'image texturée sur le template
+                # Coller l'image texturée sur le template (par-dessus la bordure noire)
                 template = Image.alpha_composite(template, textured_text)
-                print(f"✅ Texture appliquée sur le texte")
+                print(f"✅ Texture appliquée sur le texte avec bordure noire")
             else:
                 # Dessiner le texte normalement avec les couleurs
                 draw.text((text_x + shadow_offset, text_y_welcome + shadow_offset), 
