@@ -170,6 +170,21 @@ class LevelingSystem(commands.Cog):
             draw.text((level_x, config["level_position"]["y"]), 
                      level_text, font=font_level, fill=(154, 154, 154))
             
+            # Draw XP progress text
+            xp_needed, current_xp_in_level = get_xp_for_next_level(user_data["xp"])
+            total_xp_for_next = current_xp_in_level + xp_needed
+            xp_text = f"{current_xp_in_level}/{total_xp_for_next} XP"
+            
+            try:
+                font_xp = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 40)
+            except:
+                font_xp = ImageFont.load_default()
+            
+            # Position XP text below the level bar
+            xp_text_x = config["xp_bar_position"]["x"]
+            xp_text_y = config["xp_bar_position"]["y"] + config["xp_bar_position"]["height"] + 10
+            draw.text((xp_text_x, xp_text_y), xp_text, font=font_xp, fill=(100, 100, 100))
+            
             # Convert to bytes
             output = io.BytesIO()
             background.save(output, format='PNG')
