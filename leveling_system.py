@@ -152,11 +152,16 @@ class LevelingSystem(commands.Cog):
             draw = ImageDraw.Draw(background)
             
             try:
-                font_username = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", config["username_position"]["font_size"])
-                font_level = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", config["level_position"]["font_size"])
+                font_username = ImageFont.truetype("PlayPretend.otf", config["username_position"]["font_size"])
+                font_level = ImageFont.truetype("PlayPretend.otf", config["level_position"]["font_size"])
             except:
-                font_username = ImageFont.load_default()
-                font_level = ImageFont.load_default()
+                # Fallback vers les polices système si PlayPretend.otf n'est pas disponible
+                try:
+                    font_username = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", config["username_position"]["font_size"])
+                    font_level = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", config["level_position"]["font_size"])
+                except:
+                    font_username = ImageFont.load_default()
+                    font_level = ImageFont.load_default()
             
             # Draw username (en noir sur fond blanc)
             username = user.display_name
@@ -176,9 +181,13 @@ class LevelingSystem(commands.Cog):
             xp_text = f"{current_xp_in_level}/{total_xp_for_next} XP"
             
             try:
-                font_xp = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 40)
+                font_xp = ImageFont.truetype("PlayPretend.otf", 40)
             except:
-                font_xp = ImageFont.load_default()
+                # Fallback vers les polices système
+                try:
+                    font_xp = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 40)
+                except:
+                    font_xp = ImageFont.load_default()
             
             # Position XP text below the level bar
             xp_text_x = config["xp_bar_position"]["x"]
