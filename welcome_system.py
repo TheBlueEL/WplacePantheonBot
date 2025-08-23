@@ -59,13 +59,19 @@ class WelcomeSystem(commands.Cog):
     async def download_image(self, url):
         """Télécharge une image depuis une URL"""
         try:
+            print(f"Tentative de téléchargement: {url}")
             async with aiohttp.ClientSession() as session:
                 async with session.get(url) as response:
+                    print(f"Status code pour {url}: {response.status}")
                     if response.status == 200:
-                        return await response.read()
+                        data = await response.read()
+                        print(f"Image téléchargée avec succès: {len(data)} bytes")
+                        return data
+                    else:
+                        print(f"Échec du téléchargement: HTTP {response.status}")
             return None
         except Exception as e:
-            print(f"Erreur lors du téléchargement de l'image: {e}")
+            print(f"Erreur lors du téléchargement de l'image {url}: {e}")
             return None
 
     def create_circle_mask(self, size):
@@ -100,15 +106,23 @@ class WelcomeSystem(commands.Cog):
             
             # Télécharger DefaultProfile si activée
             default_profile_data = None
-            if self.config.get("default_profile", {}).get("enabled", True):
-                default_profile_url = self.config["default_profile"]["url"]
+            default_profile_config = self.config.get("default_profile", {})
+            if default_profile_config.get("enabled", True) and "url" in default_profile_config:
+                default_profile_url = default_profile_config["url"]
+                print(f"Chargement DefaultProfile: {default_profile_url}")
                 default_profile_data = await self.download_image(default_profile_url)
+                if not default_profile_data:
+                    print("⚠️ Échec du chargement de DefaultProfile")
             
             # Télécharger la décoration de profil si activée
             decoration_data = None
-            if self.config.get("profile_decoration", {}).get("enabled", True):
-                decoration_url = self.config["profile_decoration"]["url"]
+            decoration_config = self.config.get("profile_decoration", {})
+            if decoration_config.get("enabled", True) and "url" in decoration_config:
+                decoration_url = decoration_config["url"]
+                print(f"Chargement ProfileOutline: {decoration_url}")
                 decoration_data = await self.download_image(decoration_url)
+                if not decoration_data:
+                    print("⚠️ Échec du chargement de ProfileOutline")
             
             # Ouvrir l'avatar
             avatar = Image.open(io.BytesIO(avatar_data)).convert("RGBA")
@@ -116,12 +130,20 @@ class WelcomeSystem(commands.Cog):
             # Ouvrir DefaultProfile si disponible
             default_profile = None
             if default_profile_data:
-                default_profile = Image.open(io.BytesIO(default_profile_data)).convert("RGBA")
+                try:
+                    default_profile = Image.open(io.BytesIO(default_profile_data)).convert("RGBA")
+                    print(f"✅ DefaultProfile chargée: {default_profile.size}")
+                except Exception as e:
+                    print(f"❌ Erreur lors du traitement de DefaultProfile: {e}")
             
             # Ouvrir la décoration si disponible
             decoration = None
             if decoration_data:
-                decoration = Image.open(io.BytesIO(decoration_data)).convert("RGBA")
+                try:
+                    decoration = Image.open(io.BytesIO(decoration_data)).convert("RGBA")
+                    print(f"✅ ProfileOutline chargée: {decoration.size}")
+                except Exception as e:
+                    print(f"❌ Erreur lors du traitement de ProfileOutline: {e}")
             
             # Configuration de l'avatar depuis JSON
             avatar_config = self.config["avatar_position"]
@@ -256,6 +278,39 @@ class WelcomeSystem(commands.Cog):
             print(f"Erreur lors de la création de la carte de bienvenue: {e}")
             return None
 
+    @app_commands.command(name="test_welcome", description="Test welcome card generation for debugging")
+    async def test_welcome_command(self, interaction: discord.Interaction):
+        """Test command to debug welcome card generation"""
+        await interaction.response.defer()
+        
+        try:
+            # Tester la génération de carte de bienvenue
+            welcome_card = await self.create_welcome_card(interaction.user)
+            
+            if welcome_card:
+                file = discord.File(welcome_card, filename="welcome_test.png")
+                embed = discord.Embed(
+                    title="✅ Test de la carte de bienvenue",
+                    description="La carte de bienvenue a été générée avec succès !",
+                    color=discord.Color.green()
+                )
+                await interaction.followup.send(embed=embed, file=file)
+            else:
+                embed = discord.Embed(
+                    title="❌ Échec du test",
+                    description="La carte de bienvenue n'a pas pu être générée. Vérifiez les logs pour plus de détails.",
+                    color=discord.Color.red()
+                )
+                await interaction.followup.send(embed=embed)
+                
+        except Exception as e:
+            embed = discord.Embed(
+                title="❌ Erreur lors du test",
+                description=f"Erreur: {str(e)}",
+                color=discord.Color.red()
+            )
+            await interaction.followup.send(embed=embed)
+    
     @app_commands.command(name="welcome_system", description="Manage welcome card settings and design")
     async def welcome_system_command(self, interaction: discord.Interaction):
         """Command to manage welcome card system"""
