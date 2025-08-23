@@ -327,10 +327,10 @@ class WelcomeSystem(commands.Cog):
 
         view = WelcomeSystemManagerView(self.bot, interaction.user.id)
         view.guild = interaction.guild
-        
+
         # Generate preview image
         await view.generate_preview_image(interaction.user)
-        
+
         embed = view.get_main_embed()
         view.update_buttons()
 
@@ -745,39 +745,39 @@ class WelcomeSystemManagerView(discord.ui.View):
         try:
             welcome_system = WelcomeSystem(self.bot)
             preview_image = await welcome_system.create_welcome_card(interaction_user)
-            
+
             if preview_image:
                 # Save preview to temp file
                 os.makedirs('images', exist_ok=True)
                 filename = f"welcome_preview_{self.user_id}.png"
                 file_path = os.path.join('images', filename)
-                
+
                 with open(file_path, 'wb') as f:
                     f.write(preview_image.getvalue())
-                
+
                 # Upload to GitHub
                 try:
                     from github_sync import GitHubSync
                     github_sync = GitHubSync()
                     sync_success = await github_sync.sync_image_to_pictures_repo(file_path)
-                    
+
                     if sync_success:
                         # Delete local file after successful sync
                         try:
                             os.remove(file_path)
                         except:
                             pass
-                        
+
                         # Set GitHub raw URL
                         filename = os.path.basename(file_path)
                         self.preview_image_url = f"https://raw.githubusercontent.com/TheBlueEL/pictures/main/{filename}"
                         return True
                 except ImportError:
                     print("GitHub sync not available")
-                    
+
         except Exception as e:
             print(f"Error generating preview: {e}")
-        
+
         return False
 
     def update_buttons(self):
@@ -1315,6 +1315,9 @@ class ProfileOutlineHexColorModal(discord.ui.Modal):
             self.view.config["profile_decoration"].pop("custom_image", None)
             self.view.save_config()
 
+            # Generate new preview
+            await self.view.generate_preview_image(interaction.user)
+
             embed = self.view.get_profile_outline_embed()
             self.view.update_buttons()
             await interaction.response.edit_message(embed=embed, view=self.view)
@@ -1369,6 +1372,9 @@ class ProfileOutlineRGBColorModal(discord.ui.Modal):
             self.view.config["profile_decoration"].pop("custom_image", None)
             self.view.save_config()
 
+            # Generate new preview
+            await self.view.generate_preview_image(interaction.user)
+
             embed = self.view.get_profile_outline_embed()
             self.view.update_buttons()
             await interaction.response.edit_message(embed=embed, view=self.view)
@@ -1409,6 +1415,9 @@ class ProfileOutlineImageURLModal(discord.ui.Modal):
         self.view.config["profile_decoration"]["custom_image"] = url
         self.view.config["profile_decoration"].pop("color_override", None)
         self.view.save_config()
+
+        # Generate new preview
+        await self.view.generate_preview_image(interaction.user)
 
         embed = self.view.get_profile_outline_embed()
         self.view.update_buttons()
