@@ -29,19 +29,19 @@
       },
       "username_position": {
         "x": 550,
-        "y": 220,
-        "font_size": 100
+        "y": 275,
+        "font_size": 75
       },
       "level_position": {
-        "x": 0,
-        "y": 140,
+        "x": 250,
+        "y": 250,
         "font_size": 100
       },
       "xp_bar_position": {
-        "x": 30,
-        "y": 726,
-        "width": 300,
-        "height": 20
+        "x": 500,
+        "y": 350,
+        "width": 1350,
+        "height": 130
       },
       "xp_text_position": {
         "x": 30,
@@ -57,9 +57,19 @@
   },
   "user_data": {
     "723144097015136296": {
+      "xp": 40,
+      "level": 1,
+      "last_message": 1755976649.8122637
+    },
+    "1259812166349881378": {
       "xp": 20,
       "level": 1,
-      "last_message": 1755972876.8000019
+      "last_message": 1755976636.8031838
+    },
+    "1319660922834387032": {
+      "xp": 20,
+      "level": 1,
+      "last_message": 1755977114.1004503
     }
   }
 }
