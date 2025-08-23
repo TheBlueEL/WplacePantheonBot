@@ -23,17 +23,17 @@
       "profile_position": {
         "x": 50,
         "y": 50,
-        "size": 750
+        "size": 450
       },
       "username_position": {
-        "x": 220,
-        "y": 80,
-        "font_size": 60
+        "x": 550,
+        "y": 220,
+        "font_size": 100
       },
       "level_position": {
-        "x": 220,
+        "x": 0,
         "y": 140,
-        "font_size": 40
+        "font_size": 100
       },
       "xp_bar_position": {
         "x": 30,
