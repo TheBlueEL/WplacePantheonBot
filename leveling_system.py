@@ -887,6 +887,29 @@ class LevelSystemMainView(discord.ui.View):
         super().__init__(timeout=300)
         self.bot = bot
         self.user = user
+        
+        # Set initial button state based on current settings
+        data = load_leveling_data()
+        enabled = data["leveling_settings"]["enabled"]
+        
+        # Update the toggle button with correct initial state
+        self.clear_items()
+        self.add_item(discord.ui.Button(label="Reward Settings", style=discord.ButtonStyle.secondary, emoji="<:SettingLOGO:1407071854593839239>"))
+        self.add_item(discord.ui.Button(label="XP Settings", style=discord.ButtonStyle.secondary, emoji="<:SettingLOGO:1407071854593839239>"))
+        self.add_item(discord.ui.Button(label="Level Card", style=discord.ButtonStyle.secondary, emoji="🎴"))
+        
+        toggle_button = discord.ui.Button(
+            label="ON" if enabled else "OFF",
+            style=discord.ButtonStyle.success if enabled else discord.ButtonStyle.danger,
+            emoji="<:OnLOGO:1407072463883472978>" if enabled else "<:OffLOGO:1407072621836894380>"
+        )
+        toggle_button.callback = self.toggle_system
+        self.add_item(toggle_button)
+        
+        # Set callbacks for other buttons
+        self.children[0].callback = self.reward_settings
+        self.children[1].callback = self.xp_settings
+        self.children[2].callback = self.level_card
 
     def get_main_embed(self):
         data = load_leveling_data()
@@ -930,11 +953,22 @@ class LevelSystemMainView(discord.ui.View):
 
         await interaction.edit_original_response(embed=embed, view=view)
 
-    @discord.ui.button(label="ON/OFF", style=discord.ButtonStyle.success, emoji="🔄")
+    @discord.ui.button(label="OFF", style=discord.ButtonStyle.danger, emoji="<:OffLOGO:1407072621836894380>")
     async def toggle_system(self, interaction: discord.Interaction, button: discord.ui.Button):
         data = load_leveling_data()
-        data["leveling_settings"]["enabled"] = not data["leveling_settings"]["enabled"]
+        current_state = data["leveling_settings"]["enabled"]
+        data["leveling_settings"]["enabled"] = not current_state
         save_leveling_data(data)
+
+        # Update button appearance
+        if data["leveling_settings"]["enabled"]:
+            button.label = "ON"
+            button.style = discord.ButtonStyle.success
+            button.emoji = "<:OnLOGO:1407072463883472978>"
+        else:
+            button.label = "OFF"
+            button.style = discord.ButtonStyle.danger
+            button.emoji = "<:OffLOGO:1407072621836894380>"
 
         embed = self.get_main_embed()
         await interaction.response.edit_message(embed=embed, view=self)
@@ -1289,6 +1323,29 @@ class MessageXPView(discord.ui.View):
     def __init__(self, user):
         super().__init__(timeout=300)
         self.user = user
+        
+        # Set initial button state based on current settings
+        data = load_leveling_data()
+        enabled = data["leveling_settings"]["xp_settings"]["messages"]["enabled"]
+        
+        # Add buttons with correct initial states
+        self.add_item(discord.ui.Button(label="XP", style=discord.ButtonStyle.secondary, emoji="⚡"))
+        self.add_item(discord.ui.Button(label="Cooldown", style=discord.ButtonStyle.secondary, emoji="⏰"))
+        
+        toggle_button = discord.ui.Button(
+            label="ON" if enabled else "OFF",
+            style=discord.ButtonStyle.success if enabled else discord.ButtonStyle.danger,
+            emoji="<:OnLOGO:1407072463883472978>" if enabled else "<:OffLOGO:1407072621836894380>"
+        )
+        toggle_button.callback = self.toggle
+        self.add_item(toggle_button)
+        
+        self.add_item(discord.ui.Button(label="Back", style=discord.ButtonStyle.danger, emoji="<:BackLOGO:1407071474233114766>"))
+        
+        # Set callbacks for other buttons
+        self.children[0].callback = self.set_xp
+        self.children[1].callback = self.set_cooldown
+        self.children[3].callback = self.back
 
     def get_embed(self):
         data = load_leveling_data()
@@ -1317,7 +1374,6 @@ class MessageXPView(discord.ui.View):
         modal = MessageCooldownModal()
         await interaction.response.send_modal(modal)
 
-    @discord.ui.button(label="ON/OFF", style=discord.ButtonStyle.success, emoji="🔄")
     async def toggle(self, interaction: discord.Interaction):
         data = load_leveling_data()
         current_state = data["leveling_settings"]["xp_settings"]["messages"]["enabled"]
@@ -1398,6 +1454,29 @@ class CharacterXPView(discord.ui.View):
     def __init__(self, user):
         super().__init__(timeout=300)
         self.user = user
+        
+        # Set initial button state based on current settings
+        data = load_leveling_data()
+        enabled = data["leveling_settings"]["xp_settings"]["characters"]["enabled"]
+        
+        # Add buttons with correct initial states
+        self.add_item(discord.ui.Button(label="XP", style=discord.ButtonStyle.secondary, emoji="⚡"))
+        self.add_item(discord.ui.Button(label="Cooldown", style=discord.ButtonStyle.secondary, emoji="⏰"))
+        
+        toggle_button = discord.ui.Button(
+            label="ON" if enabled else "OFF",
+            style=discord.ButtonStyle.success if enabled else discord.ButtonStyle.danger,
+            emoji="<:OnLOGO:1407072463883472978>" if enabled else "<:OffLOGO:1407072621836894380>"
+        )
+        toggle_button.callback = self.toggle
+        self.add_item(toggle_button)
+        
+        self.add_item(discord.ui.Button(label="Back", style=discord.ButtonStyle.danger, emoji="<:BackLOGO:1407071474233114766>"))
+        
+        # Set callbacks for other buttons
+        self.children[0].callback = self.set_xp
+        self.children[1].callback = self.set_cooldown
+        self.children[3].callback = self.back
 
     def get_embed(self):
         data = load_leveling_data()
@@ -1427,7 +1506,6 @@ class CharacterXPView(discord.ui.View):
         modal = CharacterCooldownModal()
         await interaction.response.send_modal(modal)
 
-    @discord.ui.button(label="ON/OFF", style=discord.ButtonStyle.success, emoji="🔄")
     async def toggle(self, interaction: discord.Interaction):
         data = load_leveling_data()
         current_state = data["leveling_settings"]["xp_settings"]["characters"]["enabled"]
