@@ -1,10 +1,5 @@
 {
   "template_config": {
-    "background_color": [
-      0,
-      0,
-      150
-    ],
     "avatar_position": {
       "x": 101,
       "y": 177,
