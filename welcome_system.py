@@ -282,10 +282,10 @@ class WelcomeSystem(commands.Cog):
             text_y_welcome = circle_y + welcome_config["y_offset"]
             text_y_username = circle_y + username_config["y_offset"]
 
-            # Couleurs depuis la configuration
-            text_color = tuple(text_config["text_color"])
-            shadow_color = tuple(text_config["shadow_color"])
-            shadow_offset = text_config["shadow_offset"]
+            # Couleurs depuis la configuration avec valeurs par défaut
+            text_color = tuple(text_config.get("text_color", [255, 255, 255, 255]))
+            shadow_color = tuple(text_config.get("shadow_color", [0, 0, 0, 128]))
+            shadow_offset = text_config.get("shadow_offset", 2)
 
             # Première zone: "WELCOME, TO THE SERVER"
             try:
@@ -1525,7 +1525,8 @@ class WelcomeSystemManagerView(discord.ui.View):
         await interaction.response.edit_message(embed=embed, view=self)
 
     async def reset_background_color(self, interaction: discord.Interaction):
-        self.config.pop("background_color", None)
+        # Set default background color (white/gray mix)
+        self.config["background_color"] = [240, 240, 240]  # Light gray
         self.config.pop("background_image", None)
         self.save_config()
 
@@ -1592,10 +1593,11 @@ class WelcomeSystemManagerView(discord.ui.View):
     async def reset_content_color(self, interaction: discord.Interaction):
         if "text_config" not in self.config:
             self.config["text_config"] = {}
-        self.config["text_config"].pop("text_color", None)
+        # Set default text color (white)
+        self.config["text_config"]["text_color"] = [255, 255, 255, 255]
         self.save_config()
 
-        # Generate new preview avec la couleur par défaut (rouge)
+        # Generate new preview avec la couleur par défaut (blanc)
         print("🔄 Régénération de la prévisualisation après reset couleur de texte...")
         await self.generate_preview_image(interaction.user)
 
@@ -1688,11 +1690,12 @@ class WelcomeSystemManagerView(discord.ui.View):
     async def reset_profile_outline_color(self, interaction: discord.Interaction):
         if "profile_decoration" not in self.config:
             self.config["profile_decoration"] = {}
+        # Remove custom overrides to use default white outline
         self.config["profile_decoration"].pop("color_override", None)
         self.config["profile_decoration"].pop("custom_image", None)
         self.save_config()
 
-        # Generate new preview avec l'outline par défaut
+        # Generate new preview avec l'outline par défaut (blanc)
         print("🔄 Régénération de la prévisualisation après reset couleur profile outline...")
         await self.generate_preview_image(interaction.user)
 
