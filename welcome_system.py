@@ -717,7 +717,7 @@ class WelcomeSystemManagerView(discord.ui.View):
         config_status = ""
         if self.config.get("background_color"):
             bg = self.config["background_color"]
-            config_status += f"🎨 Background: RGB({bg[0]}, {bg[1]}, {bg[2]})\n"
+            config_status += f"<:RGBcodeLOGO:1408831982141575290> Background: RGB({bg[0]}, {bg[1]}, {bg[2]})\n"
         elif self.config.get("background_image"):
             config_status += "<:ImageLOGO:1407072328134951043> Background: Custom Image\n"
         else:
@@ -795,7 +795,7 @@ class WelcomeSystemManagerView(discord.ui.View):
         self.config = load_welcome_data()["template_config"]
 
         embed = discord.Embed(
-            title="🎨 Background Color",
+            title="<:ColorLOGO:1408828590241615883> Background Color",
             description="Choose how to set your background color",
             color=discord.Color.purple()
         )
@@ -1138,7 +1138,7 @@ class WelcomeSystemManagerView(discord.ui.View):
             hex_button = discord.ui.Button(
                 label="Hex Code",
                 style=discord.ButtonStyle.primary,
-                emoji="🎨"
+                emoji="<:HEXcodeLOGO:1408833347404304434>"
             )
             hex_button.callback = self.background_hex_color
 
@@ -1200,7 +1200,7 @@ class WelcomeSystemManagerView(discord.ui.View):
             hex_button = discord.ui.Button(
                 label="Hex Code",
                 style=discord.ButtonStyle.primary,
-                emoji="🎨"
+                emoji="<:HEXcodeLOGO:1408833347404304434>"
             )
             hex_button.callback = self.profile_outline_hex_color
 
@@ -1297,7 +1297,7 @@ class WelcomeSystemManagerView(discord.ui.View):
             hex_button = discord.ui.Button(
                 label="Hex Code",
                 style=discord.ButtonStyle.primary,
-                emoji="🎨"
+                emoji="<:HEXcodeLOGO:1408833347404304434>"
             )
             hex_button.callback = self.content_hex_color
 
@@ -1402,7 +1402,7 @@ class WelcomeSystemManagerView(discord.ui.View):
             background_button = discord.ui.Button(
                 label="Background",
                 style=discord.ButtonStyle.primary,
-                emoji="🎨"
+                emoji="<:BackgroundLOGO:1408834163309805579>"
             )
             background_button.callback = self.background_settings
 
@@ -1588,7 +1588,7 @@ class WelcomeSystemManagerView(discord.ui.View):
     async def profile_outline_color_settings(self, interaction: discord.Interaction):
         self.mode = "profile_outline_color"
         embed = self.get_background_color_embed()  # Reuse color embed design
-        embed.title = "🎨 Profile Outline Color"
+        embed.title = "<:ColorLOGO:1408828590241615883> Profile Outline Color"
         embed.description = "Choose how to set your profile outline color"
 
         # Add preview image if available
@@ -1697,7 +1697,7 @@ class WelcomeSystemManagerView(discord.ui.View):
         else:
             self.mode = "profile_outline_image"
             embed = self.get_background_image_embed()
-            embed.title = "🖼️ Profile Outline Image"
+            embed.title = "<:ImageLOGO:1407072328134951043> Profile Outline Image"
             embed.description = "Set a custom profile outline image"
 
             # Add preview image if available
