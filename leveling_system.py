@@ -824,6 +824,11 @@ class LevelingSystem(commands.Cog):
                                         break
                         except Exception as e:
                             print(f"Error updating message: {e}")
+                            # Fallback: send new message
+                            try:
+                                await channel.send(embed=embed, view=view)
+                            except:
+                                pass
                 else:
                     # File is not a valid image format
                     try:
