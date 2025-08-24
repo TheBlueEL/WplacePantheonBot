@@ -2370,7 +2370,7 @@ class LevelCardManagerView(discord.ui.View):
             self.add_item(xp_progress_button)
             self.add_item(back_button)
 
-        elif self.mode in ["xp_info_color", "xp_progress_color", "background_color", "username_color", "profile_outline_color", "level_text_color", "ranking_text_color"]:
+        elif self.mode in ["xp_info_color", "xp_progress_color", "background_color", "username_color", "profile_outline_color"]:
             # Color selection buttons
             hex_button = discord.ui.Button(
                 label="Hex Code",
@@ -2393,13 +2393,6 @@ class LevelCardManagerView(discord.ui.View):
             )
             reset_button.callback = self.reset_color
 
-            confirm_button = discord.ui.Button(
-                label="Confirm",
-                style=discord.ButtonStyle.success,
-                emoji="<:ConfirmLOGO:1407072680267481249>"
-            )
-            confirm_button.callback = self.confirm_changes
-
             back_button = discord.ui.Button(
                 label="Back",
                 style=discord.ButtonStyle.gray,
@@ -2410,10 +2403,9 @@ class LevelCardManagerView(discord.ui.View):
             self.add_item(hex_button)
             self.add_item(rgb_button)
             self.add_item(reset_button)
-            self.add_item(confirm_button)
             self.add_item(back_button)
 
-        elif self.mode in ["xp_bar_image", "background_image", "profile_outline_image", "xp_info_image", "xp_progress_image", "username_image", "level_text_image", "ranking_text_image"]:
+        elif self.mode in ["xp_bar_image", "background_image", "profile_outline_image"]:
             # Image selection buttons
             url_button = discord.ui.Button(
                 label="Set URL",
@@ -2436,13 +2428,6 @@ class LevelCardManagerView(discord.ui.View):
             )
             clear_button.callback = self.clear_image
 
-            confirm_button = discord.ui.Button(
-                label="Confirm",
-                style=discord.ButtonStyle.success,
-                emoji="<:ConfirmLOGO:1407072680267481249>"
-            )
-            confirm_button.callback = self.confirm_changes
-
             back_button = discord.ui.Button(
                 label="Back",
                 style=discord.ButtonStyle.gray,
@@ -2453,7 +2438,6 @@ class LevelCardManagerView(discord.ui.View):
             self.add_item(url_button)
             self.add_item(upload_button)
             self.add_item(clear_button)
-            self.add_item(confirm_button)
             self.add_item(back_button)
 
         elif self.mode in ["xp_info", "xp_progress", "background", "username"]:
@@ -2472,6 +2456,7 @@ class LevelCardManagerView(discord.ui.View):
                 emoji="<:ImageLOGO:1407072328134951043>"
             )
             image_button.callback = self.image_settings
+            self.add_item(image_button)
 
             back_button = discord.ui.Button(
                 label="Back",
@@ -2481,7 +2466,6 @@ class LevelCardManagerView(discord.ui.View):
             back_button.callback = self.back_to_parent
 
             self.add_item(color_button)
-            self.add_item(image_button)
             self.add_item(back_button)
 
         elif self.mode == "xp_bar":
@@ -2797,28 +2781,6 @@ class LevelCardManagerView(discord.ui.View):
         modal = LevelCardImageURLModal(self)
         await interaction.response.send_modal(modal)
 
-    async def confirm_changes(self, interaction: discord.Interaction):
-        """Confirm and apply changes"""
-        try:
-            await interaction.response.defer()
-        except discord.InteractionResponded:
-            pass
-
-        self.save_config()
-        await self.generate_preview_image(interaction.user)
-
-        embed = discord.Embed(
-            title="<:SucessLOGO:1407071637840592977> Changes Applied",
-            description="Your level card customizations have been saved!",
-            color=discord.Color.green()
-        )
-
-        # Go back to main view
-        self.mode = "main"
-        embed = self.get_main_embed()
-        self.update_buttons()
-        await interaction.edit_original_response(embed=embed, view=self)
-
     async def upload_image(self, interaction: discord.Interaction):
         self.waiting_for_image = True
         self.current_image_type = self.mode.replace("_image", "")
@@ -2931,22 +2893,12 @@ class LevelCardManagerView(discord.ui.View):
 
     # Navigation callbacks
     async def back_to_main(self, interaction: discord.Interaction):
-        try:
-            await interaction.response.defer()
-        except discord.InteractionResponded:
-            pass
-
         self.mode = "main"
         embed = self.get_main_embed()
         self.update_buttons()
-        await interaction.edit_original_response(embed=embed, view=self)
+        await interaction.response.edit_message(embed=embed, view=self)
 
     async def back_to_parent(self, interaction: discord.Interaction):
-        try:
-            await interaction.response.defer()
-        except discord.InteractionResponded:
-            pass
-
         if self.mode.endswith("_color") or self.mode.endswith("_image"):
             self.mode = self.mode.replace("_color", "").replace("_image", "")
 
@@ -2981,14 +2933,9 @@ class LevelCardManagerView(discord.ui.View):
                 embed = self.get_main_embed()
 
         self.update_buttons()
-        await interaction.edit_original_response(embed=embed, view=self)
+        await interaction.response.edit_message(embed=embed, view=self)
 
     async def back_from_image_upload(self, interaction: discord.Interaction):
-        try:
-            await interaction.response.defer()
-        except discord.InteractionResponded:
-            pass
-
         self.waiting_for_image = False
         self.mode = self.current_image_type + "_image"
 
@@ -3006,18 +2953,13 @@ class LevelCardManagerView(discord.ui.View):
             embed.description = "Set a custom profile outline image"
 
         self.update_buttons()
-        await interaction.edit_original_response(embed=embed, view=self)
+        await interaction.response.edit_message(embed=embed, view=self)
 
     async def back_to_level_system(self, interaction: discord.Interaction):
         """Go back to the main level system menu"""
-        try:
-            await interaction.response.defer()
-        except discord.InteractionResponded:
-            pass
-
         view = LevelSystemMainView(self.bot, interaction.user)
         embed = view.get_main_embed()
-        await interaction.edit_original_response(embed=embed, view=view)
+        await interaction.response.edit_message(embed=embed, view=view)
 
 # Modal classes for Level Card
 class LevelCardHexColorModal(discord.ui.Modal):
