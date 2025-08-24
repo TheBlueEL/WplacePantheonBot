@@ -584,6 +584,7 @@ class WelcomeSystem(commands.Cog):
             # Create welcome card
             welcome_card = await self.create_welcome_card(member)
             if not welcome_card:
+                print(f"Failed to create welcome card for {member.display_name}")
                 return
 
             # Get welcome message and replace {user} placeholder
@@ -599,12 +600,14 @@ class WelcomeSystem(commands.Cog):
             is_gif = file_header.startswith(b'GIF87a') or file_header.startswith(b'GIF89a')
             filename = "welcome.gif" if is_gif else "welcome.png"
 
-            # Send welcome message with image
+            # Send welcome message with image ONLY if card was created successfully
             file = discord.File(welcome_card, filename=filename)
             await channel.send(content=welcome_message, file=file)
+            print(f"Welcome message sent for {member.display_name}")
 
         except Exception as e:
             print(f"Error in on_member_join: {e}")
+            # Do NOT send any fallback message to avoid duplicates
 
     @commands.Cog.listener()
     async def on_message(self, message):
