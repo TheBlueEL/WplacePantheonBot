@@ -59,7 +59,8 @@
       "profile_outline": {
         "enabled": true,
         "url": "https://raw.githubusercontent.com/TheBlueEL/pictures/refs/heads/main/ProfileOutline.png",
-        "color_override": null
+        "color_override": null,
+        "size": 400
       },
       "username_position": {
         "x": 550,
@@ -123,9 +124,9 @@
   },
   "user_data": {
     "723144097015136296": {
-      "xp": 600,
-      "level": 5,
-      "last_message": 1755978601.5296047
+      "xp": 660,
+      "level": 6,
+      "last_message": 1755994435.4403374
     },
     "1259812166349881378": {
       "xp": 20,
@@ -136,6 +137,11 @@
       "xp": 320,
       "level": 3,
       "last_message": 1755978084.8980606
+    },
+    "952987261249654805": {
+      "xp": 40,
+      "level": 1,
+      "last_message": 1755994379.421019
     }
   }
 }
