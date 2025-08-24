@@ -124,8 +124,8 @@ class LevelingSystem(commands.Cog):
         draw.ellipse((0, 0, size[0], size[1]), fill=255)
         return mask
 
-    async def apply_text_image_overlay(self, text_image_url, text_surface, text_bbox):
-        """Apply image overlay to text using mask technique"""
+    async def apply_text_image_overlay(self, text_image_url, text_surface, text_pos, font, text_content):
+        """Apply image overlay to text using advanced masking technique"""
         try:
             if not text_image_url or text_image_url == "None":
                 return text_surface
@@ -137,26 +137,54 @@ class LevelingSystem(commands.Cog):
 
             overlay_img = Image.open(io.BytesIO(overlay_data)).convert("RGBA")
             
-            # Resize overlay to match text bounding box
-            text_width = text_bbox[2] - text_bbox[0]
-            text_height = text_bbox[3] - text_bbox[1]
+            # Get text dimensions
+            bbox = font.getbbox(text_content)
+            text_width = bbox[2] - bbox[0]
+            text_height = bbox[3] - bbox[1]
+            
+            # Create a temporary image for text rendering
+            temp_img = Image.new('RGBA', (text_width, text_height), (0, 0, 0, 0))
+            temp_draw = ImageDraw.Draw(temp_img)
+            
+            # Draw white text on transparent background to create mask
+            temp_draw.text((0, 0), text_content, font=font, fill=(255, 255, 255, 255))
+            
+            # Resize overlay to match text size
             overlay_resized = overlay_img.resize((text_width, text_height), Image.Resampling.LANCZOS)
             
-            # Create mask from text surface alpha channel
-            text_mask = text_surface.split()[-1]  # Get alpha channel
+            # Create final masked overlay
+            masked_overlay = Image.new('RGBA', (text_width, text_height), (0, 0, 0, 0))
             
-            # Apply mask to overlay image
-            overlay_resized.putalpha(text_mask)
+            # Apply text as mask to overlay
+            for x in range(text_width):
+                for y in range(text_height):
+                    try:
+                        text_pixel = temp_img.getpixel((x, y))
+                        if text_pixel[3] > 0:  # If text pixel is not transparent
+                            overlay_pixel = overlay_resized.getpixel((x, y))
+                            # Use text alpha as mask strength
+                            alpha = int(text_pixel[3] * (overlay_pixel[3] / 255.0))
+                            masked_overlay.putpixel((x, y), (overlay_pixel[0], overlay_pixel[1], overlay_pixel[2], alpha))
+                    except IndexError:
+                        continue
             
-            # Create result image
-            result = Image.new('RGBA', text_surface.size, (0, 0, 0, 0))
-            result.paste(overlay_resized, (text_bbox[0], text_bbox[1]), overlay_resized)
+            # Paste the masked overlay onto the main surface
+            text_surface.paste(masked_overlay, text_pos, masked_overlay)
             
-            return result
+            return text_surface
             
         except Exception as e:
             print(f"Error applying text image overlay: {e}")
             return text_surface
+
+    async def draw_text_with_overlay(self, draw, surface, text, pos, font, color, overlay_url=None):
+        """Draw text with optional image overlay"""
+        if overlay_url and overlay_url != "None":
+            # Apply image overlay
+            await self.apply_text_image_overlay(overlay_url, surface, pos, font, text)
+        else:
+            # Draw normal colored text
+            draw.text(pos, text, font=font, fill=tuple(color))
 
     def calculate_user_ranking(self, user_id):
         """Calculate user's ranking position compared to all other users"""
@@ -521,17 +549,22 @@ class LevelingSystem(commands.Cog):
                     font_username = ImageFont.load_default()
                     font_level = ImageFont.load_default()
 
-            # Draw username with configurable color
+            # Draw username with configurable color or image overlay
             username = user.name
             username_color = config.get("username_color", [255, 255, 255]) # Default white
-            draw.text((positions["username"]["x"], positions["username"]["y"]),
-                     username, font=font_username, fill=tuple(username_color))
+            username_overlay = config.get("username_text_image")
+            await self.draw_text_with_overlay(
+                draw, background, username, 
+                (positions["username"]["x"], positions["username"]["y"]),
+                font_username, username_color, username_overlay
+            )
 
             # Draw discriminator next to username
             discriminator_config = config.get("discriminator_position", {})
             if discriminator_config:
                 discriminator = f"#{user.discriminator}" if user.discriminator != "0" else f"#{user.id % 10000:04d}"
                 discriminator_color = discriminator_config.get("color", [200, 200, 200])
+                discriminator_overlay = discriminator_config.get("text_image")
 
                 try:
                     font_discriminator = ImageFont.truetype("PlayPretend.otf", discriminator_config.get("font_size", 50))
@@ -541,20 +574,28 @@ class LevelingSystem(commands.Cog):
                     except IOError:
                         font_discriminator = ImageFont.load_default()
 
-                draw.text((positions["discriminator"]["x"], positions["discriminator"]["y"]),
-                         discriminator, font=font_discriminator, fill=tuple(discriminator_color))
+                await self.draw_text_with_overlay(
+                    draw, background, discriminator,
+                    (positions["discriminator"]["x"], positions["discriminator"]["y"]),
+                    font_discriminator, discriminator_color, discriminator_overlay
+                )
 
-            # Draw level with configurable color
+            # Draw level with configurable color or image overlay
             level_text = f"LEVEL {user_data['level']}"
             level_color = config.get("level_color", [245, 55, 48]) # Default red
-            draw.text((positions["level"]["x"], positions["level"]["y"]),
-                     level_text, font=font_level, fill=tuple(level_color))
+            level_overlay = config.get("level_text_image")
+            await self.draw_text_with_overlay(
+                draw, background, level_text,
+                (positions["level"]["x"], positions["level"]["y"]),
+                font_level, level_color, level_overlay
+            )
 
-            # Draw ranking position
+            # Draw ranking position with configurable color or image overlay
             ranking_config = config.get("ranking_position", {})
             if ranking_config:
                 ranking_text = f"#{user_ranking}"
                 ranking_color = ranking_config.get("color", [255, 255, 255])
+                ranking_overlay = ranking_config.get("text_image")
 
                 try:
                     font_ranking = ImageFont.truetype("PlayPretend.otf", ranking_config.get("font_size", 60))
@@ -564,12 +605,17 @@ class LevelingSystem(commands.Cog):
                     except IOError:
                         font_ranking = ImageFont.load_default()
 
-                draw.text((positions["ranking"]["x"], positions["ranking"]["y"]),
-                         ranking_text, font=font_ranking, fill=tuple(ranking_color))
+                await self.draw_text_with_overlay(
+                    draw, background, ranking_text,
+                    (positions["ranking"]["x"], positions["ranking"]["y"]),
+                    font_ranking, ranking_color, ranking_overlay
+                )
 
-            # Draw XP progress text
+            # Draw XP progress text with configurable color or image overlay
             xp_needed, current_xp_in_level = get_xp_for_next_level(user_data["xp"])
             xp_text = f"{current_xp_in_level}/{xp_needed} XP"
+            xp_text_color = config.get("xp_text_color", [255, 255, 255])
+            xp_text_overlay = config.get("xp_text_image")
 
             try:
                 font_xp = ImageFont.truetype("PlayPretend.otf", config["xp_text_position"]["font_size"])
@@ -580,8 +626,12 @@ class LevelingSystem(commands.Cog):
                 except IOError:
                     font_xp = ImageFont.load_default()
 
-            # Position XP text using dynamic positions
-            draw.text((positions["xp_text"]["x"], positions["xp_text"]["y"]), xp_text, font=font_xp, fill=tuple(config.get("xp_text_color", [255, 255, 255])))
+            # Position XP text using dynamic positions with overlay support
+            await self.draw_text_with_overlay(
+                draw, background, xp_text,
+                (positions["xp_text"]["x"], positions["xp_text"]["y"]),
+                font_xp, xp_text_color, xp_text_overlay
+            )
 
 
             # If it's an animated GIF, process all frames
@@ -1169,10 +1219,19 @@ class LevelingSystem(commands.Cog):
     @app_commands.command(name="level_system", description="Manage the server leveling system")
     async def level_system(self, interaction: discord.Interaction):
         """Main level system management command"""
+        # Check if interaction is still valid
+        if interaction.response.is_done():
+            return
+        
         try:
-            await interaction.response.defer()
+            await interaction.response.defer(thinking=True)
         except discord.InteractionResponded:
-            pass
+            return
+        except discord.NotFound:
+            return
+        except Exception as e:
+            print(f"Error deferring interaction: {e}")
+            return
         
         view = LevelSystemMainView(self.bot, interaction.user)
         
@@ -1183,8 +1242,10 @@ class LevelingSystem(commands.Cog):
         
         try:
             await interaction.followup.send(embed=embed, view=view)
-        except discord.InteractionResponded:
-            await interaction.edit_original_response(embed=embed, view=view)
+        except discord.NotFound:
+            print("Interaction expired")
+        except Exception as e:
+            print(f"Error sending followup: {e}")
 
     @app_commands.command(name="level", description="View your level card")
     async def level_command(self, interaction: discord.Interaction):
@@ -2854,6 +2915,15 @@ class LevelCardManagerView(discord.ui.View):
             if "profile_outline" not in self.config:
                 self.config["profile_outline"] = {}
             self.config["profile_outline"].pop("custom_image", None)
+        elif self.mode == "username_image":
+            self.config.pop("username_text_image", None)
+        elif self.mode == "level_text_image":
+            self.config.pop("level_text_image", None)
+        elif self.mode == "ranking_text_image":
+            if "ranking_position" in self.config:
+                self.config["ranking_position"].pop("text_image", None)
+        elif self.mode == "xp_info_image":
+            self.config.pop("xp_text_image", None)
 
         self.save_config()
         await self.generate_preview_image(interaction.user)
@@ -2869,6 +2939,22 @@ class LevelCardManagerView(discord.ui.View):
             embed = self.get_profile_outline_embed()
             embed.title = "<:ImageLOGO:1407072328134951043> Profile Outline Image"
             embed.description = "Set a custom profile outline image"
+        elif self.mode == "username_image":
+            embed = self.get_username_embed()
+            embed.title = "<:ImageLOGO:1407072328134951043> Username Image"
+            embed.description = "Set a custom username text overlay"
+        elif self.mode == "level_text_image":
+            embed = self.get_level_text_embed()
+            embed.title = "<:ImageLOGO:1407072328134951043> Level Text Image"
+            embed.description = "Set a custom level text overlay"
+        elif self.mode == "ranking_text_image":
+            embed = self.get_ranking_text_embed()
+            embed.title = "<:ImageLOGO:1407072328134951043> Ranking Text Image"
+            embed.description = "Set a custom ranking text overlay"
+        elif self.mode == "xp_info_image":
+            embed = self.get_xp_info_embed()
+            embed.title = "<:ImageLOGO:1407072328134951043> XP Info Image"
+            embed.description = "Set a custom XP text overlay"
 
         self.update_buttons()
         await interaction.edit_original_response(embed=embed, view=self)
@@ -3307,6 +3393,16 @@ class LevelCardImageURLModal(discord.ui.Modal):
                 self.view.config["profile_outline"] = {}
             self.view.config["profile_outline"]["custom_image"] = url
             self.view.config["profile_outline"].pop("color_override", None)
+        elif self.view.mode == "username_image":
+            self.view.config["username_text_image"] = url
+        elif self.view.mode == "level_text_image":
+            self.view.config["level_text_image"] = url
+        elif self.view.mode == "ranking_text_image":
+            if "ranking_position" not in self.view.config:
+                self.view.config["ranking_position"] = {}
+            self.view.config["ranking_position"]["text_image"] = url
+        elif self.view.mode == "xp_info_image":
+            self.view.config["xp_text_image"] = url
 
         self.view.save_config()
         await self.view.generate_preview_image(interaction.user)
@@ -3324,6 +3420,22 @@ class LevelCardImageURLModal(discord.ui.Modal):
             embed = self.view.get_profile_outline_embed()
             embed.title = "<:ImageLOGO:1407072328134951043> Profile Outline Image"
             embed.description = "Set a custom profile outline image"
+        elif self.view.mode == "username_image":
+            embed = self.view.get_username_embed()
+            embed.title = "<:ImageLOGO:1407072328134951043> Username Image"
+            embed.description = "Set a custom username text overlay"
+        elif self.view.mode == "level_text_image":
+            embed = self.view.get_level_text_embed()
+            embed.title = "<:ImageLOGO:1407072328134951043> Level Text Image"
+            embed.description = "Set a custom level text overlay"
+        elif self.view.mode == "ranking_text_image":
+            embed = self.view.get_ranking_text_embed()
+            embed.title = "<:ImageLOGO:1407072328134951043> Ranking Text Image"
+            embed.description = "Set a custom ranking text overlay"
+        elif self.view.mode == "xp_info_image":
+            embed = self.view.get_xp_info_embed()
+            embed.title = "<:ImageLOGO:1407072328134951043> XP Info Image"
+            embed.description = "Set a custom XP text overlay"
 
         self.view.update_buttons()
         await interaction.edit_original_response(embed=embed, view=self.view)
