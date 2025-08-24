@@ -1270,8 +1270,9 @@ async def level_system(self, interaction: discord.Interaction):
         except Exception as e:
             print(f"Error sending followup: {e}")
 
-    @app_commands.command(name="level", description="View your level card")
-    async def level_command(self, interaction: discord.Interaction):
+@app_commands.command(name="level", description="View your level card")
+
+async def level_command(self, interaction: discord.Interaction):
         """Show user's level card with settings button"""
         await interaction.response.defer()
 
