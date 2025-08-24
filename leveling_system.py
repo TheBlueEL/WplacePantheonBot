@@ -1169,7 +1169,10 @@ class LevelingSystem(commands.Cog):
     @app_commands.command(name="level_system", description="Manage the server leveling system")
     async def level_system(self, interaction: discord.Interaction):
         """Main level system management command"""
-        await interaction.response.defer()
+        try:
+            await interaction.response.defer()
+        except discord.InteractionResponded:
+            pass
         
         view = LevelSystemMainView(self.bot, interaction.user)
         
@@ -1177,7 +1180,11 @@ class LevelingSystem(commands.Cog):
         await self.generate_demo_card_for_main_view(view)
         
         embed = view.get_main_embed()
-        await interaction.followup.send(embed=embed, view=view)
+        
+        try:
+            await interaction.followup.send(embed=embed, view=view)
+        except discord.InteractionResponded:
+            await interaction.edit_original_response(embed=embed, view=view)
 
     @app_commands.command(name="level", description="View your level card")
     async def level_command(self, interaction: discord.Interaction):
@@ -2713,6 +2720,11 @@ class LevelCardManagerView(discord.ui.View):
 
     # Color and Image callbacks
     async def color_settings(self, interaction: discord.Interaction):
+        try:
+            await interaction.response.defer()
+        except discord.InteractionResponded:
+            pass
+            
         self.mode = self.mode + "_color"
         if self.mode == "xp_info_color":
             embed = self.get_xp_info_embed()
@@ -2744,9 +2756,14 @@ class LevelCardManagerView(discord.ui.View):
             embed.description = "Choose how to set your ranking text color"
 
         self.update_buttons()
-        await interaction.response.edit_message(embed=embed, view=self)
+        await interaction.edit_original_response(embed=embed, view=self)
 
     async def image_settings(self, interaction: discord.Interaction):
+        try:
+            await interaction.response.defer()
+        except discord.InteractionResponded:
+            pass
+            
         self.mode = self.mode + "_image"
         if self.mode == "xp_bar_image":
             embed = self.get_xp_bar_embed()
@@ -2782,7 +2799,7 @@ class LevelCardManagerView(discord.ui.View):
             embed.description = "Set a custom ranking text image overlay"
 
         self.update_buttons()
-        await interaction.response.edit_message(embed=embed, view=self)
+        await interaction.edit_original_response(embed=embed, view=self)
 
     # Modal callbacks
     async def hex_color(self, interaction: discord.Interaction):
