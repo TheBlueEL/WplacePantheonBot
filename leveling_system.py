@@ -136,25 +136,25 @@ class LevelingSystem(commands.Cog):
                 return text_surface
 
             overlay_img = Image.open(io.BytesIO(overlay_data)).convert("RGBA")
-
+            
             # Get text dimensions
             bbox = font.getbbox(text_content)
             text_width = bbox[2] - bbox[0]
             text_height = bbox[3] - bbox[1]
-
+            
             # Create a temporary image for text rendering
             temp_img = Image.new('RGBA', (text_width, text_height), (0, 0, 0, 0))
             temp_draw = ImageDraw.Draw(temp_img)
-
+            
             # Draw white text on transparent background to create mask
             temp_draw.text((0, 0), text_content, font=font, fill=(255, 255, 255, 255))
-
+            
             # Resize overlay to match text size
             overlay_resized = overlay_img.resize((text_width, text_height), Image.Resampling.LANCZOS)
-
+            
             # Create final masked overlay
             masked_overlay = Image.new('RGBA', (text_width, text_height), (0, 0, 0, 0))
-
+            
             # Apply text as mask to overlay
             for x in range(text_width):
                 for y in range(text_height):
@@ -167,12 +167,12 @@ class LevelingSystem(commands.Cog):
                             masked_overlay.putpixel((x, y), (overlay_pixel[0], overlay_pixel[1], overlay_pixel[2], alpha))
                     except IndexError:
                         continue
-
+            
             # Paste the masked overlay onto the main surface
             text_surface.paste(masked_overlay, text_pos, masked_overlay)
-
+            
             return text_surface
-
+            
         except Exception as e:
             print(f"Error applying text image overlay: {e}")
             return text_surface
@@ -1008,7 +1008,7 @@ class LevelingSystem(commands.Cog):
                 bg_data = await self.download_image(config["background_image"])
                 if bg_data:
                     original_bg = Image.open(io.BytesIO(bg_data))
-
+                    
                     # Handle animated GIF or static image
                     if hasattr(original_bg, 'is_animated') and original_bg.is_animated:
                         original_bg.seek(0)
@@ -1244,7 +1244,7 @@ class LevelingSystem(commands.Cog):
         # Check if interaction is still valid
         if interaction.response.is_done():
             return
-
+        
         try:
             await interaction.response.defer(thinking=True)
         except discord.InteractionResponded:
@@ -1254,14 +1254,14 @@ class LevelingSystem(commands.Cog):
         except Exception as e:
             print(f"Error deferring interaction: {e}")
             return
-
+        
         view = LevelSystemMainView(self.bot, interaction.user)
-
+        
         # Generate demo level card
         await self.generate_demo_card_for_main_view(view)
-
+        
         embed = view.get_main_embed()
-
+        
         try:
             await interaction.followup.send(embed=embed, view=view)
         except discord.NotFound:
@@ -1286,17 +1286,12 @@ class LevelingSystem(commands.Cog):
             filename = "level_card.gif" if is_gif else "level_card.png"
 
             file = discord.File(level_card, filename=filename)
-
+            
             # Add settings button
             view = LevelCardSettingsButtonView(interaction.user)
             await interaction.followup.send(file=file, view=view)
         else:
             await interaction.followup.send("<:ErrorLOGO:1407071682031648850> Error creating level card!", ephemeral=True)
-
-# Helper function
-def get_bot_name(bot):
-    """Get bot display name"""
-    return bot.user.display_name if bot.user else "Bot"
 
 # Views and UI Components
 class LevelSystemMainView(discord.ui.View):
@@ -1441,14 +1436,14 @@ class RoleRewardsView(discord.ui.View):
     async def edit_role_reward(self, interaction: discord.Interaction, button: discord.ui.Button):
         data = load_leveling_data()
         role_rewards = data["leveling_settings"]["rewards"]["roles"]
-
+        
         if not role_rewards:
             await interaction.response.send_message(
                 "<:ErrorLOGO:1407071682031648850> No role rewards to edit. Please add a role reward first.",
                 ephemeral=True
             )
             return
-
+            
         view = EditRoleRewardView(self.bot, self.user)
         embed = view.get_embed()
         await interaction.response.edit_message(embed=embed, view=view)
@@ -1457,14 +1452,14 @@ class RoleRewardsView(discord.ui.View):
     async def remove_role_reward(self, interaction: discord.Interaction, button: discord.ui.Button):
         data = load_leveling_data()
         role_rewards = data["leveling_settings"]["rewards"]["roles"]
-
+        
         if not role_rewards:
             await interaction.response.send_message(
                 "<:ErrorLOGO:1407071682031648850> No role rewards to remove. Please add a role reward first.",
                 ephemeral=True
             )
             return
-
+            
         view = RemoveRoleRewardView(self.bot, self.user)
         embed = view.get_embed()
         await interaction.response.edit_message(embed=embed, view=view)
@@ -1573,7 +1568,7 @@ class EditRoleRewardView(discord.ui.View):
         super().__init__(timeout=300)
         self.bot = bot
         self.user = user
-
+        
         # Add dropdown in first row
         select = EditRoleRewardSelect()
         select.row = 0
@@ -1623,7 +1618,7 @@ class RemoveRoleRewardView(discord.ui.View):
         super().__init__(timeout=300)
         self.bot = bot
         self.user = user
-
+        
         # Add dropdown in first row
         select = RemoveRoleRewardSelect()
         select.row = 0
@@ -1703,7 +1698,7 @@ class CustomRewardsView(discord.ui.View):
     def get_embed(self):
         data = load_leveling_data()
         permissions = data["leveling_settings"].get("customization_permissions", {})
-
+        
         embed = discord.Embed(
             title="<:TotalLOGO:1408245313755545752> Customization Permissions",
             description="Manage user customization permissions for level cards:",
@@ -1716,7 +1711,7 @@ class CustomRewardsView(discord.ui.View):
             category_name = category.replace("_", " ").title()
             status = "<:OnLOGO:1407072463883472978>" if config.get("enabled", True) else "<:OffLOGO:1407072621836894380>"
             status_text += f"{status} **{category_name}**\n"
-
+            
         embed.add_field(name="Current Permissions", value=status_text or "No permissions configured", inline=False)
 
         return embed
@@ -1767,13 +1762,13 @@ class XPSettingsView(discord.ui.View):
         data = load_leveling_data()
         msg_settings = data["leveling_settings"]["xp_settings"]["messages"]
         char_settings = data["leveling_settings"]["xp_settings"]["characters"]
-
+        
         embed = discord.Embed(
             title="<:SettingLOGO:1407071854593839239> XP Settings",
             description="Configure how users gain experience:",
             color=0xFFFFFF
         )
-
+        
         # Message XP Status
         msg_status = "<:OnLOGO:1407072463883472978> Enabled" if msg_settings["enabled"] else "<:OffLOGO:1407072621836894380> Disabled"
         embed.add_field(
@@ -1781,7 +1776,7 @@ class XPSettingsView(discord.ui.View):
             value=f"{msg_status}\nXP: {msg_settings['xp_per_message']}/message\nCooldown: {msg_settings['cooldown']}s",
             inline=True
         )
-
+        
         # Character XP Status
         char_status = "<:OnLOGO:1407072463883472978> Enabled" if char_settings["enabled"] else "<:OffLOGO:1407072621836894380> Disabled"
         embed.add_field(
@@ -1789,7 +1784,7 @@ class XPSettingsView(discord.ui.View):
             value=f"{char_status}\nXP: {char_settings['xp_per_character']}/char\nLimit: {char_settings['character_limit']}\nCooldown: {char_settings['cooldown']}s",
             inline=True
         )
-
+        
         return embed
 
     @discord.ui.button(label="Messages XP", style=discord.ButtonStyle.primary, emoji="💬", row=0)
@@ -1804,7 +1799,7 @@ class XPSettingsView(discord.ui.View):
         embed = view.get_embed()
         await interaction.response.edit_message(embed=embed, view=view)
 
-
+    
 
     @discord.ui.button(label="Back", style=discord.ButtonStyle.gray, emoji="<:BackLOGO:1407071474233114766>", row=1)
     async def back(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -2278,7 +2273,7 @@ class LevelCardManagerView(discord.ui.View):
             value=f"RGB({level_color[0]}, {level_color[1]}, {level_color[2]})",
             inline=True
         )
-
+        
         embed.add_field(
             name="Ranking Color", 
             value=f"RGB({ranking_color[0]}, {ranking_color[1]}, {ranking_color[2]})",
@@ -2327,7 +2322,7 @@ class LevelCardManagerView(discord.ui.View):
 
         ranking_config = self.config.get("ranking_position", {})
         ranking_color = ranking_config.get("color", [255, 255, 255])
-
+        
         embed.add_field(
             name="Current Ranking Color",
             value=f"RGB({ranking_color[0]}, {ranking_color[1]}, {ranking_color[2]})",
@@ -2824,7 +2819,7 @@ class LevelSystemMainView(discord.ui.View):
         total_users = len(data["user_data"])
 
         status = "<:OnLOGO:1407072463883472978> Enabled" if enabled else "<:OffLOGO:1407072621836894380> Disabled"
-
+        
         embed.add_field(
             name="System Status",
             value=status,
@@ -2883,7 +2878,7 @@ class LevelSystemSettingsView(discord.ui.View):
         enabled = data["leveling_settings"]["enabled"]
 
         status = "<:OnLOGO:1407072463883472978> Enabled" if enabled else "<:OffLOGO:1407072621836894380> Disabled"
-
+        
         embed.add_field(
             name="System Status",
             value=status,
@@ -2901,7 +2896,7 @@ class LevelSystemSettingsView(discord.ui.View):
         current_enabled = data["leveling_settings"]["enabled"]
         data["leveling_settings"]["enabled"] = not current_enabled
         save_leveling_data(data)
-
+        
         embed = self.get_embed()
         await interaction.response.edit_message(embed=embed, view=self)
 
@@ -2977,7 +2972,7 @@ class XPSettingsView(discord.ui.View):
 class MessageXPModal(discord.ui.Modal):
     def __init__(self):
         super().__init__(title='Message XP Settings')
-
+        
         data = load_leveling_data()
         msg_settings = data["leveling_settings"]["xp_settings"]["messages"]
 
@@ -3039,7 +3034,7 @@ class MessageXPModal(discord.ui.Modal):
 class CharacterXPModal(discord.ui.Modal):
     def __init__(self):
         super().__init__(title='Character XP Settings')
-
+        
         data = load_leveling_data()
         char_settings = data["leveling_settings"]["xp_settings"]["characters"]
 
@@ -3334,10 +3329,10 @@ class ProfileOutlineCustomizationView(discord.ui.View):
     async def toggle_outline(self, interaction: discord.Interaction, button: discord.ui.Button):
         if "profile_outline" not in self.parent_view.config:
             self.parent_view.config["profile_outline"] = {}
-
+        
         current_enabled = self.parent_view.config["profile_outline"].get("enabled", True)
         self.parent_view.config["profile_outline"]["enabled"] = not current_enabled
-
+        
         self.parent_view.save_config()
         await self.parent_view.generate_preview_image(interaction.user)
         embed = self.get_embed()
@@ -3385,7 +3380,7 @@ class ProfileOutlineColorModal(discord.ui.Modal):
 
             if "profile_outline" not in self.parent_view.config:
                 self.parent_view.config["profile_outline"] = {}
-
+            
             self.parent_view.config["profile_outline"].pop("custom_image", None)
             self.parent_view.config["profile_outline"]["color_override"] = rgb_values
             self.parent_view.save_config()
@@ -3418,10 +3413,17 @@ class LevelCardSettingsButtonView(discord.ui.View):
         view.update_buttons()
         await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
 
-# Extended Level Card Manager View with additional methods
-class ExtendedLevelCardManagerView(LevelCardManagerView):
-    def update_buttons_extended(self):
-        if self.mode in ["xp_bar_image", "background_image", "profile_outline_image", "xp_info_image", "xp_progress_image", "username_image", "level_text_image", "ranking_text_image"]:
+def get_bot_name(bot):
+    """Get bot display name"""
+    return bot.user.display_name if bot.user else "Bot"
+
+            self.add_item(hex_button)
+            self.add_item(rgb_button)
+            self.add_item(reset_button)
+            self.add_item(confirm_button)
+            self.add_item(back_button)
+
+        elif self.mode in ["xp_bar_image", "background_image", "profile_outline_image", "xp_info_image", "xp_progress_image", "username_image", "level_text_image", "ranking_text_image"]:
             # Image selection buttons
             url_button = discord.ui.Button(
                 label="Set URL",
@@ -3725,7 +3727,7 @@ class ExtendedLevelCardManagerView(LevelCardManagerView):
             await interaction.response.defer()
         except discord.InteractionResponded:
             pass
-
+            
         self.mode = self.mode + "_color"
         if self.mode == "xp_info_color":
             embed = self.get_xp_info_embed()
@@ -3764,7 +3766,7 @@ class ExtendedLevelCardManagerView(LevelCardManagerView):
             await interaction.response.defer()
         except discord.InteractionResponded:
             pass
-
+            
         self.mode = self.mode + "_image"
         if self.mode == "xp_bar_image":
             embed = self.get_xp_bar_embed()
@@ -4391,7 +4393,7 @@ class CustomizationCategoryView(discord.ui.View):
         data = load_leveling_data()
         permissions = data["leveling_settings"].get("customization_permissions", {})
         category_config = permissions.get(self.category, {})
-
+        
         category_display = {
             "background": "Background",
             "avatar_outline": "Avatar Outline", 
@@ -4399,7 +4401,7 @@ class CustomizationCategoryView(discord.ui.View):
             "bar_progress": "Bar Progress",
             "content": "Content"
         }
-
+        
         embed = discord.Embed(
             title=f"<:SettingLOGO:1407071854593839239> {category_display.get(self.category, self.category.title())} Permissions",
             description=f"Manage {category_display.get(self.category, self.category)} customization permissions:",
@@ -4416,7 +4418,7 @@ class CustomizationCategoryView(discord.ui.View):
                 value=f"Level {category_config.get('image_permission_level', 0)}", 
                 inline=True
             )
-
+        
         if "color_permission_level" in category_config:
             embed.add_field(
                 name="Color Permission Level", 
@@ -4435,13 +4437,13 @@ class CustomizationCategoryView(discord.ui.View):
     async def toggle_enabled(self, interaction: discord.Interaction, button: discord.ui.Button):
         data = load_leveling_data()
         permissions = data["leveling_settings"].get("customization_permissions", {})
-
+        
         if self.category not in permissions:
             permissions[self.category] = {"enabled": True}
-
+        
         current_state = permissions[self.category].get("enabled", True)
         permissions[self.category]["enabled"] = not current_state
-
+        
         data["leveling_settings"]["customization_permissions"] = permissions
         save_leveling_data(data)
 
@@ -4468,11 +4470,11 @@ class CustomizationLevelModal(discord.ui.Modal):
     def __init__(self, parent_view):
         super().__init__(title="Set Permission Levels")
         self.parent_view = parent_view
-
+        
         data = load_leveling_data()
         permissions = data["leveling_settings"].get("customization_permissions", {})
         category_config = permissions.get(self.parent_view.category, {})
-
+        
         if self.parent_view.category in ["background", "avatar_outline"]:
             self.image_level = discord.ui.TextInput(
                 label="Image Permission Level",
@@ -4482,7 +4484,7 @@ class CustomizationLevelModal(discord.ui.Modal):
                 max_length=3
             )
             self.add_item(self.image_level)
-
+        
         self.color_level = discord.ui.TextInput(
             label="Color Permission Level",
             placeholder=f"Coloured {self.parent_view.category.replace('_', ' ').title()} Permission",
@@ -4496,10 +4498,10 @@ class CustomizationLevelModal(discord.ui.Modal):
         try:
             data = load_leveling_data()
             permissions = data["leveling_settings"].get("customization_permissions", {})
-
+            
             if self.parent_view.category not in permissions:
                 permissions[self.parent_view.category] = {"enabled": True}
-
+            
             if hasattr(self, 'image_level'):
                 image_level_value = int(self.image_level.value)
                 if image_level_value >= 0:
@@ -4507,20 +4509,20 @@ class CustomizationLevelModal(discord.ui.Modal):
                 else:
                     await interaction.response.send_message("<:ErrorLOGO:1407071682031648850> Level must be 0 or higher!", ephemeral=True)
                     return
-
+            
             color_level_value = int(self.color_level.value)
             if color_level_value >= 0:
                 permissions[self.parent_view.category]["color_permission_level"] = color_level_value
             else:
                 await interaction.response.send_message("<:ErrorLOGO:1407071682031648850> Level must be 0 or higher!", ephemeral=True)
                 return
-
+            
             data["leveling_settings"]["customization_permissions"] = permissions
             save_leveling_data(data)
-
+            
             embed = self.parent_view.get_embed()
             await interaction.response.edit_message(embed=embed, view=self.parent_view)
-
+            
         except ValueError:
             await interaction.response.send_message("<:ErrorLOGO:1407071682031648850> Please enter valid numbers!", ephemeral=True)
 
@@ -4648,7 +4650,7 @@ class CooldownSettingsView(discord.ui.View):
 
         embed.add_field(name="💬 Message Cooldown", value=f"{msg_cooldown} seconds", inline=True)
         embed.add_field(name="<:DescriptionLOGO:1407733417172533299> Character Cooldown", value=f"{char_cooldown} seconds", inline=True)
-
+        
         return embed
 
     @discord.ui.button(label="Message Cooldown", style=discord.ButtonStyle.primary, emoji="💬")
@@ -4667,7 +4669,7 @@ class CooldownSettingsView(discord.ui.View):
         data["leveling_settings"]["xp_settings"]["messages"]["cooldown"] = 10
         data["leveling_settings"]["xp_settings"]["characters"]["cooldown"] = 10
         save_leveling_data(data)
-
+        
         embed = self.get_embed()
         await interaction.response.edit_message(embed=embed, view=self)
 
@@ -4754,7 +4756,7 @@ class EditCustomRewardView(discord.ui.View):
         super().__init__(timeout=300)
         self.bot = bot
         self.user = user
-
+        
         # Add dropdown in first row
         select = EditCustomRewardSelect()
         select.row = 0
@@ -4779,7 +4781,7 @@ class RemoveCustomRewardView(discord.ui.View):
         super().__init__(timeout=300)
         self.bot = bot
         self.user = user
-
+        
         # Add dropdown in first row
         select = RemoveCustomRewardSelect()
         select.row = 0
@@ -5071,18 +5073,18 @@ class LevelCardSettingsButtonView(discord.ui.View):
             return
 
         await interaction.response.defer(ephemeral=True)
-
+        
         try:
             # Create user-specific level card manager
             view = UserLevelCardManagerView(interaction.client, interaction.user.id)
             view.guild = interaction.guild
-
+            
             # Generate preview image
             await view.generate_preview_image(interaction.user)
-
+            
             embed = view.get_main_embed()
             view.update_buttons()
-
+            
             # Send DM to user
             await interaction.user.send(embed=embed, view=view)
             await interaction.followup.send(
@@ -5108,7 +5110,7 @@ class UserLevelCardManagerView(LevelCardManagerView):
     def update_buttons(self):
         """Override to add close button for DM version"""
         super().update_buttons()
-
+        
         # Add close button for DM version
         if self.mode == "main":
             close_button = discord.ui.Button(
@@ -5134,17 +5136,17 @@ class UserLevelCardManagerView(LevelCardManagerView):
         data = load_leveling_data()
         user_data = data["user_data"].get(str(self.user_id), {"level": 1})
         permissions = data["leveling_settings"].get("customization_permissions", {})
-
+        
         category_config = permissions.get(category, {"enabled": True})
-
+        
         # If category is disabled, no one can use it
         if not category_config.get("enabled", True):
             return False
-
+            
         # Check specific permission level
         required_level = category_config.get(f"{permission_type}_permission_level", 0)
         user_level = user_data.get("level", 1)
-
+        
         return user_level >= required_level
 
     def update_buttons(self):
