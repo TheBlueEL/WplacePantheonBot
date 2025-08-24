@@ -2833,6 +2833,12 @@ class LevelCardManagerView(discord.ui.View):
             if "profile_outline" not in self.config:
                 self.config["profile_outline"] = {}
             self.config["profile_outline"].pop("color_override", None)
+        elif self.mode == "level_text_color":
+            self.config["level_color"] = [245, 55, 48]
+        elif self.mode == "ranking_text_color":
+            if "ranking_position" not in self.config:
+                self.config["ranking_position"] = {}
+            self.config["ranking_position"]["color"] = [255, 255, 255]
 
         self.save_config()
         await self.generate_preview_image(interaction.user)
@@ -2858,6 +2864,14 @@ class LevelCardManagerView(discord.ui.View):
             embed = self.get_profile_outline_embed()
             embed.title = "<:ColorLOGO:1408828590241615883> Profile Outline Color"
             embed.description = "Choose how to set your profile outline color"
+        elif self.mode == "level_text_color":
+            embed = self.get_level_text_embed()
+            embed.title = "<:ColorLOGO:1408828590241615883> Level Text Color"
+            embed.description = "Choose how to set your level text color"
+        elif self.mode == "ranking_text_color":
+            embed = self.get_ranking_text_embed()
+            embed.title = "<:ColorLOGO:1408828590241615883> Ranking Text Color"
+            embed.description = "Choose how to set your ranking text color"
 
         self.update_buttons()
         await interaction.edit_original_response(embed=embed, view=self)
@@ -2904,12 +2918,19 @@ class LevelCardManagerView(discord.ui.View):
             embed = self.get_level_text_embed()
         elif self.mode == "ranking_text":
             embed = self.get_ranking_text_embed()
-        elif self.mode in ["level_text", "ranking_text"]:
-            self.mode = "content"
+        elif self.mode == "content":
             embed = self.get_content_embed()
         else:
-            self.mode = "leveling_bar"
-            embed = self.get_leveling_bar_embed()
+            # For modes that should go back to a parent category
+            if self.mode in ["level_text", "ranking_text"]:
+                self.mode = "content"
+                embed = self.get_content_embed()
+            elif self.mode in ["xp_info", "xp_bar", "xp_progress"]:
+                self.mode = "leveling_bar"
+                embed = self.get_leveling_bar_embed()
+            else:
+                self.mode = "main"
+                embed = self.get_main_embed()
 
         self.update_buttons()
         await interaction.response.edit_message(embed=embed, view=self)
@@ -3125,6 +3146,12 @@ class LevelCardRGBColorModal(discord.ui.Modal):
                     self.view.config["profile_outline"] = {}
                 self.view.config["profile_outline"]["color_override"] = [r, g, b]
                 self.view.config["profile_outline"].pop("custom_image", None)
+            elif self.view.mode == "level_text_color":
+                self.view.config["level_color"] = [r, g, b]
+            elif self.view.mode == "ranking_text_color":
+                if "ranking_position" not in self.view.config:
+                    self.view.config["ranking_position"] = {}
+                self.view.config["ranking_position"]["color"] = [r, g, b]
 
             self.view.save_config()
             await self.view.generate_preview_image(interaction.user)
@@ -4036,7 +4063,7 @@ class UserLevelCardManagerView(LevelCardManagerView):
             self.add_item(xp_progress_button)
             self.add_item(back_button)
 
-        elif self.mode in ["xp_info_color", "xp_progress_color", "background_color", "username_color", "profile_outline_color"]:
+        elif self.mode in ["xp_info_color", "xp_progress_color", "background_color", "username_color", "profile_outline_color", "level_text_color", "ranking_text_color"]:
             # Color selection buttons
             hex_button = discord.ui.Button(
                 label="Hex Code",
@@ -4071,7 +4098,7 @@ class UserLevelCardManagerView(LevelCardManagerView):
             self.add_item(reset_button)
             self.add_item(back_button)
 
-        elif self.mode in ["xp_bar_image", "background_image", "profile_outline_image"]:
+        elif self.mode in ["xp_bar_image", "background_image", "profile_outline_image", "level_text_image", "ranking_text_image"]:
             # Image selection buttons
             url_button = discord.ui.Button(
                 label="Set URL",
@@ -4188,6 +4215,64 @@ class UserLevelCardManagerView(LevelCardManagerView):
             self.add_item(image_button)
             self.add_item(back_button)
 
+        elif self.mode == "content":
+            # Content main buttons
+            level_button = discord.ui.Button(
+                label="Level",
+                style=discord.ButtonStyle.secondary,
+                emoji="📊",
+                disabled=not self.check_permission("content", "color")
+            )
+            level_button.callback = self.level_text_settings
+
+            ranking_button = discord.ui.Button(
+                label="Classement",
+                style=discord.ButtonStyle.secondary,
+                emoji="🏆",
+                disabled=not self.check_permission("content", "color")
+            )
+            ranking_button.callback = self.ranking_text_settings
+
+            back_button = discord.ui.Button(
+                label="Back",
+                style=discord.ButtonStyle.gray,
+                emoji="<:BackLOGO:1407071474233114766>"
+            )
+            back_button.callback = self.back_to_main
+
+            self.add_item(level_button)
+            self.add_item(ranking_button)
+            self.add_item(back_button)
+
+        elif self.mode in ["level_text", "ranking_text"]:
+            # Level/Ranking text buttons
+            color_button = discord.ui.Button(
+                label="Color",
+                style=discord.ButtonStyle.secondary,
+                emoji="<:ColorLOGO:1408828590241615883>",
+                disabled=not self.check_permission("content", "color")
+            )
+            color_button.callback = self.color_settings
+
+            image_button = discord.ui.Button(
+                label="Image",
+                style=discord.ButtonStyle.secondary,
+                emoji="<:ImageLOGO:1407072328134951043>",
+                disabled=not self.check_permission("content", "image")
+            )
+            image_button.callback = self.image_settings
+
+            back_button = discord.ui.Button(
+                label="Back",
+                style=discord.ButtonStyle.gray,
+                emoji="<:BackLOGO:1407071474233114766>"
+            )
+            back_button.callback = self.back_to_parent
+
+            self.add_item(color_button)
+            self.add_item(image_button)
+            self.add_item(back_button)
+
         else:  # main mode
             # Main buttons with permission checks
             leveling_bar_button = discord.ui.Button(
@@ -4226,10 +4311,30 @@ class UserLevelCardManagerView(LevelCardManagerView):
             )
             profile_outline_button.callback = self.profile_outline_settings
 
+            content_button = discord.ui.Button(
+                label="Content",
+                style=discord.ButtonStyle.secondary,
+                emoji="📝",
+                row=1,
+                disabled=not self.check_permission("content", "color")
+            )
+            content_button.callback = self.content_settings
+
             self.add_item(leveling_bar_button)
             self.add_item(background_button)
             self.add_item(username_button)
             self.add_item(profile_outline_button)
+            self.add_item(content_button)
+
+            # Add close button for DM version
+            close_button = discord.ui.Button(
+                label="Close",
+                style=discord.ButtonStyle.danger,
+                emoji="❌",
+                row=2
+            )
+            close_button.callback = self.close_dm
+            self.add_item(close_button)
 
 async def setup(bot):
     await bot.add_cog(LevelingSystem(bot))
