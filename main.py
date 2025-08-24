@@ -87,8 +87,11 @@ async def on_ready():
         print(f'Failed to sync commands: {e}')
 
     # Synchroniser avec GitHub après les commandes
-    github_sync = GitHubSync()
-    await github_sync.sync_all_files_to_github()
+    try:
+        github_sync = GitHubSync()
+        await github_sync.sync_all_files_to_github()
+    except Exception as e:
+        print(f'Failed to sync with GitHub: {e}')
 
 @client.event
 async def on_message(message):
