@@ -56,6 +56,11 @@
         "y": 75,
         "size": 400
       },
+      "profile_outline": {
+        "enabled": true,
+        "url": "https://raw.githubusercontent.com/TheBlueEL/pictures/refs/heads/main/ProfileOutline.png",
+        "color_override": null
+      },
       "username_position": {
         "x": 550,
         "y": 275,
