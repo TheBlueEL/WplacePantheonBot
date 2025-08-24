@@ -758,16 +758,26 @@ class LevelingSystem(commands.Cog):
 
         # Check for level card manager image uploads
         user_id = message.author.id
-        # Check if user has an active level card manager
-        for view in self.bot._connection._view_store._synced_message_views.values():
-            if (hasattr(view, 'user_id') and view.user_id == user_id and
-                hasattr(view, 'waiting_for_image') and view.waiting_for_image and
-                isinstance(view, LevelCardManagerView) and message.attachments):
+        active_view = None
+        
+        # Plus robuste: chercher directement dans les managers actifs
+        try:
+            for view in self.bot._connection._view_store._synced_message_views.values():
+                if (hasattr(view, 'user_id') and view.user_id == user_id and
+                    hasattr(view, 'waiting_for_image') and view.waiting_for_image and
+                    isinstance(view, (LevelCardManagerView, UserLevelCardManagerView))):
+                    active_view = view
+                    break
+        except:
+            # Fallback si l'accès aux views échoue
+            active_view = None
 
-                # Check if the attachment is an image
-                attachment = message.attachments[0]
-                allowed_extensions = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.svg']
-                if any(attachment.filename.lower().endswith(ext) for ext in allowed_extensions):
+        if active_view and message.attachments:
+            # Check if the attachment is an image
+            attachment = message.attachments[0]
+            allowed_extensions = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.svg']
+            if any(attachment.filename.lower().endswith(ext) for ext in allowed_extensions):
+                try:
                     # Download the image
                     local_file = await self.download_image_to_github(attachment.url)
 
@@ -777,72 +787,146 @@ class LevelingSystem(commands.Cog):
                         except:
                             pass
 
-                        # Process the image based on type
-                        if view.current_image_type == "xp_bar":
-                            view.config["level_bar_image"] = local_file
-                        elif view.current_image_type == "background":
-                            view.config["background_image"] = local_file
-                            view.config.pop("background_color", None)
-                        elif view.current_image_type == "profile_outline":
-                            if "profile_outline" not in view.config:
-                                view.config["profile_outline"] = {}
-                            view.config["profile_outline"]["custom_image"] = local_file
-                            view.config["profile_outline"].pop("color_override", None)
+                        # Process the image based on type avec vérification de sécurité
+                        current_type = getattr(active_view, 'current_image_type', None)
+                        if current_type == "xp_bar":
+                            active_view.config["level_bar_image"] = local_file
+                        elif current_type == "background":
+                            active_view.config["background_image"] = local_file
+                            active_view.config.pop("background_color", None)
+                        elif current_type == "profile_outline":
+                            if "profile_outline" not in active_view.config:
+                                active_view.config["profile_outline"] = {}
+                            active_view.config["profile_outline"]["custom_image"] = local_file
+                            active_view.config["profile_outline"].pop("color_override", None)
 
-                        view.save_config()
-                        view.waiting_for_image = False
+                        # Sauvegarder et réinitialiser l'état
+                        active_view.save_config()
+                        active_view.waiting_for_image = False
+                        active_view.current_image_type = None
 
                         # Generate new preview
-                        await view.generate_preview_image(message.author)
-
-                        # Update the manager view
-                        if view.current_image_type == "xp_bar":
-                            view.mode = "xp_bar_image"
-                            embed = view.get_xp_bar_embed()
-                            embed.title = "<:ImageLOGO:1407072328134951043> XP Bar Image"
-                            embed.description = "Set a custom XP bar image"
-                        elif view.current_image_type == "background":
-                            view.mode = "background_image"
-                            embed = view.get_background_embed()
-                            embed.title = "<:ImageLOGO:1407072328134951043> Background Image"
-                            embed.description = "Set a custom background image"
-                        elif view.current_image_type == "profile_outline":
-                            view.mode = "profile_outline_image"
-                            embed = view.get_profile_outline_embed()
-                            embed.title = "<:ImageLOGO:1407072328134951043> Profile Outline Image"
-                            embed.description = "Set a custom profile outline image"
-
-                        view.update_buttons()
-
-                        # Find and update the original message
                         try:
-                            channel = message.channel
-                            async for msg in channel.history(limit=50):
-                                if msg.author == self.bot.user and msg.embeds:
-                                    if "Upload Image" in msg.embeds[0].title:
-                                        await msg.edit(embed=embed, view=view)
+                            await active_view.generate_preview_image(message.author)
+                        except:
+                            pass
+
+                        # Update the manager view avec gestion d'erreur améliorée
+                        success_embed = discord.Embed(
+                            title="<:SucessLOGO:1407071637840592977> Image Upload Successful",
+                            description="Your image has been uploaded and applied successfully!",
+                            color=discord.Color.green()
+                        )
+
+                        try:
+                            if current_type == "xp_bar":
+                                active_view.mode = "xp_bar_image"
+                                embed = active_view.get_xp_bar_embed()
+                                embed.title = "<:ImageLOGO:1407072328134951043> XP Bar Image"
+                                embed.description = "Set a custom XP bar image"
+                            elif current_type == "background":
+                                active_view.mode = "background_image"
+                                embed = active_view.get_background_embed()
+                                embed.title = "<:ImageLOGO:1407072328134951043> Background Image"
+                                embed.description = "Set a custom background image"
+                            elif current_type == "profile_outline":
+                                active_view.mode = "profile_outline_image"
+                                embed = active_view.get_profile_outline_embed()
+                                embed.title = "<:ImageLOGO:1407072328134951043> Profile Outline Image"
+                                embed.description = "Set a custom profile outline image"
+                            else:
+                                # Fallback vers l'embed principal si le type est inconnu
+                                active_view.mode = "main"
+                                embed = active_view.get_main_embed()
+
+                            active_view.update_buttons()
+
+                            # Méthode de mise à jour plus fiable
+                            message_updated = False
+                            try:
+                                channel = message.channel
+                                async for msg in channel.history(limit=100):
+                                    if (msg.author == self.bot.user and msg.embeds and
+                                        ("Upload Image" in msg.embeds[0].title or 
+                                         "Level Card Manager" in msg.embeds[0].title or
+                                         "Settings" in msg.embeds[0].title)):
+                                        await msg.edit(embed=embed, view=active_view)
+                                        message_updated = True
                                         break
+                            except Exception as e:
+                                print(f"Error updating message: {e}")
+
+                            # Fallback: envoyer un nouveau message si la mise à jour échoue
+                            if not message_updated:
+                                try:
+                                    await message.channel.send(embed=embed, view=active_view)
+                                except Exception as e:
+                                    print(f"Error sending fallback message: {e}")
+                                    # Dernier recours: envoyer juste le message de succès
+                                    try:
+                                        await message.channel.send(embed=success_embed)
+                                    except:
+                                        pass
+
                         except Exception as e:
-                            print(f"Error updating message: {e}")
-                else:
-                    # File is not a valid image format
-                    try:
-                        await message.delete()
-                    except:
-                        pass
+                            print(f"Error processing image upload: {e}")
+                            # Réinitialiser l'état en cas d'erreur
+                            active_view.waiting_for_image = False
+                            active_view.current_image_type = None
+                            active_view.mode = "main"
+                            active_view.update_buttons()
+                            
+                            try:
+                                await message.channel.send(embed=success_embed)
+                            except:
+                                pass
 
-                    error_embed = discord.Embed(
-                        title="<:ErrorLOGO:1407071682031648850> Invalid File Type",
-                        description="Please upload only image files with these extensions:\n`.png`, `.jpg`, `.jpeg`, `.gif`, `.webp`, `.bmp`, `.svg`",
-                        color=discord.Color.red()
-                    )
+                    else:
+                        # Échec du téléchargement
+                        active_view.waiting_for_image = False
+                        active_view.current_image_type = None
+                        
+                        error_embed = discord.Embed(
+                            title="<:ErrorLOGO:1407071682031648850> Upload Failed",
+                            description="Failed to upload image. Please try again.",
+                            color=discord.Color.red()
+                        )
+                        try:
+                            await message.channel.send(embed=error_embed, delete_after=5)
+                        except:
+                            pass
+                            
+                except Exception as e:
+                    print(f"Error handling image upload: {e}")
+                    # Réinitialiser l'état en cas d'erreur critique
+                    active_view.waiting_for_image = False
+                    active_view.current_image_type = None
+                    active_view.mode = "main"
+                    active_view.update_buttons()
+                    
+            else:
+                # File is not a valid image format
+                try:
+                    await message.delete()
+                except:
+                    pass
 
-                    try:
-                        channel = message.channel
-                        await channel.send(embed=error_embed, delete_after=5)
-                    except:
-                        pass
-                return
+                error_embed = discord.Embed(
+                    title="<:ErrorLOGO:1407071682031648850> Invalid File Type",
+                    description="Please upload only image files with these extensions:\n`.png`, `.jpg`, `.jpeg`, `.gif`, `.webp`, `.bmp`, `.svg`",
+                    color=discord.Color.red()
+                )
+
+                try:
+                    channel = message.channel
+                    await channel.send(embed=error_embed, delete_after=5)
+                except:
+                    pass
+                    
+                # Réinitialiser l'état même pour les fichiers invalides
+                active_view.waiting_for_image = False
+                active_view.current_image_type = None
+            return
 
         # Regular XP processing
         data = load_leveling_data()
@@ -2903,6 +2987,9 @@ class LevelCardManagerView(discord.ui.View):
         embed = self.get_waiting_image_embed()
         self.update_buttons()
         await interaction.response.edit_message(embed=embed, view=self)
+        
+        # Ajouter un timeout automatique pour éviter les blocages
+        asyncio.create_task(self._auto_timeout_image_upload())
 
     async def clear_image(self, interaction: discord.Interaction):
         await interaction.response.defer()
@@ -3086,6 +3173,14 @@ class LevelCardManagerView(discord.ui.View):
         self.update_buttons()
         await interaction.edit_original_response(embed=embed, view=self)
 
+    async def _auto_timeout_image_upload(self):
+        """Timeout automatique pour l'upload d'image après 5 minutes"""
+        await asyncio.sleep(300)  # 5 minutes
+        if self.waiting_for_image:
+            self.waiting_for_image = False
+            self.current_image_type = None
+            print(f"Auto-timeout: Image upload cancelled for user {self.user_id}")
+
     async def back_from_image_upload(self, interaction: discord.Interaction):
         try:
             await interaction.response.defer()
@@ -3093,7 +3188,13 @@ class LevelCardManagerView(discord.ui.View):
             pass
 
         self.waiting_for_image = False
-        self.mode = self.current_image_type + "_image"
+        current_type = self.current_image_type
+        self.current_image_type = None
+        
+        if current_type:
+            self.mode = current_type + "_image"
+        else:
+            self.mode = "main"
 
         if self.mode == "xp_bar_image":
             embed = self.get_xp_bar_embed()
@@ -3107,6 +3208,8 @@ class LevelCardManagerView(discord.ui.View):
             embed = self.get_profile_outline_embed()
             embed.title = "<:ImageLOGO:1407072328134951043> Profile Outline Image"
             embed.description = "Set a custom profile outline image"
+        else:
+            embed = self.get_main_embed()
 
         self.update_buttons()
         await interaction.edit_original_response(embed=embed, view=self)
