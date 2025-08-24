@@ -1529,21 +1529,11 @@ class ConvertersCommand(commands.Cog):
                                             embed = manager.get_image_preview_embed()
                                             manager.update_buttons()
 
-                                            # Find and update the original message
-                                            try:
-                                                channel = message.channel
-                                                async for msg in channel.history(limit=50):
-                                                    if msg.author == self.bot.user and msg.embeds:
-                                                        if "Upload Image" in msg.embeds[0].title:
-                                                            await msg.edit(embed=embed, view=manager)
-                                                            break
-                                            except Exception as e:
-                                                print(f"Error updating message: {e}")
-                                                # Fallback: send new message
-                                                try:
-                                                    await channel.send(embed=embed, view=manager)
-                                                except:
-                                                    pass
+                                            # Use followup if interaction already responded
+                                            if interaction.response.is_done():
+                                                await interaction.followup.edit_message(message_id=interaction.message.id, embed=embed, view=manager)
+                                            else:
+                                                await interaction.response.edit_message(embed=embed, view=manager)
                                         else:
                                             raise Exception("Image not accessible")
                             except Exception as e:
