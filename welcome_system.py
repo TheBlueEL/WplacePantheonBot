@@ -324,10 +324,13 @@ class WelcomeSystem(commands.Cog):
             shadow_color = tuple(text_config.get("shadow_color", [0, 0, 0, 128]))
             shadow_offset = text_config.get("shadow_offset", 2)
 
-            # Récupérer le message de bienvenue personnalisé depuis welcome_config
-            welcome_text = welcome_config.get("text", "WELCOME TO THE SERVER")
+            # Récupérer le message de bienvenue personnalisé
+            welcome_data = load_welcome_data()
+            custom_message = welcome_data.get("welcome_settings", {}).get("welcome_message", "Welcome {user}!")
+            # Remplacer {user} par le nom d'utilisateur et supprimer les mentions Discord
+            welcome_text = custom_message.replace("{user}", user.display_name).replace("<@", "").replace(">", "")
             
-            # Première zone: Message de bienvenue fixe
+            # Première zone: Message personnalisé
             try:
                 font_welcome = ImageFont.truetype(welcome_config["font_path"], welcome_config["font_size"])
             except:
@@ -527,7 +530,6 @@ class WelcomeSystem(commands.Cog):
             await interaction.response.send_message(embed=embed, ephemeral=True)
             return
 
-        # Defer only once
         await interaction.response.defer()
 
         view = WelcomeSystemManagerView(self.bot, interaction.user.id)
