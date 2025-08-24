@@ -1238,13 +1238,9 @@ class LevelingSystem(commands.Cog):
 
         return False
 
-# Forward declaration helper function
-def get_bot_name(bot):
-    """Get bot display name"""
-    return bot.user.display_name if bot.user else "Bot"
+@app_commands.command(name="level_system", description="Manage the server leveling system")
 
-    @app_commands.command(name="level_system", description="Manage the server leveling system")
-    async def level_system(self, interaction: discord.Interaction):
+async def level_system(self, interaction: discord.Interaction):
         """Main level system management command"""
         # Check if interaction is still valid
         if interaction.response.is_done():
@@ -1297,6 +1293,11 @@ def get_bot_name(bot):
             await interaction.followup.send(file=file, view=view)
         else:
             await interaction.followup.send("<:ErrorLOGO:1407071682031648850> Error creating level card!", ephemeral=True)
+
+# Helper function
+def get_bot_name(bot):
+    """Get bot display name"""
+    return bot.user.display_name if bot.user else "Bot"
 
 # Views and UI Components
 class LevelSystemMainView(discord.ui.View):
@@ -3418,8 +3419,10 @@ class LevelCardSettingsButtonView(discord.ui.View):
         view.update_buttons()
         await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
 
-def update_buttons(self):
-    elif self.mode in ["xp_bar_image", "background_image", "profile_outline_image", "xp_info_image", "xp_progress_image", "username_image", "level_text_image", "ranking_text_image"]:
+# Extended Level Card Manager View with additional methods
+class ExtendedLevelCardManagerView(LevelCardManagerView):
+    def update_buttons_extended(self):
+        if self.mode in ["xp_bar_image", "background_image", "profile_outline_image", "xp_info_image", "xp_progress_image", "username_image", "level_text_image", "ranking_text_image"]:
             # Image selection buttons
             url_button = discord.ui.Button(
                 label="Set URL",
