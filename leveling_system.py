@@ -1238,7 +1238,7 @@ class LevelingSystem(commands.Cog):
 
         return False
 
-@app_commands.command(name="level_system", description="Manage the server leveling system")
+    @app_commands.command(name="level_system", description="Manage the server leveling system")
     async def level_system(self, interaction: discord.Interaction):
         """Main level system management command"""
         # Check if interaction is still valid
@@ -1269,7 +1269,7 @@ class LevelingSystem(commands.Cog):
         except Exception as e:
             print(f"Error sending followup: {e}")
 
-@app_commands.command(name="level", description="View your level card")
+    @app_commands.command(name="level", description="View your level card")
     async def level_command(self, interaction: discord.Interaction):
         """Show user's level card with settings button"""
         await interaction.response.defer()
