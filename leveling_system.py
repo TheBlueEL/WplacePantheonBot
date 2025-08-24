@@ -788,6 +788,25 @@ class LevelingSystem(commands.Cog):
                                 view.config["profile_outline"] = {}
                             view.config["profile_outline"]["custom_image"] = local_file
                             view.config["profile_outline"].pop("color_override", None)
+                        elif view.current_image_type == "username_text":
+                            view.config["username_text_image"] = local_file
+                            view.config.pop("username_color", None)
+                        elif view.current_image_type == "level_text":
+                            view.config["level_text_image"] = local_file
+                            view.config.pop("level_color", None)
+                        elif view.current_image_type == "ranking_text":
+                            if "ranking_position" not in view.config:
+                                view.config["ranking_position"] = {}
+                            view.config["ranking_position"]["text_image"] = local_file
+                            view.config["ranking_position"].pop("color", None)
+                        elif view.current_image_type == "discriminator_text":
+                            if "discriminator_position" not in view.config:
+                                view.config["discriminator_position"] = {}
+                            view.config["discriminator_position"]["text_image"] = local_file
+                            view.config["discriminator_position"].pop("color", None)
+                        elif view.current_image_type == "xp_text":
+                            view.config["xp_text_image"] = local_file
+                            view.config.pop("xp_text_color", None)
 
                         view.save_config()
                         view.waiting_for_image = False
@@ -811,6 +830,9 @@ class LevelingSystem(commands.Cog):
                             embed = view.get_profile_outline_embed()
                             embed.title = "<:ImageLOGO:1407072328134951043> Profile Outline Image"
                             embed.description = "Set a custom profile outline image"
+                        elif view.current_image_type in ["username_text", "level_text", "ranking_text", "discriminator_text", "xp_text"]:
+                            view.mode = "main"
+                            embed = view.get_main_embed()
 
                         view.update_buttons()
 
@@ -2474,6 +2496,926 @@ class LevelCardManagerView(discord.ui.View):
                 emoji="<:BackLOGO:1407071474233114766>"
             )
             back_button.callback = self.back_to_parent
+
+
+
+# Level Card Management Views
+class LevelCardManagerView(discord.ui.View):
+    def __init__(self, bot, user_id):
+        super().__init__(timeout=300)
+        self.bot = bot
+        self.user_id = user_id
+        self.config = load_leveling_data()["leveling_settings"]["level_card"]
+        self.mode = "main"
+        self.waiting_for_image = False
+        self.current_image_type = None
+        self.preview_card_url = None
+
+    def save_config(self):
+        """Save the current configuration to JSON file"""
+        data = load_leveling_data()
+        data["leveling_settings"]["level_card"] = self.config
+        save_leveling_data(data)
+
+    async def generate_preview_image(self, user):
+        """Generate preview image and upload it to GitHub"""
+        try:
+            leveling_system = LevelingSystem(self.bot)
+            preview_image = await leveling_system.create_demo_level_card(user)
+
+            if preview_image:
+                # Save to temp file
+                os.makedirs('images', exist_ok=True)
+                import time
+                timestamp = int(time.time())
+                filename = f"level_card_preview_{timestamp}.png"
+                file_path = os.path.join('images', filename)
+
+                with open(file_path, 'wb') as f:
+                    f.write(preview_image.getvalue())
+
+                # Upload to GitHub
+                try:
+                    from github_sync import GitHubSync
+                    github_sync = GitHubSync()
+                    sync_success = await github_sync.sync_image_to_pictures_repo(file_path)
+
+                    if sync_success:
+                        try:
+                            os.remove(file_path)
+                        except:
+                            pass
+
+                        filename = os.path.basename(file_path)
+                        self.preview_card_url = f"https://raw.githubusercontent.com/TheBlueEL/pictures/main/{filename}?t={timestamp}"
+                        return True
+                except ImportError:
+                    print("GitHub sync not available")
+
+        except Exception as e:
+            print(f"Error generating preview: {e}")
+
+        return False
+
+    def get_main_embed(self):
+        embed = discord.Embed(
+            title="<:SettingLOGO:1407071854593839239> Level Card Manager",
+            description="Customize your level card design",
+            color=0x5865F2
+        )
+
+        # Add preview image if available
+        if hasattr(self, 'preview_card_url') and self.preview_card_url:
+            import time
+            timestamp = int(time.time())
+            if '?' in self.preview_card_url:
+                image_url = self.preview_card_url.split('?')[0] + f"?refresh={timestamp}"
+            else:
+                image_url = self.preview_card_url + f"?refresh={timestamp}"
+            embed.set_image(url=image_url)
+
+        bot_name = get_bot_name(self.bot)
+        embed.set_footer(text=f"{bot_name} | Level Card Manager", icon_url=self.bot.user.display_avatar.url)
+
+        return embed
+
+    def get_waiting_image_embed(self):
+        embed = discord.Embed(
+            title="<:UploadLOGO:1407072005567545478> Upload Image",
+            description="Please send an image file in this channel.\n\n**Only you can upload the image for security reasons.**",
+            color=discord.Color.blue()
+        )
+
+        bot_name = get_bot_name(self.bot)
+        embed.set_footer(text=f"{bot_name} | Upload Image", icon_url=self.bot.user.display_avatar.url)
+
+        return embed
+
+    def update_buttons(self):
+        self.clear_items()
+
+        if self.waiting_for_image:
+            # Back button only when waiting for image
+            back_button = discord.ui.Button(
+                label="Back",
+                style=discord.ButtonStyle.gray,
+                emoji="<:BackLOGO:1391511633431494666>",
+                row=0
+            )
+
+            async def back_callback(interaction):
+                self.waiting_for_image = False
+                self.mode = "main"
+                embed = self.get_main_embed()
+                self.update_buttons()
+                await interaction.response.edit_message(embed=embed, view=self)
+
+            back_button.callback = back_callback
+            self.add_item(back_button)
+        else:
+            # Main buttons
+            # Row 1: Username and Level
+            username_button = discord.ui.Button(
+                label="Username",
+                style=discord.ButtonStyle.primary,
+                emoji="<:ParticipantLOGO:1407072406329360478>",
+                row=0
+            )
+
+            async def username_callback(interaction):
+                view = TextCustomizationView(self, "username", "Username Text")
+                embed = view.get_embed()
+                await interaction.response.edit_message(embed=embed, view=view)
+
+            username_button.callback = username_callback
+            self.add_item(username_button)
+
+            level_button = discord.ui.Button(
+                label="Level",
+                style=discord.ButtonStyle.primary,
+                emoji="<:TrophyLOGO:1407072525372514358>",
+                row=0
+            )
+
+            async def level_callback(interaction):
+                view = TextCustomizationView(self, "level", "Level Text")
+                embed = view.get_embed()
+                await interaction.response.edit_message(embed=embed, view=view)
+
+            level_button.callback = level_callback
+            self.add_item(level_button)
+
+            # Row 2: Ranking and XP Text
+            ranking_button = discord.ui.Button(
+                label="Ranking",
+                style=discord.ButtonStyle.primary,
+                emoji="<:RankingLOGO:1407072572453601381>",
+                row=1
+            )
+
+            async def ranking_callback(interaction):
+                view = TextCustomizationView(self, "ranking", "Ranking Text")
+                embed = view.get_embed()
+                await interaction.response.edit_message(embed=embed, view=view)
+
+            ranking_button.callback = ranking_callback
+            self.add_item(ranking_button)
+
+            xp_button = discord.ui.Button(
+                label="XP Text",
+                style=discord.ButtonStyle.primary,
+                emoji="<:XPLOGO:1407072619517534289>",
+                row=1
+            )
+
+            async def xp_callback(interaction):
+                view = TextCustomizationView(self, "xp_text", "XP Text")
+                embed = view.get_embed()
+                await interaction.response.edit_message(embed=embed, view=view)
+
+            xp_button.callback = xp_callback
+            self.add_item(xp_button)
+
+            # Row 3: Background and Profile Outline
+            background_button = discord.ui.Button(
+                label="Background",
+                style=discord.ButtonStyle.secondary,
+                emoji="<:ImageLOGO:1407072328134951043>",
+                row=2
+            )
+
+            async def background_callback(interaction):
+                view = BackgroundCustomizationView(self)
+                embed = view.get_embed()
+                await interaction.response.edit_message(embed=embed, view=view)
+
+            background_button.callback = background_callback
+            self.add_item(background_button)
+
+            profile_button = discord.ui.Button(
+                label="Profile Outline",
+                style=discord.ButtonStyle.secondary,
+                emoji="<:ParticipantsLOGO:1407733929389199460>",
+                row=2
+            )
+
+            async def profile_callback(interaction):
+                view = ProfileOutlineCustomizationView(self)
+                embed = view.get_embed()
+                await interaction.response.edit_message(embed=embed, view=view)
+
+            profile_button.callback = profile_callback
+            self.add_item(profile_button)
+
+class TextCustomizationView(discord.ui.View):
+    def __init__(self, parent_view, text_type, display_name):
+        super().__init__(timeout=300)
+        self.parent_view = parent_view
+        self.text_type = text_type
+        self.display_name = display_name
+
+    def get_embed(self):
+        embed = discord.Embed(
+            title=f"<:TXTFileLOGO:1407735600752361622> {self.display_name}",
+            description=f"Customize the {self.display_name.lower()} appearance",
+            color=discord.Color.purple()
+        )
+
+        # Show current status
+        config = self.parent_view.config
+        has_image = False
+        has_color = False
+
+        if self.text_type == "username":
+            has_image = config.get("username_text_image") is not None
+            has_color = config.get("username_color") is not None
+        elif self.text_type == "level":
+            has_image = config.get("level_text_image") is not None
+            has_color = config.get("level_color") is not None
+        elif self.text_type == "ranking":
+            ranking_config = config.get("ranking_position", {})
+            has_image = ranking_config.get("text_image") is not None
+            has_color = ranking_config.get("color") is not None
+        elif self.text_type == "xp_text":
+            has_image = config.get("xp_text_image") is not None
+            has_color = config.get("xp_text_color") is not None
+
+        status = ""
+        if has_image:
+            status += "<:SucessLOGO:1407071637840592977> Image overlay: Active\n"
+        else:
+            status += "<:ErrorLOGO:1407071682031648850> Image overlay: None\n"
+
+        if has_color:
+            status += "<:SucessLOGO:1407071637840592977> Color: Custom\n"
+        else:
+            status += "<:ErrorLOGO:1407071682031648850> Color: Default\n"
+
+        embed.add_field(
+            name="Current Status",
+            value=status,
+            inline=False
+        )
+
+        # Add preview image if available
+        if hasattr(self.parent_view, 'preview_card_url') and self.parent_view.preview_card_url:
+            embed.set_image(url=self.parent_view.preview_card_url)
+
+        bot_name = get_bot_name(self.parent_view.bot)
+        embed.set_footer(text=f"{bot_name} | {self.display_name}", icon_url=self.parent_view.bot.user.display_avatar.url)
+
+        return embed
+
+    @discord.ui.button(label="Set Color", style=discord.ButtonStyle.primary, emoji="<:ColorLOGO:1408828590241615883>")
+    async def set_color(self, interaction: discord.Interaction, button: discord.ui.Button):
+        modal = TextColorModal(self.parent_view, self.text_type, self.display_name)
+        await interaction.response.send_modal(modal)
+
+    @discord.ui.button(label="Set Image", style=discord.ButtonStyle.secondary, emoji="<:ImageLOGO:1407072328134951043>")
+    async def set_image(self, interaction: discord.Interaction, button: discord.ui.Button):
+        self.parent_view.waiting_for_image = True
+        self.parent_view.current_image_type = f"{self.text_type}_text"
+        embed = self.parent_view.get_waiting_image_embed()
+        self.parent_view.update_buttons()
+        await interaction.response.edit_message(embed=embed, view=self.parent_view)
+
+    @discord.ui.button(label="Clear", style=discord.ButtonStyle.danger, emoji="<:DeleteLOGO:1407071421363916841>")
+    async def clear_customization(self, interaction: discord.Interaction, button: discord.ui.Button):
+        config = self.parent_view.config
+
+        if self.text_type == "username":
+            config.pop("username_text_image", None)
+            config.pop("username_color", None)
+        elif self.text_type == "level":
+            config.pop("level_text_image", None)
+            config.pop("level_color", None)
+        elif self.text_type == "ranking":
+            if "ranking_position" in config:
+                config["ranking_position"].pop("text_image", None)
+                config["ranking_position"].pop("color", None)
+        elif self.text_type == "xp_text":
+            config.pop("xp_text_image", None)
+            config.pop("xp_text_color", None)
+
+
+
+# Main Level System Views
+class LevelSystemMainView(discord.ui.View):
+    def __init__(self, bot, user):
+        super().__init__(timeout=300)
+        self.bot = bot
+        self.user = user
+        self.demo_card_url = None
+
+    def get_main_embed(self):
+        embed = discord.Embed(
+            title="<:SettingLOGO:1407071854593839239> Level System Manager",
+            description="Manage your server's leveling system",
+            color=0x5865F2
+        )
+
+        data = load_leveling_data()
+        enabled = data["leveling_settings"]["enabled"]
+        total_users = len(data["user_data"])
+
+        status = "<:OnLOGO:1407072463883472978> Enabled" if enabled else "<:OffLOGO:1407072621836894380> Disabled"
+        
+        embed.add_field(
+            name="System Status",
+            value=status,
+            inline=True
+        )
+
+        embed.add_field(
+            name="Total Users",
+            value=f"{total_users} users",
+            inline=True
+        )
+
+        # Add demo card if available
+        if hasattr(self, 'demo_card_url') and self.demo_card_url:
+            embed.set_image(url=self.demo_card_url)
+
+        bot_name = get_bot_name(self.bot)
+        embed.set_footer(text=f"{bot_name} | Level System", icon_url=self.bot.user.display_avatar.url)
+
+        return embed
+
+    @discord.ui.button(label="Level Card Design", style=discord.ButtonStyle.primary, emoji="<:ImageLOGO:1407072328134951043>")
+    async def level_card_design(self, interaction: discord.Interaction, button: discord.ui.Button):
+        view = LevelCardManagerView(interaction.client, interaction.user.id)
+        await view.generate_preview_image(interaction.user)
+        embed = view.get_main_embed()
+        view.update_buttons()
+        await interaction.response.edit_message(embed=embed, view=view)
+
+    @discord.ui.button(label="System Settings", style=discord.ButtonStyle.secondary, emoji="<:SettingLOGO:1407071854593839239>")
+    async def system_settings(self, interaction: discord.Interaction, button: discord.ui.Button):
+        view = LevelSystemSettingsView(self.bot, self.user)
+        embed = view.get_embed()
+        await interaction.response.edit_message(embed=embed, view=view)
+
+    @discord.ui.button(label="XP Settings", style=discord.ButtonStyle.secondary, emoji="<:XPLOGO:1407072619517534289>")
+    async def xp_settings(self, interaction: discord.Interaction, button: discord.ui.Button):
+        view = XPSettingsView(self.bot, self.user)
+        embed = view.get_embed()
+        await interaction.response.edit_message(embed=embed, view=view)
+
+class LevelSystemSettingsView(discord.ui.View):
+    def __init__(self, bot, user):
+        super().__init__(timeout=300)
+        self.bot = bot
+        self.user = user
+
+    def get_embed(self):
+        embed = discord.Embed(
+            title="<:SettingLOGO:1407071854593839239> System Settings",
+            description="Configure the leveling system behavior",
+            color=discord.Color.blue()
+        )
+
+        data = load_leveling_data()
+        enabled = data["leveling_settings"]["enabled"]
+
+        status = "<:OnLOGO:1407072463883472978> Enabled" if enabled else "<:OffLOGO:1407072621836894380> Disabled"
+        
+        embed.add_field(
+            name="System Status",
+            value=status,
+            inline=False
+        )
+
+        bot_name = get_bot_name(self.bot)
+        embed.set_footer(text=f"{bot_name} | System Settings", icon_url=self.bot.user.display_avatar.url)
+
+        return embed
+
+    @discord.ui.button(label="Toggle System", style=discord.ButtonStyle.primary, emoji="<:OnLOGO:1407072463883472978>")
+    async def toggle_system(self, interaction: discord.Interaction, button: discord.ui.Button):
+        data = load_leveling_data()
+        current_enabled = data["leveling_settings"]["enabled"]
+        data["leveling_settings"]["enabled"] = not current_enabled
+        save_leveling_data(data)
+        
+        embed = self.get_embed()
+        await interaction.response.edit_message(embed=embed, view=self)
+
+    @discord.ui.button(label="Back", style=discord.ButtonStyle.gray, emoji="<:BackLOGO:1391511633431494666>")
+    async def back(self, interaction: discord.Interaction, button: discord.ui.Button):
+        view = LevelSystemMainView(self.bot, self.user)
+        embed = view.get_main_embed()
+        await interaction.response.edit_message(embed=embed, view=view)
+
+class XPSettingsView(discord.ui.View):
+    def __init__(self, bot, user):
+        super().__init__(timeout=300)
+        self.bot = bot
+        self.user = user
+
+    def get_embed(self):
+        embed = discord.Embed(
+            title="<:XPLOGO:1407072619517534289> XP Settings",
+            description="Configure how users gain experience points",
+            color=discord.Color.green()
+        )
+
+        data = load_leveling_data()
+        xp_settings = data["leveling_settings"]["xp_settings"]
+
+        # Message XP
+        msg_enabled = xp_settings["messages"]["enabled"]
+        msg_xp = xp_settings["messages"]["xp_per_message"]
+        msg_cooldown = xp_settings["messages"]["cooldown"]
+
+        # Character XP
+        char_enabled = xp_settings["characters"]["enabled"]
+        char_xp = xp_settings["characters"]["xp_per_character"]
+        char_limit = xp_settings["characters"]["character_limit"]
+        char_cooldown = xp_settings["characters"]["cooldown"]
+
+        msg_status = "<:OnLOGO:1407072463883472978> Enabled" if msg_enabled else "<:OffLOGO:1407072621836894380> Disabled"
+        char_status = "<:OnLOGO:1407072463883472978> Enabled" if char_enabled else "<:OffLOGO:1407072621836894380> Disabled"
+
+        embed.add_field(
+            name="Message XP",
+            value=f"{msg_status}\nXP: {msg_xp} per message\nCooldown: {msg_cooldown}s",
+            inline=True
+        )
+
+        embed.add_field(
+            name="Character XP",
+            value=f"{char_status}\nXP: {char_xp} per character\nLimit: {char_limit} chars\nCooldown: {char_cooldown}s",
+            inline=True
+        )
+
+        bot_name = get_bot_name(self.bot)
+        embed.set_footer(text=f"{bot_name} | XP Settings", icon_url=self.bot.user.display_avatar.url)
+
+        return embed
+
+    @discord.ui.button(label="Message XP", style=discord.ButtonStyle.primary, emoji="<:MessageLOGO:1407072668213751869>")
+    async def message_xp_settings(self, interaction: discord.Interaction, button: discord.ui.Button):
+        modal = MessageXPModal()
+        await interaction.response.send_modal(modal)
+
+    @discord.ui.button(label="Character XP", style=discord.ButtonStyle.primary, emoji="<:TXTFileLOGO:1407735600752361622>")
+    async def character_xp_settings(self, interaction: discord.Interaction, button: discord.ui.Button):
+        modal = CharacterXPModal()
+        await interaction.response.send_modal(modal)
+
+    @discord.ui.button(label="Back", style=discord.ButtonStyle.gray, emoji="<:BackLOGO:1391511633431494666>")
+    async def back(self, interaction: discord.Interaction, button: discord.ui.Button):
+        view = LevelSystemMainView(self.bot, self.user)
+        embed = view.get_main_embed()
+        await interaction.response.edit_message(embed=embed, view=view)
+
+class MessageXPModal(discord.ui.Modal):
+    def __init__(self):
+        super().__init__(title='Message XP Settings')
+        
+        data = load_leveling_data()
+        msg_settings = data["leveling_settings"]["xp_settings"]["messages"]
+
+        self.enabled = discord.ui.TextInput(
+            label='Enabled (true/false)',
+            placeholder='true or false',
+            default=str(msg_settings["enabled"]).lower(),
+            required=True,
+            max_length=5
+        )
+
+        self.xp_per_message = discord.ui.TextInput(
+            label='XP per Message',
+            placeholder='20',
+            default=str(msg_settings["xp_per_message"]),
+            required=True,
+            max_length=5
+        )
+
+        self.cooldown = discord.ui.TextInput(
+            label='Cooldown (seconds)',
+            placeholder='10',
+            default=str(msg_settings["cooldown"]),
+            required=True,
+            max_length=5
+        )
+
+        self.add_item(self.enabled)
+        self.add_item(self.xp_per_message)
+        self.add_item(self.cooldown)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        try:
+            enabled = self.enabled.value.lower() == 'true'
+            xp_per_message = int(self.xp_per_message.value)
+            cooldown = int(self.cooldown.value)
+
+            if xp_per_message < 1 or cooldown < 0:
+                raise ValueError("Invalid values")
+
+            data = load_leveling_data()
+            data["leveling_settings"]["xp_settings"]["messages"] = {
+                "enabled": enabled,
+                "xp_per_message": xp_per_message,
+                "cooldown": cooldown
+            }
+            save_leveling_data(data)
+
+            await interaction.response.defer()
+
+        except ValueError:
+            error_embed = discord.Embed(
+                title="<:ErrorLOGO:1407071682031648850> Invalid Values",
+                description="Please enter valid values (XP > 0, cooldown >= 0)",
+                color=discord.Color.red()
+            )
+            await interaction.response.send_message(embed=error_embed, ephemeral=True)
+
+class CharacterXPModal(discord.ui.Modal):
+    def __init__(self):
+        super().__init__(title='Character XP Settings')
+        
+        data = load_leveling_data()
+        char_settings = data["leveling_settings"]["xp_settings"]["characters"]
+
+        self.enabled = discord.ui.TextInput(
+            label='Enabled (true/false)',
+            placeholder='true or false',
+            default=str(char_settings["enabled"]).lower(),
+            required=True,
+            max_length=5
+        )
+
+        self.xp_per_character = discord.ui.TextInput(
+            label='XP per Character',
+            placeholder='1',
+            default=str(char_settings["xp_per_character"]),
+            required=True,
+            max_length=5
+        )
+
+        self.character_limit = discord.ui.TextInput(
+            label='Character Limit',
+            placeholder='20',
+            default=str(char_settings["character_limit"]),
+            required=True,
+            max_length=5
+        )
+
+        self.cooldown = discord.ui.TextInput(
+            label='Cooldown (seconds)',
+            placeholder='10',
+            default=str(char_settings["cooldown"]),
+            required=True,
+            max_length=5
+        )
+
+        self.add_item(self.enabled)
+        self.add_item(self.xp_per_character)
+        self.add_item(self.character_limit)
+        self.add_item(self.cooldown)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        try:
+            enabled = self.enabled.value.lower() == 'true'
+            xp_per_character = int(self.xp_per_character.value)
+            character_limit = int(self.character_limit.value)
+            cooldown = int(self.cooldown.value)
+
+            if xp_per_character < 1 or character_limit < 1 or cooldown < 0:
+                raise ValueError("Invalid values")
+
+            data = load_leveling_data()
+            data["leveling_settings"]["xp_settings"]["characters"] = {
+                "enabled": enabled,
+                "xp_per_character": xp_per_character,
+                "character_limit": character_limit,
+                "cooldown": cooldown
+            }
+            save_leveling_data(data)
+
+            await interaction.response.defer()
+
+        except ValueError:
+            error_embed = discord.Embed(
+                title="<:ErrorLOGO:1407071682031648850> Invalid Values",
+                description="Please enter valid values (all values must be positive)",
+                color=discord.Color.red()
+            )
+            await interaction.response.send_message(embed=error_embed, ephemeral=True)
+
+        self.parent_view.save_config()
+        await self.parent_view.generate_preview_image(interaction.user)
+        embed = self.get_embed()
+        await interaction.response.edit_message(embed=embed, view=self)
+
+    @discord.ui.button(label="Back", style=discord.ButtonStyle.gray, emoji="<:BackLOGO:1391511633431494666>")
+    async def back(self, interaction: discord.Interaction, button: discord.ui.Button):
+        embed = self.parent_view.get_main_embed()
+        self.parent_view.update_buttons()
+        await interaction.response.edit_message(embed=embed, view=self.parent_view)
+
+class TextColorModal(discord.ui.Modal):
+    def __init__(self, parent_view, text_type, display_name):
+        super().__init__(title=f'{display_name} Color')
+        self.parent_view = parent_view
+        self.text_type = text_type
+        self.display_name = display_name
+
+        self.color_input = discord.ui.TextInput(
+            label='RGB Color (e.g., 255,255,255)',
+            placeholder='255,255,255 for white',
+            required=True,
+            max_length=20
+        )
+
+        self.add_item(self.color_input)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        try:
+            # Parse RGB values
+            rgb_values = [int(x.strip()) for x in self.color_input.value.split(',')]
+            if len(rgb_values) != 3 or any(x < 0 or x > 255 for x in rgb_values):
+                raise ValueError("Invalid RGB values")
+
+            config = self.parent_view.config
+
+            # Remove image overlay when setting color
+            if self.text_type == "username":
+                config.pop("username_text_image", None)
+                config["username_color"] = rgb_values
+            elif self.text_type == "level":
+                config.pop("level_text_image", None)
+                config["level_color"] = rgb_values
+            elif self.text_type == "ranking":
+                if "ranking_position" not in config:
+                    config["ranking_position"] = {}
+                config["ranking_position"].pop("text_image", None)
+                config["ranking_position"]["color"] = rgb_values
+            elif self.text_type == "xp_text":
+                config.pop("xp_text_image", None)
+                config["xp_text_color"] = rgb_values
+
+            self.parent_view.save_config()
+            await self.parent_view.generate_preview_image(interaction.user)
+            await interaction.response.defer()
+
+        except ValueError:
+            error_embed = discord.Embed(
+                title="<:ErrorLOGO:1407071682031648850> Invalid Color",
+                description="Please enter RGB values in format: 255,255,255 (values between 0-255)",
+                color=discord.Color.red()
+            )
+            await interaction.response.send_message(embed=error_embed, ephemeral=True)
+
+class BackgroundCustomizationView(discord.ui.View):
+    def __init__(self, parent_view):
+        super().__init__(timeout=300)
+        self.parent_view = parent_view
+
+    def get_embed(self):
+        embed = discord.Embed(
+            title="<:ImageLOGO:1407072328134951043> Background Settings",
+            description="Customize the background of your level card",
+            color=discord.Color.blue()
+        )
+
+        # Show current background status
+        config = self.parent_view.config
+        if config.get("background_color"):
+            bg = config["background_color"]
+            embed.add_field(
+                name="Current Background",
+                value=f"Color: RGB({bg[0]}, {bg[1]}, {bg[2]})",
+                inline=False
+            )
+        elif config.get("background_image"):
+            embed.add_field(
+                name="Current Background",
+                value="Custom Image",
+                inline=False
+            )
+        else:
+            embed.add_field(
+                name="Current Background",
+                value="Default",
+                inline=False
+            )
+
+        # Add preview image if available
+        if hasattr(self.parent_view, 'preview_card_url') and self.parent_view.preview_card_url:
+            embed.set_image(url=self.parent_view.preview_card_url)
+
+        bot_name = get_bot_name(self.parent_view.bot)
+        embed.set_footer(text=f"{bot_name} | Background Settings", icon_url=self.parent_view.bot.user.display_avatar.url)
+
+        return embed
+
+    @discord.ui.button(label="Set Color", style=discord.ButtonStyle.primary, emoji="<:ColorLOGO:1408828590241615883>")
+    async def set_color(self, interaction: discord.Interaction, button: discord.ui.Button):
+        modal = BackgroundColorModal(self.parent_view)
+        await interaction.response.send_modal(modal)
+
+    @discord.ui.button(label="Set Image", style=discord.ButtonStyle.secondary, emoji="<:ImageLOGO:1407072328134951043>")
+    async def set_image(self, interaction: discord.Interaction, button: discord.ui.Button):
+        self.parent_view.waiting_for_image = True
+        self.parent_view.current_image_type = "background"
+        embed = self.parent_view.get_waiting_image_embed()
+        self.parent_view.update_buttons()
+        await interaction.response.edit_message(embed=embed, view=self.parent_view)
+
+    @discord.ui.button(label="Clear", style=discord.ButtonStyle.danger, emoji="<:DeleteLOGO:1407071421363916841>")
+    async def clear_background(self, interaction: discord.Interaction, button: discord.ui.Button):
+        self.parent_view.config.pop("background_image", None)
+        self.parent_view.config.pop("background_color", None)
+        self.parent_view.save_config()
+        await self.parent_view.generate_preview_image(interaction.user)
+        embed = self.get_embed()
+        await interaction.response.edit_message(embed=embed, view=self)
+
+    @discord.ui.button(label="Back", style=discord.ButtonStyle.gray, emoji="<:BackLOGO:1391511633431494666>")
+    async def back(self, interaction: discord.Interaction, button: discord.ui.Button):
+        embed = self.parent_view.get_main_embed()
+        self.parent_view.update_buttons()
+        await interaction.response.edit_message(embed=embed, view=self.parent_view)
+
+class BackgroundColorModal(discord.ui.Modal):
+    def __init__(self, parent_view):
+        super().__init__(title='Background Color')
+        self.parent_view = parent_view
+
+        self.color_input = discord.ui.TextInput(
+            label='RGB Color (e.g., 255,255,255)',
+            placeholder='255,255,255 for white',
+            required=True,
+            max_length=20
+        )
+
+        self.add_item(self.color_input)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        try:
+            # Parse RGB values
+            rgb_values = [int(x.strip()) for x in self.color_input.value.split(',')]
+            if len(rgb_values) != 3 or any(x < 0 or x > 255 for x in rgb_values):
+                raise ValueError("Invalid RGB values")
+
+            self.parent_view.config.pop("background_image", None)
+            self.parent_view.config["background_color"] = rgb_values
+            self.parent_view.save_config()
+            await self.parent_view.generate_preview_image(interaction.user)
+            await interaction.response.defer()
+
+        except ValueError:
+            error_embed = discord.Embed(
+                title="<:ErrorLOGO:1407071682031648850> Invalid Color",
+                description="Please enter RGB values in format: 255,255,255 (values between 0-255)",
+                color=discord.Color.red()
+            )
+            await interaction.response.send_message(embed=error_embed, ephemeral=True)
+
+class ProfileOutlineCustomizationView(discord.ui.View):
+    def __init__(self, parent_view):
+        super().__init__(timeout=300)
+        self.parent_view = parent_view
+
+    def get_embed(self):
+        embed = discord.Embed(
+            title="<:ParticipantsLOGO:1407733929389199460> Profile Outline Settings",
+            description="Customize the profile decoration outline",
+            color=discord.Color.orange()
+        )
+
+        profile_config = self.parent_view.config.get("profile_outline", {})
+        enabled = profile_config.get("enabled", True)
+
+        status = "<:OnLOGO:1407072463883472978> Enabled" if enabled else "<:OffLOGO:1407072621836894380> Disabled"
+        embed.add_field(
+            name="Current Status",
+            value=status,
+            inline=False
+        )
+
+        if profile_config.get("color_override"):
+            color = profile_config["color_override"]
+            embed.add_field(
+                name="Color Override",
+                value=f"RGB({color[0]}, {color[1]}, {color[2]})",
+                inline=False
+            )
+        elif profile_config.get("custom_image"):
+            embed.add_field(
+                name="Custom Image",
+                value="<:SucessLOGO:1407071637840592977> Custom outline image set",
+                inline=False
+            )
+        else:
+            embed.add_field(
+                name="Style",
+                value="Default outline",
+                inline=False
+            )
+
+        # Add preview image if available
+        if hasattr(self.parent_view, 'preview_card_url') and self.parent_view.preview_card_url:
+            embed.set_image(url=self.parent_view.preview_card_url)
+
+        bot_name = get_bot_name(self.parent_view.bot)
+        embed.set_footer(text=f"{bot_name} | Profile Outline", icon_url=self.parent_view.bot.user.display_avatar.url)
+
+        return embed
+
+    @discord.ui.button(label="Toggle", style=discord.ButtonStyle.primary, emoji="<:OnLOGO:1407072463883472978>")
+    async def toggle_outline(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if "profile_outline" not in self.parent_view.config:
+            self.parent_view.config["profile_outline"] = {}
+        
+        current_enabled = self.parent_view.config["profile_outline"].get("enabled", True)
+        self.parent_view.config["profile_outline"]["enabled"] = not current_enabled
+        
+        self.parent_view.save_config()
+        await self.parent_view.generate_preview_image(interaction.user)
+        embed = self.get_embed()
+        await interaction.response.edit_message(embed=embed, view=self)
+
+    @discord.ui.button(label="Set Color", style=discord.ButtonStyle.secondary, emoji="<:ColorLOGO:1408828590241615883>")
+    async def set_color(self, interaction: discord.Interaction, button: discord.ui.Button):
+        modal = ProfileOutlineColorModal(self.parent_view)
+        await interaction.response.send_modal(modal)
+
+    @discord.ui.button(label="Set Image", style=discord.ButtonStyle.secondary, emoji="<:ImageLOGO:1407072328134951043>")
+    async def set_image(self, interaction: discord.Interaction, button: discord.ui.Button):
+        self.parent_view.waiting_for_image = True
+        self.parent_view.current_image_type = "profile_outline"
+        embed = self.parent_view.get_waiting_image_embed()
+        self.parent_view.update_buttons()
+        await interaction.response.edit_message(embed=embed, view=self.parent_view)
+
+    @discord.ui.button(label="Back", style=discord.ButtonStyle.gray, emoji="<:BackLOGO:1391511633431494666>")
+    async def back(self, interaction: discord.Interaction, button: discord.ui.Button):
+        embed = self.parent_view.get_main_embed()
+        self.parent_view.update_buttons()
+        await interaction.response.edit_message(embed=embed, view=self.parent_view)
+
+class ProfileOutlineColorModal(discord.ui.Modal):
+    def __init__(self, parent_view):
+        super().__init__(title='Profile Outline Color')
+        self.parent_view = parent_view
+
+        self.color_input = discord.ui.TextInput(
+            label='RGB Color (e.g., 255,255,255)',
+            placeholder='255,255,255 for white',
+            required=True,
+            max_length=20
+        )
+
+        self.add_item(self.color_input)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        try:
+            # Parse RGB values
+            rgb_values = [int(x.strip()) for x in self.color_input.value.split(',')]
+            if len(rgb_values) != 3 or any(x < 0 or x > 255 for x in rgb_values):
+                raise ValueError("Invalid RGB values")
+
+            if "profile_outline" not in self.parent_view.config:
+                self.parent_view.config["profile_outline"] = {}
+            
+            self.parent_view.config["profile_outline"].pop("custom_image", None)
+            self.parent_view.config["profile_outline"]["color_override"] = rgb_values
+            self.parent_view.save_config()
+            await self.parent_view.generate_preview_image(interaction.user)
+            await interaction.response.defer()
+
+        except ValueError:
+            error_embed = discord.Embed(
+                title="<:ErrorLOGO:1407071682031648850> Invalid Color",
+                description="Please enter RGB values in format: 255,255,255 (values between 0-255)",
+                color=discord.Color.red()
+            )
+            await interaction.response.send_message(embed=error_embed, ephemeral=True)
+
+# Button to access level card manager
+class LevelCardSettingsButtonView(discord.ui.View):
+    def __init__(self, user):
+        super().__init__(timeout=300)
+        self.user = user
+
+    @discord.ui.button(label="Customize", style=discord.ButtonStyle.primary, emoji="<:SettingLOGO:1407071854593839239>")
+    async def customize_card(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user.id != self.user.id:
+            await interaction.response.send_message("❌ Only the original user can customize this level card.", ephemeral=True)
+            return
+
+        view = LevelCardManagerView(interaction.client, interaction.user.id)
+        await view.generate_preview_image(interaction.user)
+        embed = view.get_main_embed()
+        view.update_buttons()
+        await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
+
+def get_bot_name(bot):
+    """Get bot display name"""
+    return bot.user.display_name if bot.user else "Bot"
 
             self.add_item(hex_button)
             self.add_item(rgb_button)
