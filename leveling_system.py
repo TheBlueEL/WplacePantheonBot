@@ -3418,7 +3418,7 @@ class LevelCardSettingsButtonView(discord.ui.View):
         view.update_buttons()
         await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
 
-elif self.mode in ["xp_bar_image", "background_image", "profile_outline_image", "xp_info_image", "xp_progress_image", "username_image", "level_text_image", "ranking_text_image"]:
+    elif self.mode in ["xp_bar_image", "background_image", "profile_outline_image", "xp_info_image", "xp_progress_image", "username_image", "level_text_image", "ranking_text_image"]:
             # Image selection buttons
             url_button = discord.ui.Button(
                 label="Set URL",
