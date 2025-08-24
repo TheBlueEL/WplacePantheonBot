@@ -324,7 +324,13 @@ class WelcomeSystem(commands.Cog):
             shadow_color = tuple(text_config.get("shadow_color", [0, 0, 0, 128]))
             shadow_offset = text_config.get("shadow_offset", 2)
 
-            # Première zone: "WELCOME, TO THE SERVER"
+            # Récupérer le message de bienvenue personnalisé
+            welcome_data = load_welcome_data()
+            custom_message = welcome_data.get("welcome_settings", {}).get("welcome_message", "Welcome {user}!")
+            # Remplacer {user} par le nom d'utilisateur et supprimer les mentions Discord
+            welcome_text = custom_message.replace("{user}", user.display_name).replace("<@", "").replace(">", "")
+            
+            # Première zone: Message personnalisé
             try:
                 font_welcome = ImageFont.truetype(welcome_config["font_path"], welcome_config["font_size"])
             except:
@@ -386,7 +392,7 @@ class WelcomeSystem(commands.Cog):
                     for adj_y in range(-border_thickness, border_thickness + 1):
                         if adj != 0 or adj_y != 0:
                             draw.text((text_x + adj, text_y_welcome + adj_y),
-                                     welcome_config["text"], font=font_welcome, fill=(0, 0, 0, 255))
+                                     welcome_text, font=font_welcome, fill=(0, 0, 0, 255))
                             draw.text((text_x + adj, text_y_username + adj_y),
                                      username_text, font=font_username, fill=(0, 0, 0, 255))
 
@@ -396,7 +402,7 @@ class WelcomeSystem(commands.Cog):
 
                 # Dessiner le texte sur le masque en blanc (visible) - seulement le texte principal, pas la bordure
                 mask_draw.text((text_x, text_y_welcome),
-                             welcome_config["text"], font=font_welcome, fill=255)
+                             welcome_text, font=font_welcome, fill=255)
                 mask_draw.text((text_x, text_y_username),
                              username_text, font=font_username, fill=255)
 
@@ -413,9 +419,9 @@ class WelcomeSystem(commands.Cog):
             else:
                 # Dessiner le texte normalement avec les couleurs
                 draw.text((text_x + shadow_offset, text_y_welcome + shadow_offset),
-                         welcome_config["text"], font=font_welcome, fill=shadow_color)
+                         welcome_text, font=font_welcome, fill=shadow_color)
                 draw.text((text_x, text_y_welcome),
-                         welcome_config["text"], font=font_welcome, fill=text_color)
+                         welcome_text, font=font_welcome, fill=text_color)
 
                 # Dessiner le nom d'utilisateur avec l'ombre
                 draw.text((text_x + shadow_offset, text_y_username + shadow_offset),
@@ -459,14 +465,14 @@ class WelcomeSystem(commands.Cog):
                             for adj_y in range(-border_thickness, border_thickness + 1):
                                 if adj != 0 or adj_y != 0:
                                     draw.text((text_x + adj, text_y_welcome + adj_y),
-                                             welcome_config["text"], font=font_welcome, fill=(0, 0, 0, 255))
+                                             welcome_text, font=font_welcome, fill=(0, 0, 0, 255))
                                     draw.text((text_x + adj, text_y_username + adj_y),
                                              username_text, font=font_username, fill=(0, 0, 0, 255))
 
                         text_mask = Image.new('L', current_template.size, 0)
                         mask_draw = ImageDraw.Draw(text_mask)
                         mask_draw.text((text_x, text_y_welcome),
-                                     welcome_config["text"], font=font_welcome, fill=255)
+                                     welcome_text, font=font_welcome, fill=255)
                         mask_draw.text((text_x, text_y_username),
                                      username_text, font=font_username, fill=255)
 
@@ -478,9 +484,9 @@ class WelcomeSystem(commands.Cog):
                     else:
                         # Texte normal
                         draw.text((text_x + shadow_offset, text_y_welcome + shadow_offset),
-                                 welcome_config["text"], font=font_welcome, fill=shadow_color)
+                                 welcome_text, font=font_welcome, fill=shadow_color)
                         draw.text((text_x, text_y_welcome),
-                                 welcome_config["text"], font=font_welcome, fill=text_color)
+                                 welcome_text, font=font_welcome, fill=text_color)
                         draw.text((text_x + shadow_offset, text_y_username + shadow_offset),
                                  username_text, font=font_username, fill=shadow_color)
                         draw.text((text_x, text_y_username),
