@@ -853,12 +853,256 @@ class LevelingSystem(commands.Cog):
                 except Exception as e:
                     print(f"Error assigning role reward: {e}")
 
+    async def create_demo_level_card(self, bot_user):
+        """Create demo level card for bot user showing level 100 and rank #1"""
+        try:
+            data = load_leveling_data()
+            config = data["leveling_settings"]["level_card"]
+
+            # Create demo user data (level 100, rank #1)
+            demo_user_data = {"xp": 999999, "level": 100}
+
+            # Get background size from config
+            bg_width = config.get("background_size", {}).get("width", 2048)
+            bg_height = config.get("background_size", {}).get("height", 540)
+
+            # Create background based on configuration
+            if config.get("background_image") and config["background_image"] != "None":
+                bg_data = await self.download_image(config["background_image"])
+                if bg_data:
+                    original_bg = Image.open(io.BytesIO(bg_data))
+                    
+                    # Handle animated GIF or static image
+                    if hasattr(original_bg, 'is_animated') and original_bg.is_animated:
+                        original_bg.seek(0)
+                        frame = original_bg.copy().convert("RGBA")
+                    else:
+                        frame = original_bg.convert("RGBA")
+
+                    # Calculate aspect ratios and resize
+                    original_ratio = frame.width / frame.height
+                    target_ratio = bg_width / bg_height
+
+                    if original_ratio > target_ratio:
+                        new_height = frame.height
+                        new_width = int(new_height * target_ratio)
+                        left = (frame.width - new_width) // 2
+                        cropped = frame.crop((left, 0, left + new_width, new_height))
+                    else:
+                        new_width = frame.width
+                        new_height = int(new_width / target_ratio)
+                        top = (frame.height - new_height) // 2
+                        cropped = frame.crop((0, top, new_width, top + new_height))
+
+                    background = cropped.resize((bg_width, bg_height), Image.Resampling.LANCZOS)
+                else:
+                    default_bg_color = config.get("background_color", [245, 55, 48])
+                    bg_color = tuple(default_bg_color) + (255,)
+                    background = Image.new("RGBA", (bg_width, bg_height), bg_color)
+            elif config.get("background_color") and config["background_color"] != "None":
+                if isinstance(config["background_color"], list) and len(config["background_color"]) == 3:
+                    bg_color = tuple(config["background_color"]) + (255,)
+                else:
+                    bg_color = (255, 255, 255, 255)
+                background = Image.new("RGBA", (bg_width, bg_height), bg_color)
+            else:
+                default_bg_color = config.get("background_color", [245, 55, 48])
+                bg_color = tuple(default_bg_color) + (255,)
+                background = Image.new("RGBA", (bg_width, bg_height), bg_color)
+
+            # Download and add level bar image
+            levelbar_data = await self.download_image(config.get("level_bar_image", "https://raw.githubusercontent.com/TheBlueEL/pictures/refs/heads/main/LevelBar.png"))
+            levelbar_x = 0
+            levelbar_y = 0
+
+            if levelbar_data:
+                levelbar = Image.open(io.BytesIO(levelbar_data)).convert("RGBA")
+                xp_bar_config = config.get("xp_bar_position", {})
+                if "x" in xp_bar_config and "y" in xp_bar_config:
+                    if "width" in xp_bar_config and "height" in xp_bar_config:
+                        levelbar = levelbar.resize((xp_bar_config["width"], xp_bar_config["height"]), Image.Resampling.LANCZOS)
+                    levelbar_x = xp_bar_config["x"]
+                    levelbar_y = xp_bar_config["y"]
+                else:
+                    levelbar_x = 30
+                    levelbar_y = bg_height - levelbar.height - 30
+
+                background.paste(levelbar, (levelbar_x, levelbar_y), levelbar)
+
+                # Create full XP progress bar (100% filled for demo)
+                xp_bar_color_rgb = config.get("xp_bar_color", [245, 55, 48])
+                xp_bar_color = tuple(xp_bar_color_rgb) + (255,)
+                progress_bar = Image.new("RGBA", (levelbar.width, levelbar.height), xp_bar_color)
+                background.paste(progress_bar, (levelbar_x, levelbar_y), levelbar)
+
+            # Download bot avatar
+            avatar_url = bot_user.display_avatar.url
+            avatar_data = await self.download_image(avatar_url)
+            if avatar_data:
+                avatar = Image.open(io.BytesIO(avatar_data)).convert("RGBA")
+                size = config["profile_position"]["size"]
+                avatar = avatar.resize((size, size), Image.Resampling.LANCZOS)
+
+                # Make avatar circular
+                mask = self.create_circle_mask((size, size))
+                avatar.putalpha(mask)
+
+                # Paste avatar
+                background.paste(avatar, (config["profile_position"]["x"], config["profile_position"]["y"]), avatar)
+
+                # Add profile outline (default enabled)
+                profile_outline_config = config.get("profile_outline", {"enabled": True, "url": "https://raw.githubusercontent.com/TheBlueEL/pictures/refs/heads/main/ProfileOutline.png"})
+                if profile_outline_config.get("enabled", True):
+                    outline_url = profile_outline_config.get("url", "https://raw.githubusercontent.com/TheBlueEL/pictures/refs/heads/main/ProfileOutline.png")
+                    outline_data = await self.download_image(outline_url)
+                    if outline_data:
+                        outline = Image.open(io.BytesIO(outline_data)).convert("RGBA")
+
+                        # Apply color override if specified
+                        if profile_outline_config.get("color_override"):
+                            color_override = profile_outline_config["color_override"]
+                            colored_outline = Image.new("RGBA", outline.size, tuple(color_override + [255]))
+                            colored_outline.putalpha(outline.split()[-1])
+                            outline = colored_outline
+
+                        outline = outline.resize((size, size), Image.Resampling.LANCZOS)
+                        background.paste(outline, (config["profile_position"]["x"], config["profile_position"]["y"]), outline)
+
+            # Calculate dynamic positions for demo user
+            positions = self.calculate_dynamic_positions(bot_user, demo_user_data, 1, config, bg_width, bg_height)
+
+            # Draw text
+            draw = ImageDraw.Draw(background)
+
+            try:
+                font_username = ImageFont.truetype("PlayPretend.otf", positions["fonts"]["username_size"])
+                font_level = ImageFont.truetype("PlayPretend.otf", config["level_position"]["font_size"])
+            except IOError:
+                try:
+                    font_username = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", positions["fonts"]["username_size"])
+                    font_level = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", config["level_position"]["font_size"])
+                except IOError:
+                    font_username = ImageFont.load_default()
+                    font_level = ImageFont.load_default()
+
+            # Draw username with configurable color
+            username = bot_user.name
+            username_color = config.get("username_color", [255, 255, 255])
+            draw.text((positions["username"]["x"], positions["username"]["y"]),
+                     username, font=font_username, fill=tuple(username_color))
+
+            # Draw discriminator
+            discriminator_config = config.get("discriminator_position", {})
+            if discriminator_config:
+                discriminator = f"#{bot_user.discriminator}" if bot_user.discriminator != "0" else f"#{bot_user.id % 10000:04d}"
+                discriminator_color = discriminator_config.get("color", [200, 200, 200])
+
+                try:
+                    font_discriminator = ImageFont.truetype("PlayPretend.otf", discriminator_config.get("font_size", 50))
+                except IOError:
+                    try:
+                        font_discriminator = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", discriminator_config.get("font_size", 50))
+                    except IOError:
+                        font_discriminator = ImageFont.load_default()
+
+                draw.text((positions["discriminator"]["x"], positions["discriminator"]["y"]),
+                         discriminator, font=font_discriminator, fill=tuple(discriminator_color))
+
+            # Draw level with configurable color
+            level_text = "LEVEL 100"
+            level_color = config.get("level_color", [245, 55, 48])
+            draw.text((positions["level"]["x"], positions["level"]["y"]),
+                     level_text, font=font_level, fill=tuple(level_color))
+
+            # Draw ranking position (#1)
+            ranking_config = config.get("ranking_position", {})
+            if ranking_config:
+                ranking_text = "#1"
+                ranking_color = ranking_config.get("color", [255, 255, 255])
+
+                try:
+                    font_ranking = ImageFont.truetype("PlayPretend.otf", ranking_config.get("font_size", 60))
+                except IOError:
+                    try:
+                        font_ranking = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", ranking_config.get("font_size", 60))
+                    except IOError:
+                        font_ranking = ImageFont.load_default()
+
+                draw.text((positions["ranking"]["x"], positions["ranking"]["y"]),
+                         ranking_text, font=font_ranking, fill=tuple(ranking_color))
+
+            # Draw XP progress text (MAX for level 100)
+            xp_text = "MAX/MAX XP"
+
+            try:
+                font_xp = ImageFont.truetype("PlayPretend.otf", config["xp_text_position"]["font_size"])
+            except IOError:
+                try:
+                    font_xp = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", config["xp_text_position"]["font_size"])
+                except IOError:
+                    font_xp = ImageFont.load_default()
+
+            draw.text((positions["xp_text"]["x"], positions["xp_text"]["y"]), xp_text, font=font_xp, fill=tuple(config.get("xp_text_color", [255, 255, 255])))
+
+            output = io.BytesIO()
+            background.save(output, format='PNG')
+            output.seek(0)
+            return output
+
+        except Exception as e:
+            print(f"Error creating demo level card: {e}")
+            return None
+
+    async def generate_demo_card_for_main_view(self, view):
+        """Generate and upload demo card for main view"""
+        try:
+            demo_card = await self.create_demo_level_card(self.bot.user)
+            if demo_card:
+                # Save to temp file
+                os.makedirs('images', exist_ok=True)
+                import time
+                timestamp = int(time.time())
+                filename = f"demo_level_card_{timestamp}.png"
+                file_path = os.path.join('images', filename)
+
+                with open(file_path, 'wb') as f:
+                    f.write(demo_card.getvalue())
+
+                # Upload to GitHub
+                try:
+                    from github_sync import GitHubSync
+                    github_sync = GitHubSync()
+                    sync_success = await github_sync.sync_image_to_pictures_repo(file_path)
+
+                    if sync_success:
+                        try:
+                            os.remove(file_path)
+                        except:
+                            pass
+
+                        filename = os.path.basename(file_path)
+                        view.demo_card_url = f"https://raw.githubusercontent.com/TheBlueEL/pictures/main/{filename}?t={timestamp}"
+                        return True
+                except ImportError:
+                    print("GitHub sync not available")
+
+        except Exception as e:
+            print(f"Error generating demo card: {e}")
+
+        return False
+
     @app_commands.command(name="level_system", description="Manage the server leveling system")
     async def level_system(self, interaction: discord.Interaction):
         """Main level system management command"""
+        await interaction.response.defer()
+        
         view = LevelSystemMainView(self.bot, interaction.user)
+        
+        # Generate demo level card
+        await self.generate_demo_card_for_main_view(view)
+        
         embed = view.get_main_embed()
-        await interaction.response.send_message(embed=embed, view=view)
+        await interaction.followup.send(embed=embed, view=view)
 
     @app_commands.command(name="level", description="View your level card")
     async def level_command(self, interaction: discord.Interaction):
@@ -887,6 +1131,7 @@ class LevelSystemMainView(discord.ui.View):
         super().__init__(timeout=300)
         self.bot = bot
         self.user = user
+        self.demo_card_url = None
 
     def get_main_embed(self):
         data = load_leveling_data()
@@ -900,6 +1145,10 @@ class LevelSystemMainView(discord.ui.View):
 
         status = "<:OnLOGO:1407072463883472978> Enabled" if settings["enabled"] else "<:OffLOGO:1407072621836894380> Disabled"
         embed.add_field(name="System Status", value=status, inline=True)
+
+        # Add demo level card image if available
+        if hasattr(self, 'demo_card_url') and self.demo_card_url:
+            embed.set_image(url=self.demo_card_url)
 
         return embed
 
