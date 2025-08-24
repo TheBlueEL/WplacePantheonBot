@@ -3418,28 +3418,102 @@ class LevelCardSettingsButtonView(discord.ui.View):
         view.update_buttons()
         await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
 
-    def update_buttons(self):
-        if self.mode in ["xp_bar_image", "background_image", "profile_outline_image", "xp_info_image", "xp_progress_image", "username_image", "level_text_image", "ranking_text_image"]:
-            self.add_item(discord.ui.Button(label="Set URL", style=discord.ButtonStyle.primary, emoji="<:URLLOGO:1407071963809054931>", callback=self.image_url))
-            self.add_item(discord.ui.Button(label="Upload Image", style=discord.ButtonStyle.secondary, emoji="<:UploadLOGO:1407072005567545478>", callback=self.upload_image))
-            self.add_item(discord.ui.Button(label="Clear Image", style=discord.ButtonStyle.danger, emoji="<:DeleteLOGO:1407071421363916841>", callback=self.clear_image))
-            self.add_item(discord.ui.Button(label="Confirm", style=discord.ButtonStyle.success, emoji="<:ConfirmLOGO:1407072680267481249>", callback=self.confirm_changes))
-            self.add_item(discord.ui.Button(label="Back", style=discord.ButtonStyle.gray, emoji="<:BackLOGO:1407071474233114766>", callback=self.back_to_parent))
+elif self.mode in ["xp_bar_image", "background_image", "profile_outline_image", "xp_info_image", "xp_progress_image", "username_image", "level_text_image", "ranking_text_image"]:
+            # Image selection buttons
+            url_button = discord.ui.Button(
+                label="Set URL",
+                style=discord.ButtonStyle.primary,
+                emoji="<:URLLOGO:1407071963809054931>"
+            )
+            url_button.callback = self.image_url
+
+            upload_button = discord.ui.Button(
+                label="Upload Image",
+                style=discord.ButtonStyle.secondary,
+                emoji="<:UploadLOGO:1407072005567545478>"
+            )
+            upload_button.callback = self.upload_image
+
+            clear_button = discord.ui.Button(
+                label="Clear Image",
+                style=discord.ButtonStyle.danger,
+                emoji="<:DeleteLOGO:1407071421363916841>"
+            )
+            clear_button.callback = self.clear_image
+
+            confirm_button = discord.ui.Button(
+                label="Confirm",
+                style=discord.ButtonStyle.success,
+                emoji="<:ConfirmLOGO:1407072680267481249>"
+            )
+            confirm_button.callback = self.confirm_changes
+
+            back_button = discord.ui.Button(
+                label="Back",
+                style=discord.ButtonStyle.gray,
+                emoji="<:BackLOGO:1407071474233114766>"
+            )
+            back_button.callback = self.back_to_parent
+
+            self.add_item(url_button)
+            self.add_item(upload_button)
+            self.add_item(clear_button)
+            self.add_item(confirm_button)
+            self.add_item(back_button)
 
         elif self.mode in ["xp_info", "xp_progress", "background", "username"]:
-            self.add_item(discord.ui.Button(label="Color", style=discord.ButtonStyle.primary, emoji="<:ColorLOGO:1408828590241615883>", callback=self.color_settings))
-            self.add_item(discord.ui.Button(label="Image", style=discord.ButtonStyle.secondary, emoji="<:ImageLOGO:1407072328134951043>", callback=self.image_settings))
-            self.add_item(discord.ui.Button(label="Back", style=discord.ButtonStyle.gray, emoji="<:BackLOGO:1407071474233114766>", callback=self.back_to_parent))
+            # Sub-category buttons
+            color_button = discord.ui.Button(
+                label="Color",
+                style=discord.ButtonStyle.primary,
+                emoji="<:ColorLOGO:1408828590241615883>"
+            )
+            color_button.callback = self.color_settings
+
+            # Add image button for all categories
+            image_button = discord.ui.Button(
+                label="Image",
+                style=discord.ButtonStyle.secondary,
+                emoji="<:ImageLOGO:1407072328134951043>"
+            )
+            image_button.callback = self.image_settings
+
+            back_button = discord.ui.Button(
+                label="Back",
+                style=discord.ButtonStyle.gray,
+                emoji="<:BackLOGO:1407071474233114766>"
+            )
+            back_button.callback = self.back_to_parent
+
+            self.add_item(color_button)
+            self.add_item(image_button)
+            self.add_item(back_button)
 
         elif self.mode == "xp_bar":
-            self.add_item(discord.ui.Button(label="Image", style=discord.ButtonStyle.primary, emoji="<:ImageLOGO:1407072328134951043>", callback=self.image_settings))
-            self.add_item(discord.ui.Button(label="Back", style=discord.ButtonStyle.gray, emoji="<:BackLOGO:1407071474233114766>", callback=self.back_to_parent))
+            # XP Bar specific buttons
+            image_button = discord.ui.Button(
+                label="Image",
+                style=discord.ButtonStyle.primary,
+                emoji="<:ImageLOGO:1407072328134951043>"
+            )
+            image_button.callback = self.image_settings
+
+            back_button = discord.ui.Button(
+                label="Back",
+                style=discord.ButtonStyle.gray,
+                emoji="<:BackLOGO:1407071474233114766>"
+            )
+            back_button.callback = self.back_to_parent
+
+            self.add_item(image_button)
+            self.add_item(back_button)
 
         elif self.mode == "profile_outline":
-            toggle_label = "ON" if self.config.get("profile_outline", {}).get("enabled", True) else "OFF"
-            toggle_style = discord.ButtonStyle.success if self.config.get("profile_outline", {}).get("enabled", True) else discord.ButtonStyle.danger
-            toggle_emoji = "<:OnLOGO:1407072463883472978>" if self.config.get("profile_outline", {}).get("enabled", True) else "<:OffLOGO:1407072621836894380>"
-            self.add_item(discord.ui.Button(label=toggle_label, style=toggle_style, emoji=toggle_emoji, callback=self.toggle_profile_outline))6894380>"
+            # Profile outline main buttons
+            toggle_button = discord.ui.Button(
+                label="ON" if self.config.get("profile_outline", {}).get("enabled", True) else "OFF",
+                style=discord.ButtonStyle.success if self.config.get("profile_outline", {}).get("enabled", True) else discord.ButtonStyle.danger,
+                emoji="<:OnLOGO:1407072463883472978>" if self.config.get("profile_outline", {}).get("enabled", True) else "<:OffLOGO:1407072621836894380>"
             )
             toggle_button.callback = self.toggle_profile_outline
 
