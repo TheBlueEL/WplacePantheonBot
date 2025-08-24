@@ -1029,6 +1029,11 @@ class PantheonCommand(commands.Cog):
                                         break
                         except Exception as e:
                             print(f"Error updating message: {e}")
+                            # Fallback: send new message
+                            try:
+                                await channel.send(embed=embed, view=manager)
+                            except:
+                                pass
                 else:
                     try:
                         await message.delete()
