@@ -527,22 +527,39 @@ class WelcomeSystem(commands.Cog):
             await interaction.response.send_message(embed=embed, ephemeral=True)
             return
 
-        # Defer only once
-        await interaction.response.defer()
+        try:
+            # Defer only once and handle potential timeout
+            await interaction.response.defer(ephemeral=False)
 
-        view = WelcomeSystemManagerView(self.bot, interaction.user.id)
-        view.guild = interaction.guild
+            view = WelcomeSystemManagerView(self.bot, interaction.user.id)
+            view.guild = interaction.guild
 
-        # Generate preview image
-        await view.generate_preview_image(interaction.user)
+            # Generate preview image with timeout protection
+            try:
+                await view.generate_preview_image(interaction.user)
+            except Exception as e:
+                print(f"Preview generation failed: {e}")
 
-        embed = view.get_main_embed()
-        view.update_buttons()
+            embed = view.get_main_embed()
+            view.update_buttons()
 
-        await interaction.followup.send(embed=embed, view=view)
+            await interaction.followup.send(embed=embed, view=view)
 
-        # Store the active manager
-        self.active_managers[interaction.user.id] = view
+            # Store the active manager
+            self.active_managers[interaction.user.id] = view
+
+        except discord.InteractionResponded:
+            # Interaction already responded to
+            return
+        except Exception as e:
+            print(f"Error in welcome_system_command: {e}")
+            try:
+                if not interaction.response.is_done():
+                    await interaction.response.send_message("An error occurred. Please try again.", ephemeral=True)
+                else:
+                    await interaction.followup.send("An error occurred. Please try again.", ephemeral=True)
+            except:
+                pass
 
     @commands.Cog.listener()
     async def on_member_join(self, member):
