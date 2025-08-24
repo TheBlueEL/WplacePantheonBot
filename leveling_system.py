@@ -3094,6 +3094,14 @@ class LevelCardRGBColorModal(discord.ui.Modal):
             if profile_config.get("color_override"):
                 rgb = profile_config["color_override"]
                 current_r, current_g, current_b = str(rgb[0]), str(rgb[1]), str(rgb[2])
+        elif self.view.mode == "level_text_color" and self.view.config.get("level_color"):
+            rgb = self.view.config["level_color"]
+            current_r, current_g, current_b = str(rgb[0]), str(rgb[1]), str(rgb[2])
+        elif self.view.mode == "ranking_text_color":
+            ranking_config = self.view.config.get("ranking_position", {})
+            if ranking_config.get("color"):
+                rgb = ranking_config["color"]
+                current_r, current_g, current_b = str(rgb[0]), str(rgb[1]), str(rgb[2])
 
         self.red_input = discord.ui.TextInput(
             label='Red (0-255)',
