@@ -129,23 +129,23 @@ class LevelingSystem(commands.Cog):
         try:
             # Calculate scaling factor to make image fit target dimensions
             scale_factor = max(target_width / image.width, target_height / image.height)
-            
+
             # Calculate new dimensions after scaling
             new_width = int(image.width * scale_factor)
             new_height = int(image.height * scale_factor)
-            
+
             # Resize image to new dimensions
             resized_image = image.resize((new_width, new_height), Image.Resampling.LANCZOS)
-            
+
             # Calculate crop coordinates to center the image
             left = (new_width - target_width) // 2
             top = (new_height - target_height) // 2
             right = left + target_width
             bottom = top + target_height
-            
+
             # Crop to exact target size, centered
             cropped_image = resized_image.crop((left, top, right, bottom))
-            
+
             return cropped_image
 
         except Exception as e:
@@ -197,35 +197,35 @@ class LevelingSystem(commands.Cog):
             text_bbox = font.getbbox(text)
             text_width = text_bbox[2] - text_bbox[0]
             text_height = text_bbox[3] - text_bbox[1]
-            
+
             # Ajouter plus de padding pour éviter les coupures
             padding = 30
             canvas_width = text_width + (padding * 2)
             canvas_height = text_height + (padding * 2)
-            
+
             if image_url and image_url != "None":
                 # Download overlay image
                 overlay_data = await self.download_image(image_url)
                 if overlay_data:
                     overlay_img = Image.open(io.BytesIO(overlay_data)).convert("RGBA")
-                    
+
                     # Créer d'abord le masque de texte PRÉCIS qui suit exactement la forme des lettres
                     text_mask = Image.new('L', (canvas_width, canvas_height), 0)
                     mask_draw = ImageDraw.Draw(text_mask)
-                    
+
                     # Dessiner le texte UNE SEULE FOIS pour garder la forme exacte
                     text_x = padding
                     text_y = padding
                     mask_draw.text((text_x, text_y), text, font=font, fill=255)
-                    
+
                     # Redimensionner l'image pour qu'elle ait la même largeur que le canvas
                     original_ratio = overlay_img.width / overlay_img.height
                     new_width = canvas_width
                     new_height = int(new_width / original_ratio)
-                    
+
                     # Redimensionner l'image avec la nouvelle largeur
                     overlay_resized = overlay_img.resize((new_width, new_height), Image.Resampling.LANCZOS)
-                    
+
                     # Rogner l'image centrée pour qu'elle ait la même hauteur que le canvas
                     if new_height > canvas_height:
                         # L'image est plus haute, rogner du centre
@@ -236,32 +236,32 @@ class LevelingSystem(commands.Cog):
                         overlay_cropped = Image.new('RGBA', (canvas_width, canvas_height), (0, 0, 0, 0))
                         paste_y = (canvas_height - new_height) // 2
                         overlay_cropped.paste(overlay_resized, (0, paste_y))
-                    
+
                     # Créer l'image finale avec transparence complète
                     result = Image.new('RGBA', (canvas_width, canvas_height), (0, 0, 0, 0))
-                    
+
                     # Appliquer la texture UNIQUEMENT aux pixels des lettres
                     # Convertir le masque en array pour manipulation pixel par pixel
                     import numpy as np
                     mask_array = np.array(text_mask)
                     overlay_array = np.array(overlay_cropped)
                     result_array = np.array(result)
-                    
+
                     # Pour chaque pixel où le masque n'est pas 0 (donc où il y a du texte)
                     text_pixels = mask_array > 0
                     result_array[text_pixels] = overlay_array[text_pixels]
-                    
+
                     # Reconvertir en image PIL
                     result = Image.fromarray(result_array, 'RGBA')
-                    
+
                     return result
-            
+
             # Fallback to regular colored text
             temp_img = Image.new('RGBA', (canvas_width, canvas_height), (0, 0, 0, 0))
             temp_draw = ImageDraw.Draw(temp_img)
             temp_draw.text((padding, padding), text, font=font, fill=tuple(color))
             return temp_img
-            
+
         except Exception as e:
             print(f"Error creating text with image overlay: {e}")
             # Fallback to basic text
@@ -530,7 +530,7 @@ class LevelingSystem(commands.Cog):
                 if levelbar_data:
                     # Calculate radius for half-circle (half of height)
                     radius = levelbar.height // 2
-                    
+
                     # Check if there's a custom XP bar image texture
                     xp_bar_image_url = config.get("level_bar_image")
                     if xp_bar_image_url and xp_bar_image_url != "https://raw.githubusercontent.com/TheBlueEL/pictures/refs/heads/main/LevelBar.png":
@@ -539,12 +539,12 @@ class LevelingSystem(commands.Cog):
                             xp_bar_texture_data = await self.download_image(xp_bar_image_url)
                             if xp_bar_texture_data:
                                 xp_bar_texture = Image.open(io.BytesIO(xp_bar_texture_data)).convert("RGBA")
-                                
+
                                 # Resize texture to fit the bar dimensions using centered proportional resizing
                                 texture_resized = self.resize_image_proportionally_centered(
                                     xp_bar_texture, levelbar.width, levelbar.height
                                 )
-                                
+
                                 # Create mask for rounded rectangle
                                 mask = Image.new('L', (levelbar.width, levelbar.height), 0)
                                 mask_draw = ImageDraw.Draw(mask)
@@ -553,20 +553,20 @@ class LevelingSystem(commands.Cog):
                                     radius=radius,
                                     fill=255
                                 )
-                                
+
                                 # Apply texture only to the rounded rectangle shape
                                 import numpy as np
                                 texture_array = np.array(texture_resized)
                                 mask_array = np.array(mask)
                                 result_array = np.zeros_like(texture_array)
-                                
+
                                 # Only copy pixels where the mask is not 0
                                 mask_pixels = mask_array > 0
                                 result_array[mask_pixels] = texture_array[mask_pixels]
                                 result_array[:, :, 3] = mask_array  # Set alpha channel to match mask
-                                
+
                                 rounded_bg = Image.fromarray(result_array, 'RGBA')
-                                
+
                                 # Paste the textured background
                                 background.paste(rounded_bg, (levelbar_x, levelbar_y), rounded_bg)
                             else:
@@ -624,19 +624,19 @@ class LevelingSystem(commands.Cog):
                                 xp_progress_texture_data = await self.download_image(xp_progress_image_url)
                                 if xp_progress_texture_data:
                                     xp_progress_texture = Image.open(io.BytesIO(xp_progress_texture_data)).convert("RGBA")
-                                    
+
                                     # Resize texture to fit the FULL bar dimensions first
                                     texture_full = self.resize_image_proportionally_centered(
                                         xp_progress_texture, levelbar.width, levelbar.height
                                     )
-                                    
+
                                     # Create progress mask with rounded corners
                                     progress_mask = Image.new('L', (levelbar.width, levelbar.height), 0)
                                     progress_mask_draw = ImageDraw.Draw(progress_mask)
-                                    
+
                                     # Calculate radius for half-circle (half of height)
                                     radius = levelbar.height // 2
-                                    
+
                                     # Draw progress mask based on progress width
                                     if progress_width >= levelbar.height:
                                         # Full rounded rectangle when progress is wide enough
@@ -651,20 +651,20 @@ class LevelingSystem(commands.Cog):
                                             [(0, 0), (min(progress_width * 2, levelbar.height) - 1, levelbar.height - 1)],
                                             fill=255
                                         )
-                                    
+
                                     # Apply texture only to the progress area
                                     import numpy as np
                                     texture_array = np.array(texture_full)
                                     mask_array = np.array(progress_mask)
                                     result_array = np.zeros_like(texture_array)
-                                    
+
                                     # Only copy pixels where the mask is not 0
                                     mask_pixels = mask_array > 0
                                     result_array[mask_pixels] = texture_array[mask_pixels]
                                     result_array[:, :, 3] = mask_array  # Set alpha channel to match mask
-                                    
+
                                     progress_bar = Image.fromarray(result_array, 'RGBA')
-                                    
+
                                     # Paste the textured progress bar over the background
                                     background.paste(progress_bar, (levelbar_x, levelbar_y), progress_bar)
                                 else:
@@ -673,7 +673,7 @@ class LevelingSystem(commands.Cog):
                                     xp_bar_color = tuple(xp_bar_color_rgb) + (255,)
                                     progress_bar = Image.new("RGBA", (progress_width, levelbar.height), (0, 0, 0, 0))
                                     progress_draw = ImageDraw.Draw(progress_bar)
-                                    
+
                                     radius = levelbar.height // 2
                                     if progress_width >= levelbar.height:
                                         progress_draw.rounded_rectangle(
@@ -694,7 +694,7 @@ class LevelingSystem(commands.Cog):
                                 xp_bar_color = tuple(xp_bar_color_rgb) + (255,)
                                 progress_bar = Image.new("RGBA", (progress_width, levelbar.height), (0, 0, 0, 0))
                                 progress_draw = ImageDraw.Draw(progress_bar)
-                                
+
                                 radius = levelbar.height // 2
                                 if progress_width >= levelbar.height:
                                     progress_draw.rounded_rectangle(
@@ -714,7 +714,7 @@ class LevelingSystem(commands.Cog):
                             xp_bar_color = tuple(xp_bar_color_rgb) + (255,)
                             progress_bar = Image.new("RGBA", (progress_width, levelbar.height), (0, 0, 0, 0))
                             progress_draw = ImageDraw.Draw(progress_bar)
-                            
+
                             radius = levelbar.height // 2
                             if progress_width >= levelbar.height:
                                 progress_draw.rounded_rectangle(
@@ -753,7 +753,7 @@ class LevelingSystem(commands.Cog):
                         outline_url = profile_outline_config["custom_image"]
                     else:
                         outline_url = profile_outline_config.get("url")
-                    
+
                     if outline_url:
                         outline_data = await self.download_image(outline_url)
                         if outline_data:
@@ -801,7 +801,7 @@ class LevelingSystem(commands.Cog):
             username = user.name
             username_color = config.get("username_color", [255, 255, 255]) # Default white
             username_image_url = config.get("username_image")
-            
+
             if username_image_url and username_image_url != "None":
                 username_surface = await self.create_text_with_image_overlay(
                     username, font_username, username_color, username_image_url
@@ -834,7 +834,7 @@ class LevelingSystem(commands.Cog):
             level_text = f"LEVEL {user_data['level']}"
             level_color = config.get("level_color", [245, 55, 48]) # Default red
             level_image_url = config.get("level_text_image")
-            
+
             if level_image_url and level_image_url != "None":
                 level_surface = await self.create_text_with_image_overlay(
                     level_text, font_level, level_color, level_image_url
@@ -1076,7 +1076,7 @@ class LevelingSystem(commands.Cog):
 
                         # Update the manager view
                         view.mode = view.current_image_type + "_image"
-                        
+
                         if view.current_image_type == "xp_bar":
                             embed = view.get_xp_bar_embed()
                             embed.title = "<:ImageLOGO:1407072328134951043> XP Bar Image"
@@ -1266,7 +1266,7 @@ class LevelingSystem(commands.Cog):
             data = load_leveling_data()
             config = data["leveling_settings"]["level_card"]
             outline_url = config.get("profile_outline", {}).get("url", "https://raw.githubusercontent.com/TheBlueEL/pictures/refs/heads/main/ProfileOutline.png")
-            
+
             async with aiohttp.ClientSession() as session:
                 async with session.get(outline_url) as response:
                     if response.status == 200:
@@ -1290,20 +1290,20 @@ class LevelingSystem(commands.Cog):
 
             # Create final masked image with ONLY the overlapping parts visible
             masked_image = Image.new("RGBA", custom_cropped.size, (0, 0, 0, 0))
-            
+
             # Use numpy for pixel-level masking to ensure only overlapping parts are visible
             import numpy as np
             custom_array = np.array(custom_cropped)
             mask_array = np.array(alpha_mask)
             result_array = np.zeros_like(custom_array)
-            
+
             # Only copy pixels where the mask is not transparent (>0)
             mask_pixels = mask_array > 0
             result_array[mask_pixels] = custom_array[mask_pixels]
-            
+
             # Set alpha channel to match the mask exactly
             result_array[:, :, 3] = mask_array
-            
+
             # Convert back to PIL Image
             masked_image = Image.fromarray(result_array, 'RGBA')
 
@@ -2748,7 +2748,7 @@ class LevelCardManagerView(discord.ui.View):
         try:
             data = load_leveling_data()
             permissions = data["leveling_settings"].get("customization_permissions", {})
-            
+
             # Map features to permission categories
             feature_mapping = {
                 "background": "background",
@@ -2760,21 +2760,21 @@ class LevelCardManagerView(discord.ui.View):
                 "level_text": "content",
                 "ranking_text": "content"
             }
-            
+
             permission_category = feature_mapping.get(feature_type, feature_type)
             category_config = permissions.get(permission_category, {})
-            
+
             # Check if category is enabled
             if not category_config.get("enabled", True):
                 return False
-            
+
             # Get required level for action type
             required_level = 0
             if action_type == "color":
                 required_level = category_config.get("color_permission_level", 0)
             elif action_type == "image":
                 required_level = category_config.get("image_permission_level", 0)
-            
+
             return self.user_level >= required_level
         except Exception as e:
             print(f"Error checking permissions: {e}")
@@ -2809,7 +2809,7 @@ class LevelCardManagerView(discord.ui.View):
             "username_color": [255, 255, 255],
             "level_color": [245, 55, 48]
         }
-        
+
         if self.mode == "xp_info_color":
             current = self.config.get("xp_text_color", default_config["xp_text_color"])
             return current != default_config["xp_text_color"]
@@ -2938,7 +2938,7 @@ class LevelCardManagerView(discord.ui.View):
             # Color selection buttons
             feature_type = self.mode.replace("_color", "")
             has_permission = self.has_permission_for_feature(feature_type, "color")
-            
+
             hex_button = discord.ui.Button(
                 label="Hex Code",
                 style=discord.ButtonStyle.secondary,
@@ -2982,7 +2982,7 @@ class LevelCardManagerView(discord.ui.View):
             # Image selection buttons
             feature_type = self.mode.replace("_image", "")
             has_permission = self.has_permission_for_feature(feature_type, "image")
-            
+
             url_button = discord.ui.Button(
                 label="Set URL",
                 style=discord.ButtonStyle.secondary,
@@ -3027,7 +3027,7 @@ class LevelCardManagerView(discord.ui.View):
             feature_type = self.mode
             has_color_permission = self.has_permission_for_feature(feature_type, "color")
             has_image_permission = self.has_permission_for_feature(feature_type, "image")
-            
+
             color_button = discord.ui.Button(
                 label="Color",
                 style=discord.ButtonStyle.secondary,
@@ -3060,7 +3060,7 @@ class LevelCardManagerView(discord.ui.View):
             # XP Bar specific buttons with permission checks
             has_color_permission = self.has_permission_for_feature("xp_bar", "color")
             has_image_permission = self.has_permission_for_feature("xp_bar", "image")
-            
+
             color_button = discord.ui.Button(
                 label="Color",
                 style=discord.ButtonStyle.secondary,
@@ -3092,7 +3092,7 @@ class LevelCardManagerView(discord.ui.View):
             # Profile outline main buttons with permission checks
             has_color_permission = self.has_permission_for_feature("profile_outline", "color")
             has_image_permission = self.has_permission_for_feature("profile_outline", "image")
-            
+
             # Dynamic toggle button
             is_enabled = self.config.get("profile_outline", {}).get("enabled", True)
             toggle_button = discord.ui.Button(
@@ -3161,7 +3161,7 @@ class LevelCardManagerView(discord.ui.View):
             # Level/Ranking text buttons with permission checks
             has_color_permission = self.has_permission_for_feature(self.mode, "color")
             has_image_permission = self.has_permission_for_feature(self.mode, "image")
-            
+
             color_button = discord.ui.Button(
                 label="Color",
                 style=discord.ButtonStyle.secondary,
@@ -3584,7 +3584,7 @@ class LevelCardManagerView(discord.ui.View):
 
     async def back_to_parent(self, interaction: discord.Interaction):
         original_mode = self.mode
-        
+
         # Handle color/image mode suffixes
         if self.mode.endswith("_color") or self.mode.endswith("_image"):
             self.mode = self.mode.replace("_color", "").replace("_image", "")
@@ -3854,7 +3854,7 @@ class HexColorModal(discord.ui.Modal):
 
         try:
             rgb = tuple(int(hex_value[i:i+2], 16) for i in (0, 2, 4))
-            
+
             # Apply color based on current mode
             if self.view.mode == "xp_bar_color":
                 self.view.config["xp_bar_color"] = list(rgb)
@@ -3870,7 +3870,7 @@ class HexColorModal(discord.ui.Modal):
 
             # Update view
             self.view.update_buttons()
-            
+
             # Get appropriate embed
             if self.view.mode == "xp_bar_color":
                 embed = self.view.get_xp_bar_embed()
@@ -3948,7 +3948,7 @@ class RGBColorModal(discord.ui.Modal):
 
             # Update view
             self.view.update_buttons()
-            
+
             # Get appropriate embed
             if self.view.mode == "xp_bar_color":
                 embed = self.view.get_xp_bar_embed()
@@ -4017,7 +4017,7 @@ class ImageURLModal(discord.ui.Modal):
 
         # Update view
         self.view.update_buttons()
-        
+
         # Get appropriate embed
         if self.view.mode == "username_image":
             embed = self.view.get_username_embed()
