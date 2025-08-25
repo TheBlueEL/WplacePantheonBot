@@ -2152,6 +2152,23 @@ class MessageXPView(discord.ui.View):
     def __init__(self, user):
         super().__init__(timeout=300)
         self.user = user
+        
+        # Initialize toggle button state
+        data = load_leveling_data()
+        messages_enabled = data["leveling_settings"]["xp_settings"]["messages"]["enabled"]
+        
+        # Update the toggle button based on current state
+        for item in self.children:
+            if hasattr(item, 'callback') and item.callback.__name__ == 'toggle_messages_xp':
+                if messages_enabled:
+                    item.label = "ON"
+                    item.style = discord.ButtonStyle.success
+                    item.emoji = "<:OnLOGO:1407072463883472978>"
+                else:
+                    item.label = "OFF" 
+                    item.style = discord.ButtonStyle.danger
+                    item.emoji = "<:OffLOGO:1407072621836894380>"
+                break
 
     def get_embed(self):
         data = load_leveling_data()
@@ -2180,23 +2197,23 @@ class MessageXPView(discord.ui.View):
         modal = MessageCooldownModal()
         await interaction.response.send_modal(modal)
 
-        @discord.ui.button(label="OFF", style=discord.ButtonStyle.danger, emoji="<:OffLOGO:1407072621836894380>")
-        async def toggle_messages_xp(self, interaction: discord.Interaction, button: discord.ui.Button):
-            data = load_leveling_data()
-            current_state = data["leveling_settings"]["xp_settings"]["messages"]["enabled"]
-            data["leveling_settings"]["xp_settings"]["messages"]["enabled"] = not current_state
-            save_leveling_data(data)
-            # Update button appearance
-            if data["leveling_settings"]["xp_settings"]["messages"]["enabled"]:
-                button.label = "ON"
-                button.style = discord.ButtonStyle.success
-                button.emoji = "<:OnLOGO:1407072463883472978>"
-            else:
-                button.label = "OFF"
-                button.style = discord.ButtonStyle.danger
-                button.emoji = "<:OffLOGO:1407072621836894380>"
-            embed = self.get_embed()
-            await interaction.response.edit_message(embed=embed, view=self)
+    @discord.ui.button(label="OFF", style=discord.ButtonStyle.danger, emoji="<:OffLOGO:1407072621836894380>")
+    async def toggle_messages_xp(self, interaction: discord.Interaction, button: discord.ui.Button):
+        data = load_leveling_data()
+        current_state = data["leveling_settings"]["xp_settings"]["messages"]["enabled"]
+        data["leveling_settings"]["xp_settings"]["messages"]["enabled"] = not current_state
+        save_leveling_data(data)
+        # Update button appearance
+        if data["leveling_settings"]["xp_settings"]["messages"]["enabled"]:
+            button.label = "ON"
+            button.style = discord.ButtonStyle.success
+            button.emoji = "<:OnLOGO:1407072463883472978>"
+        else:
+            button.label = "OFF"
+            button.style = discord.ButtonStyle.danger
+            button.emoji = "<:OffLOGO:1407072621836894380>"
+        embed = self.get_embed()
+        await interaction.response.edit_message(embed=embed, view=self)
 
 
     @discord.ui.button(label="Back", style=discord.ButtonStyle.gray, emoji="<:BackLOGO:1407071474233114766>")
@@ -2258,6 +2275,23 @@ class CharacterXPView(discord.ui.View):
     def __init__(self, user):
         super().__init__(timeout=300)
         self.user = user
+        
+        # Initialize toggle button state
+        data = load_leveling_data()
+        characters_enabled = data["leveling_settings"]["xp_settings"]["characters"]["enabled"]
+        
+        # Update the toggle button based on current state
+        for item in self.children:
+            if hasattr(item, 'callback') and item.callback.__name__ == 'toggle_characters_xp':
+                if characters_enabled:
+                    item.label = "ON"
+                    item.style = discord.ButtonStyle.success
+                    item.emoji = "<:OnLOGO:1407072463883472978>"
+                else:
+                    item.label = "OFF"
+                    item.style = discord.ButtonStyle.danger
+                    item.emoji = "<:OffLOGO:1407072621836894380>"
+                break
 
     def get_embed(self):
         data = load_leveling_data()
@@ -2292,23 +2326,21 @@ class CharacterXPView(discord.ui.View):
         modal = CharacterCooldownModal()
         await interaction.response.send_modal(modal)
 
-        # Bouton 2 - Characters XP Toggle  
-        @discord.ui.button(label="OFF", style=discord.ButtonStyle.danger, emoji="<:OffLOGO:1407072621836894380>")
-        async def toggle_characters_xp(self, interaction: discord.Interaction, button: discord.ui.Button):
-            data = load_leveling_data()
-            current_state = data["leveling_settings"]["xp_settings"]["characters"]["enabled"]
-            data["leveling_settings"]["xp_settings"]["characters"]["enabled"] = not current_state
-            save_leveling_data(data)
-            # Update button appearance
-            if data["leveling_settings"]["xp_settings"]["characters"]["enabled"]:
-                button.label = "ON"
-                button.style = discord.ButtonStyle.success
-                button.emoji = "<:OnLOGO:1407072463883472978>"
-            else:
-                button.label = "OFF"
-                button.style = discord.ButtonStyle.danger
-                button.emoji = "<:OffLOGO:1407072621836894380>"
-
+    @discord.ui.button(label="OFF", style=discord.ButtonStyle.danger, emoji="<:OffLOGO:1407072621836894380>")
+    async def toggle_characters_xp(self, interaction: discord.Interaction, button: discord.ui.Button):
+        data = load_leveling_data()
+        current_state = data["leveling_settings"]["xp_settings"]["characters"]["enabled"]
+        data["leveling_settings"]["xp_settings"]["characters"]["enabled"] = not current_state
+        save_leveling_data(data)
+        # Update button appearance
+        if data["leveling_settings"]["xp_settings"]["characters"]["enabled"]:
+            button.label = "ON"
+            button.style = discord.ButtonStyle.success
+            button.emoji = "<:OnLOGO:1407072463883472978>"
+        else:
+            button.label = "OFF"
+            button.style = discord.ButtonStyle.danger
+            button.emoji = "<:OffLOGO:1407072621836894380>"
         embed = self.get_embed()
         await interaction.response.edit_message(embed=embed, view=self)
 
@@ -2905,6 +2937,29 @@ class LevelCardManagerView(discord.ui.View):
             print(f"Error generating preview: {e}")
 
         return False
+
+    def get_current_button_states(self):
+        """Get current button states for dynamic toggles"""
+        data = load_leveling_data()
+        
+        # System toggle state
+        system_enabled = data["leveling_settings"]["enabled"]
+        
+        # Messages XP toggle state
+        messages_enabled = data["leveling_settings"]["xp_settings"]["messages"]["enabled"]
+        
+        # Characters XP toggle state
+        characters_enabled = data["leveling_settings"]["xp_settings"]["characters"]["enabled"]
+        
+        # Profile outline toggle state
+        profile_outline_enabled = self.config.get("profile_outline", {}).get("enabled", True)
+        
+        return {
+            "system": system_enabled,
+            "messages": messages_enabled,
+            "characters": characters_enabled,
+            "profile_outline": profile_outline_enabled
+        }
 
     def update_buttons(self):
         self.clear_items()
@@ -5073,328 +5128,138 @@ class UserLevelCardManagerView(LevelCardManagerView):
         return user_level >= required_level
 
     def update_buttons(self):
-        """Override to disable buttons based on permissions"""
-        self.clear_items()
-
-        if self.waiting_for_image:
-            back_button = discord.ui.Button(
-                label="Back",
-                style=discord.ButtonStyle.gray,
-                emoji="<:BackLOGO:1407071474233114766>"
-            )
-            back_button.callback = self.back_from_image_upload
-            self.add_item(back_button)
-
-        elif self.mode == "leveling_bar":
-            # Leveling Bar main buttons
-            xp_info_button = discord.ui.Button(
-                label="XP Info",
-                style=discord.ButtonStyle.secondary,
-                emoji="ℹ️",
-                disabled=not self.check_permission("content", "color")
-            )
-            xp_info_button.callback = self.xp_info_settings
-
-            xp_bar_button = discord.ui.Button(
-                label="XP Bar",
-                style=discord.ButtonStyle.secondary,
-                emoji="📊",
-                disabled=not self.check_permission("bar_progress", "color")
-            )
-            xp_bar_button.callback = self.xp_bar_settings
-
-            xp_progress_button = discord.ui.Button(
-                label="XP Progress",
-                style=discord.ButtonStyle.secondary,
-                emoji="⚡",
-                disabled=not self.check_permission("bar_progress", "color")
-            )
-            xp_progress_button.callback = self.xp_progress_settings
-
-            back_button = discord.ui.Button(
-                label="Back",
-                style=discord.ButtonStyle.gray,
-                emoji="<:BackLOGO:1407071474233114766>"
-            )
-            back_button.callback = self.back_to_main
-
-            self.add_item(xp_info_button)
-            self.add_item(xp_bar_button)
-            self.add_item(xp_progress_button)
-            self.add_item(back_button)
-
-        elif self.mode in ["xp_info_color", "xp_progress_color", "background_color", "username_color", "profile_outline_color", "level_text_color", "ranking_text_color"]:
-            # Color selection buttons
-            hex_button = discord.ui.Button(
-                label="Hex Code",
-                style=discord.ButtonStyle.secondary,
-                emoji="<:HEXcodeLOGO:1408833347404304434>"
-            )
-            hex_button.callback = self.hex_color
-
-            rgb_button = discord.ui.Button(
-                label="RGB Code",
-                style=discord.ButtonStyle.secondary,
-                emoji="<:RGBcodeLOGO:1408831982141575290>"
-            )
-            rgb_button.callback = self.rgb_color
-
-            reset_button = discord.ui.Button(
-                label="Reset",
-                style=discord.ButtonStyle.secondary,
-                emoji="<:UpdateLOGO:1407072818214080695>"
-            )
-            reset_button.callback = self.reset_color
-
-            back_button = discord.ui.Button(
-                label="Back",
-                style=discord.ButtonStyle.gray,
-                emoji="<:BackLOGO:1407071474233114766>"
-            )
-            back_button.callback = self.back_to_parent
-
-            self.add_item(hex_button)
-            self.add_item(rgb_button)
-            self.add_item(reset_button)
-            self.add_item(back_button)
-
-        elif self.mode in ["xp_bar_image", "background_image", "profile_outline_image", "level_text_image", "ranking_text_image"]:
-            # Image selection buttons
-            url_button = discord.ui.Button(
-                label="Set URL",
-                style=discord.ButtonStyle.secondary,
-                emoji="<:URLLOGO:1407071963809054931>"
-            )
-            url_button.callback = self.image_url
-
-            upload_button = discord.ui.Button(
-                label="Upload Image",
-                style=discord.ButtonStyle.secondary,
-                emoji="<:UploadLOGO:1407072005567545478>"
-            )
-            upload_button.callback = self.upload_image
-
-            clear_button = discord.ui.Button(
-                label="Clear Image",
-                style=discord.ButtonStyle.secondary,
-                emoji="<:DeleteLOGO:1407071421363916841>"
-            )
-            clear_button.callback = self.clear_image
-
-            back_button = discord.ui.Button(
-                label="Back",
-                style=discord.ButtonStyle.gray,
-                emoji="<:BackLOGO:1407071474233114766>"
-            )
-            back_button.callback = self.back_to_parent
-
-            self.add_item(url_button)
-            self.add_item(upload_button)
-            self.add_item(clear_button)
-            self.add_item(back_button)
-
-        elif self.mode in ["xp_info", "xp_progress", "background", "username"]:
-            # Sub-category buttons
-            color_button = discord.ui.Button(
-                label="Color",
-                style=discord.ButtonStyle.secondary,
-                emoji="<:ColorLOGO:1408828590241615883>",
-                disabled=not self.check_permission(
-                    "background" if self.mode == "background" else 
-                    "username" if self.mode == "username" else "content",
-                    "color"
-                )
-            )
-            color_button.callback = self.color_settings
-
-            if self.mode in ["background"]:
-                image_button = discord.ui.Button(
-                    label="Image",
-                    style=discord.ButtonStyle.secondary,
-                    emoji="<:ImageLOGO:1407072328134951043>",
-                    disabled=not self.check_permission("background", "image")
-                )
-                image_button.callback = self.image_settings
-                self.add_item(image_button)
-
-            back_button = discord.ui.Button(
-                label="Back",
-                style=discord.ButtonStyle.gray,
-                emoji="<:BackLOGO:1407071474233114766>"
-            )
-            back_button.callback = self.back_to_parent
-
-            self.add_item(color_button)
-            self.add_item(back_button)
-
-        elif self.mode == "xp_bar":
-            # XP Bar specific buttons - no image permission needed for bar
-            back_button = discord.ui.Button(
-                label="Back",
-                style=discord.ButtonStyle.gray,
-                emoji="<:BackLOGO:1407071474233114766>"
-            )
-            back_button.callback = self.back_to_parent
-            self.add_item(back_button)
-
-        elif self.mode == "profile_outline":
-            # Profile outline main buttons
-            toggle_button = discord.ui.Button(
-                label="ON" if self.config.get("profile_outline", {}).get("enabled", True) else "OFF",
-                style=discord.ButtonStyle.success if self.config.get("profile_outline", {}).get("enabled", True) else discord.ButtonStyle.danger,
-                emoji="<:OnLOGO:1407072463883472978>" if self.config.get("profile_outline", {}).get("enabled", True) else "<:OffLOGO:1407072621836894380>",
-                disabled=not self.check_permission("avatar_outline", "color")
-            )
-            toggle_button.callback = self.toggle_profile_outline
-
-            color_button = discord.ui.Button(
-                label="Color",
-                style=discord.ButtonStyle.secondary,
-                emoji="<:ColorLOGO:1408828590241615883>",
-                disabled=not self.check_permission("avatar_outline", "color")
-            )
-            color_button.callback = self.color_settings
-
-            image_button = discord.ui.Button(
-                label="Image",
-                style=discord.ButtonStyle.secondary,
-                emoji="<:ImageLOGO:1407072328134951043>",
-                disabled=not self.check_permission("avatar_outline", "image")
-            )
-            image_button.callback = self.image_settings
-
-            back_button = discord.ui.Button(
-                label="Back",
-                style=discord.ButtonStyle.gray,
-                emoji="<:BackLOGO:1407071474233114766>"
-            )
-            back_button.callback = self.back_to_main
-
-            self.add_item(toggle_button)
-            self.add_item(color_button)
-            self.add_item(image_button)
-            self.add_item(back_button)
-
-        elif self.mode == "content":
-            # Content main buttons
-            level_button = discord.ui.Button(
-                label="Level",
-                style=discord.ButtonStyle.secondary,
-                emoji="📊",
-                disabled=not self.check_permission("content", "color")
-            )
-            level_button.callback = self.level_text_settings
-
-            ranking_button = discord.ui.Button(
-                label="Classement",
-                style=discord.ButtonStyle.secondary,
-                emoji="🏆",
-                disabled=not self.check_permission("content", "color")
-            )
-            ranking_button.callback = self.ranking_text_settings
-
-            back_button = discord.ui.Button(
-                label="Back",
-                style=discord.ButtonStyle.gray,
-                emoji="<:BackLOGO:1407071474233114766>"
-            )
-            back_button.callback = self.back_to_main
-
-            self.add_item(level_button)
-            self.add_item(ranking_button)
-            self.add_item(back_button)
-
-        elif self.mode in ["level_text", "ranking_text"]:
-            # Level/Ranking text buttons
-            color_button = discord.ui.Button(
-                label="Color",
-                style=discord.ButtonStyle.secondary,
-                emoji="<:ColorLOGO:1408828590241615883>",
-                disabled=not self.check_permission("content", "color")
-            )
-            color_button.callback = self.color_settings
-
-            image_button = discord.ui.Button(
-                label="Image",
-                style=discord.ButtonStyle.secondary,
-                emoji="<:ImageLOGO:1407072328134951043>",
-                disabled=not self.check_permission("content", "image")
-            )
-            image_button.callback = self.image_settings
-
-            back_button = discord.ui.Button(
-                label="Back",
-                style=discord.ButtonStyle.gray,
-                emoji="<:BackLOGO:1407071474233114766>"
-            )
-            back_button.callback = self.back_to_parent
-
-            self.add_item(color_button)
-            self.add_item(image_button)
-            self.add_item(back_button)
-
-        else:  # main mode
-            # Main buttons with permission checks
-            leveling_bar_button = discord.ui.Button(
-                label="Leveling Bar",
-                style=discord.ButtonStyle.secondary,
-                emoji="📊",
-                row=0,
-                disabled=not (self.check_permission("bar_progress", "color") or self.check_permission("content", "color"))
-            )
-            leveling_bar_button.callback = self.leveling_bar_settings
-
-            background_button = discord.ui.Button(
-                label="Background",
-                style=discord.ButtonStyle.secondary,
-                emoji="<:BackgroundLOGO:1408834163309805579>",
-                row=0,
-                disabled=not (self.check_permission("background", "color") or self.check_permission("background", "image"))
-            )
-            background_button.callback = self.background_settings
-
-            username_button = discord.ui.Button(
-                label="Username",
-                style=discord.ButtonStyle.secondary,
-                emoji="<:ParticipantsLOGO:1407733929389199460>",
-                row=0,
-                disabled=not self.check_permission("username", "color")
-            )
-            username_button.callback = self.username_settings
-
-            profile_outline_button = discord.ui.Button(
-                label="Profile Outline",
-                style=discord.ButtonStyle.secondary,
-                emoji="<:ProfileLOGO:1408830057819930806>",
-                row=1,
-                disabled=not (self.check_permission("avatar_outline", "color") or self.check_permission("avatar_outline", "image"))
-            )
-            profile_outline_button.callback = self.profile_outline_settings
-
-            content_button = discord.ui.Button(
-                label="Content",
-                style=discord.ButtonStyle.secondary,
-                emoji="📝",
-                row=1,
-                disabled=not self.check_permission("content", "color")
-            )
-            content_button.callback = self.content_settings
-
-            self.add_item(leveling_bar_button)
-            self.add_item(background_button)
-            self.add_item(username_button)
-            self.add_item(profile_outline_button)
-            self.add_item(content_button)
-
-            # Add close button for DM version
-            close_button = discord.ui.Button(
-                label="Close",
-                style=discord.ButtonStyle.danger,
-                emoji="<:CloseLOGO:1407072519420248256>",
-                row=1
-            )
-            close_button.callback = self.close_dm
-            self.add_item(close_button)
+        """Use exact same interface as LevelCardManagerView but with permission checks"""
+        # Call parent's update_buttons method to get the exact same interface
+        super().update_buttons()
+        
+        # Now disable buttons based on permissions for DM users
+        for item in self.children:
+            if hasattr(item, 'disabled') and hasattr(item, 'label'):
+                # Check permissions for each button
+                if item.label == "Leveling Bar":
+                    item.disabled = not (self.has_permission_for_feature("bar_progress", "color") or 
+                                       self.has_permission_for_feature("content", "color"))
+                elif item.label == "Background":
+                    item.disabled = not (self.has_permission_for_feature("background", "color") or 
+                                       self.has_permission_for_feature("background", "image"))
+                elif item.label == "Username":
+                    item.disabled = not self.has_permission_for_feature("username", "color")
+                elif item.label == "Profile Outline":
+                    item.disabled = not (self.has_permission_for_feature("profile_outline", "color") or 
+                                       self.has_permission_for_feature("profile_outline", "image"))
+                elif item.label == "Content":
+                    item.disabled = not self.has_permission_for_feature("content", "color")
+                elif item.label == "XP Info":
+                    item.disabled = not self.has_permission_for_feature("content", "color")
+                elif item.label == "XP Bar":
+                    item.disabled = not self.has_permission_for_feature("bar_progress", "color")
+                elif item.label == "XP Progress":
+                    item.disabled = not self.has_permission_for_feature("bar_progress", "color")
+                elif item.label == "Level":
+                    item.disabled = not self.has_permission_for_feature("content", "color")
+                elif item.label == "Classement":
+                    item.disabled = not self.has_permission_for_feature("content", "color")
+                elif item.label == "Color":
+                    # Get feature type from current mode
+                    feature_type = self.mode
+                    if self.mode == "background":
+                        item.disabled = not self.has_permission_for_feature("background", "color")
+                    elif self.mode == "username":
+                        item.disabled = not self.has_permission_for_feature("username", "color")
+                    elif self.mode == "profile_outline":
+                        item.disabled = not self.has_permission_for_feature("profile_outline", "color")
+                    elif self.mode in ["xp_info", "xp_progress", "level_text", "ranking_text"]:
+                        if self.mode in ["xp_info", "level_text", "ranking_text"]:
+                            item.disabled = not self.has_permission_for_feature("content", "color")
+                        else:
+                            item.disabled = not self.has_permission_for_feature("bar_progress", "color")
+                elif item.label == "Image":
+                    # Get feature type from current mode
+                    if self.mode == "background":
+                        item.disabled = not self.has_permission_for_feature("background", "image")
+                    elif self.mode == "profile_outline":
+                        item.disabled = not self.has_permission_for_feature("profile_outline", "image")
+                    elif self.mode in ["level_text", "ranking_text"]:
+                        item.disabled = not self.has_permission_for_feature("content", "image")
+                elif item.label == "Set URL":
+                    # Check image permission for current mode
+                    if "background" in self.mode:
+                        item.disabled = not self.has_permission_for_feature("background", "image")
+                    elif "profile_outline" in self.mode:
+                        item.disabled = not self.has_permission_for_feature("profile_outline", "image")
+                    elif any(x in self.mode for x in ["level_text", "ranking_text", "username", "xp_info", "xp_progress"]):
+                        if "username" in self.mode:
+                            item.disabled = not self.has_permission_for_feature("username", "image")
+                        elif any(x in self.mode for x in ["level_text", "ranking_text", "xp_info"]):
+                            item.disabled = not self.has_permission_for_feature("content", "image")
+                        elif "xp_progress" in self.mode:
+                            item.disabled = not self.has_permission_for_feature("bar_progress", "image")
+                elif item.label == "Upload Image":
+                    # Same logic as Set URL
+                    if "background" in self.mode:
+                        item.disabled = not self.has_permission_for_feature("background", "image")
+                    elif "profile_outline" in self.mode:
+                        item.disabled = not self.has_permission_for_feature("profile_outline", "image")
+                    elif any(x in self.mode for x in ["level_text", "ranking_text", "username", "xp_info", "xp_progress"]):
+                        if "username" in self.mode:
+                            item.disabled = not self.has_permission_for_feature("username", "image")
+                        elif any(x in self.mode for x in ["level_text", "ranking_text", "xp_info"]):
+                            item.disabled = not self.has_permission_for_feature("content", "image")
+                        elif "xp_progress" in self.mode:
+                            item.disabled = not self.has_permission_for_feature("bar_progress", "image")
+                elif item.label == "Clear Image":
+                    # Same logic as Set URL and Upload Image
+                    if "background" in self.mode:
+                        item.disabled = not self.has_permission_for_feature("background", "image")
+                    elif "profile_outline" in self.mode:
+                        item.disabled = not self.has_permission_for_feature("profile_outline", "image")
+                    elif any(x in self.mode for x in ["level_text", "ranking_text", "username", "xp_info", "xp_progress"]):
+                        if "username" in self.mode:
+                            item.disabled = not self.has_permission_for_feature("username", "image")
+                        elif any(x in self.mode for x in ["level_text", "ranking_text", "xp_info"]):
+                            item.disabled = not self.has_permission_for_feature("content", "image")
+                        elif "xp_progress" in self.mode:
+                            item.disabled = not self.has_permission_for_feature("bar_progress", "image")
+                elif item.label == "Hex Code":
+                    # Check color permission for current mode
+                    if "background" in self.mode:
+                        item.disabled = not self.has_permission_for_feature("background", "color")
+                    elif "username" in self.mode:
+                        item.disabled = not self.has_permission_for_feature("username", "color")
+                    elif "profile_outline" in self.mode:
+                        item.disabled = not self.has_permission_for_feature("profile_outline", "color")
+                    elif any(x in self.mode for x in ["xp_info", "level_text", "ranking_text"]):
+                        item.disabled = not self.has_permission_for_feature("content", "color")
+                    elif "xp_progress" in self.mode:
+                        item.disabled = not self.has_permission_for_feature("bar_progress", "color")
+                elif item.label == "RGB Code":
+                    # Same logic as Hex Code
+                    if "background" in self.mode:
+                        item.disabled = not self.has_permission_for_feature("background", "color")
+                    elif "username" in self.mode:
+                        item.disabled = not self.has_permission_for_feature("username", "color")
+                    elif "profile_outline" in self.mode:
+                        item.disabled = not self.has_permission_for_feature("profile_outline", "color")
+                    elif any(x in self.mode for x in ["xp_info", "level_text", "ranking_text"]):
+                        item.disabled = not self.has_permission_for_feature("content", "color")
+                    elif "xp_progress" in self.mode:
+                        item.disabled = not self.has_permission_for_feature("bar_progress", "color")
+                elif item.label == "Reset":
+                    # Same logic as Hex Code and RGB Code
+                    if "background" in self.mode:
+                        item.disabled = not self.has_permission_for_feature("background", "color")
+                    elif "username" in self.mode:
+                        item.disabled = not self.has_permission_for_feature("username", "color")
+                    elif "profile_outline" in self.mode:
+                        item.disabled = not self.has_permission_for_feature("profile_outline", "color")
+                    elif any(x in self.mode for x in ["xp_info", "level_text", "ranking_text"]):
+                        item.disabled = not self.has_permission_for_feature("content", "color")
+                    elif "xp_progress" in self.mode:
+                        item.disabled = not self.has_permission_for_feature("bar_progress", "color")
+                elif item.label in ["ON", "OFF"] and hasattr(item, 'callback') and hasattr(item.callback, '__name__'):
+                    # Toggle button for profile outline
+                    if item.callback.__name__ == 'toggle_profile_outline':
+                        item.disabled = not self.has_permission_for_feature("profile_outline", "color")
 
 async def setup(bot):
     await bot.add_cog(LevelingSystem(bot))
