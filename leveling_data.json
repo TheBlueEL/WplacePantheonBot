@@ -161,5 +161,82 @@
       "level": 1,
       "last_message": 1756159951.057529
     }
+  },
+  "notification_settings": {
+    "level_notifications": {
+      "enabled": true,
+      "cycle": 1,
+      "level_card": {
+        "background_color": [
+          245,
+          55,
+          48
+        ],
+        "background_image": null,
+        "username_color": [
+          255,
+          255,
+          255
+        ],
+        "level_text_color": [
+          255,
+          255,
+          255
+        ],
+        "message_text_color": [
+          255,
+          255,
+          255
+        ],
+        "info_text_color": [
+          200,
+          200,
+          200
+        ],
+        "outline_enabled": true,
+        "outline_color": [
+          255,
+          255,
+          255
+        ],
+        "outline_image": null,
+        "username_position": {
+          "x": 540,
+          "y": 200,
+          "font_size": 80
+        },
+        "level_position": {
+          "x": 540,
+          "y": 300,
+          "font_size": 120
+        },
+        "message_position": {
+          "x": 540,
+          "y": 450,
+          "font_size": 60
+        },
+        "info_position": {
+          "x": 540,
+          "y": 550,
+          "font_size": 40
+        },
+        "avatar_position": {
+          "x": 190,
+          "y": 190,
+          "size": 300
+        },
+        "outline_position": {
+          "x": 190,
+          "y": 190,
+          "size": 300
+        }
+      }
+    },
+    "role_notifications": {
+      "enabled": false
+    },
+    "custom_notifications": {
+      "enabled": false
+    }
   }
 }
