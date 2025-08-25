@@ -541,8 +541,25 @@ class LevelingSystem(commands.Cog):
                     levelbar_x = 30
                     levelbar_y = bg_height - levelbar.height - 30
 
-                # Paste the level bar background first
-                background.paste(levelbar, (levelbar_x, levelbar_y), levelbar)
+                # Create XP bar background with rounded corners that matches the progress bar shape
+                if levelbar_data:
+                    # Calculate radius for half-circle (half of height)
+                    radius = levelbar.height // 2
+                    
+                    # Create a rounded background bar
+                    rounded_bg = Image.new("RGBA", (levelbar.width, levelbar.height), (0, 0, 0, 0))
+                    rounded_bg_draw = ImageDraw.Draw(rounded_bg)
+                    
+                    # Draw rounded rectangle background in a neutral gray color
+                    bg_color = (80, 80, 80, 255)  # Dark gray background
+                    rounded_bg_draw.rounded_rectangle(
+                        [(0, 0), (levelbar.width - 1, levelbar.height - 1)],
+                        radius=radius,
+                        fill=bg_color
+                    )
+                    
+                    # Paste the rounded background
+                    background.paste(rounded_bg, (levelbar_x, levelbar_y), rounded_bg)
 
                 # Create XP progress bar overlay with rounded corners
                 xp_needed, current_xp_in_level = get_xp_for_next_level(user_data["xp"])
@@ -580,22 +597,8 @@ class LevelingSystem(commands.Cog):
                                 fill=xp_bar_color
                             )
 
-                        # Create a mask from the original levelbar to respect its shape
-                        levelbar_mask = levelbar.copy().convert('L')
-                        
-                        # Apply the levelbar mask to the progress bar
-                        progress_bar_masked = Image.new("RGBA", (progress_width, levelbar.height), (0, 0, 0, 0))
-                        progress_bar_masked.paste(progress_bar, (0, 0))
-                        
-                        # Crop the mask to match progress width
-                        if progress_width < levelbar.width:
-                            cropped_mask = levelbar_mask.crop((0, 0, progress_width, levelbar.height))
-                            progress_bar_masked.putalpha(cropped_mask)
-                        else:
-                            progress_bar_masked.putalpha(levelbar_mask)
-
-                        # Paste the masked progress bar
-                        background.paste(progress_bar_masked, (levelbar_x, levelbar_y), progress_bar_masked)
+                        # Paste the progress bar over the background
+                        background.paste(progress_bar, (levelbar_x, levelbar_y), progress_bar)
 
 
             # Download user avatar
