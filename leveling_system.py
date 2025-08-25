@@ -193,9 +193,10 @@ class LevelingSystem(commands.Cog):
             text_width = text_bbox[2] - text_bbox[0]
             text_height = text_bbox[3] - text_bbox[1]
             
-            # Create temporary image for text
-            temp_img = Image.new('RGBA', (text_width + 20, text_height + 20), (0, 0, 0, 0))
-            temp_draw = ImageDraw.Draw(temp_img)
+            # Ajouter plus de padding pour éviter les coupures
+            padding = 30
+            canvas_width = text_width + (padding * 2)
+            canvas_height = text_height + (padding * 2)
             
             if image_url and image_url != "None":
                 # Download overlay image
@@ -203,53 +204,66 @@ class LevelingSystem(commands.Cog):
                 if overlay_data:
                     overlay_img = Image.open(io.BytesIO(overlay_data)).convert("RGBA")
                     
-                    # Calculate aspect ratios
-                    original_ratio = overlay_img.width / overlay_img.height
-                    target_ratio = text_width / text_height
+                    # Créer d'abord le masque de texte avec des contours plus nets
+                    text_mask = Image.new('L', (canvas_width, canvas_height), 0)
+                    mask_draw = ImageDraw.Draw(text_mask)
                     
-                    # Redimensionner pour que l'image couvre complètement la zone de texte
+                    # Dessiner le texte plusieurs fois pour épaissir les contours
+                    text_x = padding
+                    text_y = padding
+                    
+                    # Épaissir le masque en dessinant le texte plusieurs fois avec de légers décalages
+                    for dx in range(-2, 3):
+                        for dy in range(-2, 3):
+                            mask_draw.text((text_x + dx, text_y + dy), text, font=font, fill=255)
+                    
+                    # Redimensionner l'image de texture pour qu'elle soit plus grande que le texte
+                    scale_factor = 1.5  # Agrandir l'image de 50%
+                    scaled_width = int(text_width * scale_factor)
+                    scaled_height = int(text_height * scale_factor)
+                    
+                    # Calculer le ratio pour couvrir complètement le texte
+                    original_ratio = overlay_img.width / overlay_img.height
+                    target_ratio = scaled_width / scaled_height
+                    
                     if original_ratio > target_ratio:
-                        # Image plus large, ajuster sur la hauteur et rogner sur les côtés
-                        new_height = text_height
+                        # Image plus large, ajuster sur la hauteur
+                        new_height = scaled_height
                         new_width = int(new_height * original_ratio)
                     else:
-                        # Image plus haute, ajuster sur la largeur et rogner en haut/bas
-                        new_width = text_width
+                        # Image plus haute, ajuster sur la largeur
+                        new_width = scaled_width
                         new_height = int(new_width / original_ratio)
                     
                     # Redimensionner l'image
                     overlay_resized = overlay_img.resize((new_width, new_height), Image.Resampling.LANCZOS)
                     
-                    # Rogner depuis le centre pour obtenir les dimensions exactes du texte
-                    if new_width > text_width or new_height > text_height:
-                        # Calculer les coordonnées de rognage centrées
-                        left = (new_width - text_width) // 2
-                        top = (new_height - text_height) // 2
-                        right = left + text_width
-                        bottom = top + text_height
-                        
-                        overlay_cropped = overlay_resized.crop((left, top, right, bottom))
-                    else:
-                        overlay_cropped = overlay_resized
+                    # Rogner depuis le centre
+                    left = (new_width - scaled_width) // 2
+                    top = (new_height - scaled_height) // 2
+                    right = left + scaled_width
+                    bottom = top + scaled_height
+                    overlay_cropped = overlay_resized.crop((left, top, right, bottom))
                     
-                    # S'assurer que les dimensions sont exactes
-                    if overlay_cropped.size != (text_width, text_height):
-                        overlay_cropped = overlay_cropped.resize((text_width, text_height), Image.Resampling.LANCZOS)
+                    # Créer l'image finale
+                    result = Image.new('RGBA', (canvas_width, canvas_height), (0, 0, 0, 0))
                     
-                    # Create text mask
-                    text_mask = Image.new('L', (text_width + 20, text_height + 20), 0)
-                    mask_draw = ImageDraw.Draw(text_mask)
-                    mask_draw.text((10, 10), text, font=font, fill=255)
+                    # Centrer l'image de texture sur le canvas
+                    texture_x = (canvas_width - scaled_width) // 2
+                    texture_y = (canvas_height - scaled_height) // 2
                     
-                    # Create masked overlay
-                    masked_overlay = Image.new('RGBA', (text_width + 20, text_height + 20), (0, 0, 0, 0))
-                    masked_overlay.paste(overlay_cropped, (10, 10))
-                    masked_overlay.putalpha(text_mask)
+                    # Coller l'image de texture
+                    result.paste(overlay_cropped, (texture_x, texture_y))
                     
-                    return masked_overlay
+                    # Appliquer le masque de texte
+                    result.putalpha(text_mask)
+                    
+                    return result
             
             # Fallback to regular colored text
-            temp_draw.text((10, 10), text, font=font, fill=tuple(color))
+            temp_img = Image.new('RGBA', (canvas_width, canvas_height), (0, 0, 0, 0))
+            temp_draw = ImageDraw.Draw(temp_img)
+            temp_draw.text((padding, padding), text, font=font, fill=tuple(color))
             return temp_img
             
         except Exception as e:
@@ -258,9 +272,10 @@ class LevelingSystem(commands.Cog):
             text_bbox = font.getbbox(text)
             text_width = text_bbox[2] - text_bbox[0]
             text_height = text_bbox[3] - text_bbox[1]
-            temp_img = Image.new('RGBA', (text_width + 20, text_height + 20), (0, 0, 0, 0))
+            padding = 30
+            temp_img = Image.new('RGBA', (text_width + padding * 2, text_height + padding * 2), (0, 0, 0, 0))
             temp_draw = ImageDraw.Draw(temp_img)
-            temp_draw.text((10, 10), text, font=font, fill=tuple(color))
+            temp_draw.text((padding, padding), text, font=font, fill=tuple(color))
             return temp_img
 
     def calculate_user_ranking(self, user_id):
@@ -677,7 +692,7 @@ class LevelingSystem(commands.Cog):
                     username, font_username, username_color, username_image_url
                 )
                 background.paste(username_surface, 
-                               (positions["username"]["x"] - 10, positions["username"]["y"] - 10), 
+                               (positions["username"]["x"] - 30, positions["username"]["y"] - 30), 
                                username_surface)
             else:
                 draw.text((positions["username"]["x"], positions["username"]["y"]),
@@ -710,7 +725,7 @@ class LevelingSystem(commands.Cog):
                     level_text, font_level, level_color, level_image_url
                 )
                 background.paste(level_surface, 
-                               (positions["level"]["x"] - 10, positions["level"]["y"] - 10), 
+                               (positions["level"]["x"] - 30, positions["level"]["y"] - 30), 
                                level_surface)
             else:
                 draw.text((positions["level"]["x"], positions["level"]["y"]),
@@ -736,7 +751,7 @@ class LevelingSystem(commands.Cog):
                         ranking_text, font_ranking, ranking_color, ranking_image_url
                     )
                     background.paste(ranking_surface, 
-                                   (positions["ranking"]["x"] - 10, positions["ranking"]["y"] - 10), 
+                                   (positions["ranking"]["x"] - 30, positions["ranking"]["y"] - 30), 
                                    ranking_surface)
                 else:
                     draw.text((positions["ranking"]["x"], positions["ranking"]["y"]),
@@ -761,7 +776,7 @@ class LevelingSystem(commands.Cog):
                     xp_text, font_xp, config.get("xp_text_color", [255, 255, 255]), xp_info_image_url
                 )
                 background.paste(xp_surface, 
-                               (positions["xp_text"]["x"] - 10, positions["xp_text"]["y"] - 10), 
+                               (positions["xp_text"]["x"] - 30, positions["xp_text"]["y"] - 30), 
                                xp_surface)
             else:
                 draw.text((positions["xp_text"]["x"], positions["xp_text"]["y"]), 
@@ -2939,6 +2954,10 @@ class LevelCardManagerView(discord.ui.View):
             embed = self.get_xp_progress_embed()
             embed.title = "<:ColorLOGO:1408828590241615883> XP Progress Color"
             embed.description = "Choose how to set your XP progress bar color"
+        elif self.mode == "xp_bar_color":
+            embed = self.get_xp_bar_embed()
+            embed.title = "<:ColorLOGO:1408828590241615883> XP Bar Color"
+            embed.description = "Choose how to set your XP bar color"
         elif self.mode == "background_color":
             embed = self.get_background_embed()
             embed.title = "<:ColorLOGO:1408828590241615883> Background Color"
@@ -2959,6 +2978,11 @@ class LevelCardManagerView(discord.ui.View):
             embed = self.get_ranking_text_embed()
             embed.title = "<:ColorLOGO:1408828590241615883> Ranking Text Color"
             embed.description = "Choose how to set your ranking text color"
+        else:
+            # Fallback pour les modes non prévus
+            embed = self.get_main_embed()
+            embed.title = "<:ColorLOGO:1408828590241615883> Color Settings"
+            embed.description = "Choose how to set your color"
 
         self.update_buttons()
         await interaction.response.edit_message(embed=embed, view=self)
@@ -2997,6 +3021,11 @@ class LevelCardManagerView(discord.ui.View):
             embed = self.get_ranking_text_embed()
             embed.title = "<:ImageLOGO:1407072328134951043> Ranking Text Image"
             embed.description = "Set a custom ranking text image overlay"
+        else:
+            # Fallback pour les modes non prévus
+            embed = self.get_main_embed()
+            embed.title = "<:ImageLOGO:1407072328134951043> Image Settings"
+            embed.description = "Set a custom image"
 
         self.update_buttons()
         await interaction.response.edit_message(embed=embed, view=self)
