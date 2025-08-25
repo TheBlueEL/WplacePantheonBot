@@ -1,4 +1,3 @@
-
 import discord
 from discord.ext import commands
 from discord import app_commands
@@ -103,26 +102,26 @@ class NotificationSystemView(discord.ui.View):
             description="Configure notification settings for the leveling system:",
             color=0xFFFFFF
         )
-        
+
         data = load_notification_data()
         settings = data.get("notification_settings", {})
-        
+
         # Level notifications status
         level_enabled = settings.get("level_notifications", {}).get("enabled", True)
         level_status = "<:OnLOGO:1407072463883472978> Enabled" if level_enabled else "<:OffLOGO:1407072621836894380> Disabled"
-        
+
         # Role notifications status
         role_enabled = settings.get("role_notifications", {}).get("enabled", False)
         role_status = "<:OnLOGO:1407072463883472978> Enabled" if role_enabled else "<:OffLOGO:1407072621836894380> Disabled"
-        
+
         # Custom notifications status
         custom_enabled = settings.get("custom_notifications", {}).get("enabled", False)
         custom_status = "<:OnLOGO:1407072463883472978> Enabled" if custom_enabled else "<:OffLOGO:1407072621836894380> Disabled"
-        
+
         embed.add_field(name="Level Notifications", value=level_status, inline=True)
         embed.add_field(name="Role Notifications", value=role_status, inline=True)
         embed.add_field(name="Custom Notifications", value=custom_status, inline=True)
-        
+
         return embed
 
     @discord.ui.button(label="Level Notification", style=discord.ButtonStyle.secondary, emoji="<a:XPLOGO:1409634015043915827>")
@@ -162,11 +161,11 @@ class LevelNotificationView(discord.ui.View):
         super().__init__(timeout=300)
         self.bot = bot
         self.user = user
-        
+
         # Initialize toggle button state
         data = load_notification_data()
         level_enabled = data.get("notification_settings", {}).get("level_notifications", {}).get("enabled", True)
-        
+
         # Update toggle button based on current state
         for item in self.children:
             if hasattr(item, 'callback') and hasattr(item.callback, 'callback') and item.callback.callback.__name__ == 'toggle_level_notifications':
@@ -183,35 +182,35 @@ class LevelNotificationView(discord.ui.View):
     def get_embed(self):
         data = load_notification_data()
         settings = data.get("notification_settings", {}).get("level_notifications", {})
-        
+
         embed = discord.Embed(
             title="<a:XPLOGO:1409634015043915827> Level Notification Settings",
             description="Configure level-up notifications:",
             color=0xFFFFFF
         )
-        
+
         enabled = settings.get("enabled", True)
         status = "<:OnLOGO:1407072463883472978> Enabled" if enabled else "<:OffLOGO:1407072621836894380> Disabled"
         cycle = settings.get("cycle", 1)
-        
+
         embed.add_field(name="Status", value=status, inline=True)
         embed.add_field(name="Notification Cycle", value=f"Every {cycle} level(s)", inline=True)
-        
+
         return embed
 
     @discord.ui.button(label="ON", style=discord.ButtonStyle.success, emoji="<:OnLOGO:1407072463883472978>")
     async def toggle_level_notifications(self, interaction: discord.Interaction, button: discord.ui.Button):
         data = load_notification_data()
         current_state = data.get("notification_settings", {}).get("level_notifications", {}).get("enabled", True)
-        
+
         if "notification_settings" not in data:
             data["notification_settings"] = {}
         if "level_notifications" not in data["notification_settings"]:
             data["notification_settings"]["level_notifications"] = {}
-            
+
         data["notification_settings"]["level_notifications"]["enabled"] = not current_state
         save_notification_data(data)
-        
+
         # Update button appearance
         if data["notification_settings"]["level_notifications"]["enabled"]:
             button.label = "ON"
@@ -221,7 +220,7 @@ class LevelNotificationView(discord.ui.View):
             button.label = "OFF"
             button.style = discord.ButtonStyle.danger
             button.emoji = "<:OffLOGO:1407072621836894380>"
-        
+
         embed = self.get_embed()
         await interaction.response.edit_message(embed=embed, view=self)
 
@@ -233,13 +232,13 @@ class LevelNotificationView(discord.ui.View):
     @discord.ui.button(label="Level Card", style=discord.ButtonStyle.secondary, emoji="<:CardLOGO:1409586383047233536>")
     async def level_card_settings(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.defer()
-        
+
         view = NotificationLevelCardView(self.bot, self.user)
         await view.generate_preview_image(interaction.user)
-        
+
         embed = view.get_main_embed()
         view.update_buttons()
-        
+
         await interaction.edit_original_response(embed=embed, view=view)
 
     @discord.ui.button(label="Back", style=discord.ButtonStyle.gray, emoji="<:BackLOGO:1407071474233114766>")
@@ -263,19 +262,19 @@ class CycleModal(discord.ui.Modal):
         try:
             cycle_value = int(self.cycle.value)
             data = load_notification_data()
-            
+
             # Get max level from leveling settings
             max_level = data.get("leveling_settings", {}).get("max_level", 100)
-            
+
             if 1 <= cycle_value <= max_level:
                 if "notification_settings" not in data:
                     data["notification_settings"] = {}
                 if "level_notifications" not in data["notification_settings"]:
                     data["notification_settings"]["level_notifications"] = {}
-                    
+
                 data["notification_settings"]["level_notifications"]["cycle"] = cycle_value
                 save_notification_data(data)
-                
+
                 await interaction.response.send_message(f"<:SucessLOGO:1407071637840592977> Notification cycle set to every {cycle_value} level(s)!", ephemeral=True)
             else:
                 await interaction.response.send_message(f"<:ErrorLOGO:1407071682031648850> Cycle must be between 1 and {max_level}!", ephemeral=True)
@@ -311,9 +310,9 @@ class NotificationLevelCardView(discord.ui.View):
             description="Configure the level-up notification card design (1080x1080 pixels)",
             color=0xFFFFFF
         )
-        
+
         config = self.get_config()
-        
+
         # Show current configuration
         config_status = ""
         if config.get("background_image"):
@@ -321,17 +320,17 @@ class NotificationLevelCardView(discord.ui.View):
         elif config.get("background_color"):
             bg = config["background_color"]
             config_status += f"<:BackgroundLOGO:1408834163309805579> Background: RGB({bg[0]}, {bg[1]}, {bg[2]})\n"
-        
+
         outline_enabled = config.get("outline_enabled", True)
         outline_status = "<:OnLOGO:1407072463883472978> Enabled" if outline_enabled else "<:OffLOGO:1407072621836894380> Disabled"
         config_status += f"<:ProfileLOGO:1408830057819930806> Profile Outline: {outline_status}\n"
-        
+
         text_outline_enabled = config.get("text_outline_enabled", True)
         text_outline_status = "<:OnLOGO:1407072463883472978> Enabled" if text_outline_enabled else "<:OffLOGO:1407072621836894380> Disabled"
         config_status += f"<:DescriptionLOGO:1407733417172533299> Text Outline: {text_outline_status}\n"
-        
+
         embed.add_field(name="Current Configuration", value=config_status, inline=False)
-        
+
         # Add preview image if available
         if hasattr(self, 'preview_image_url') and self.preview_image_url:
             import time
@@ -341,7 +340,7 @@ class NotificationLevelCardView(discord.ui.View):
             else:
                 image_url = self.preview_image_url + f"?refresh={timestamp}"
             embed.set_image(url=image_url)
-        
+
         return embed
 
     def get_background_embed(self):
@@ -350,7 +349,7 @@ class NotificationLevelCardView(discord.ui.View):
             description="Configure the background of your notification card",
             color=0xFFFFFF
         )
-        
+
         config = self.get_config()
         if config.get("background_color"):
             bg = config["background_color"]
@@ -383,13 +382,13 @@ class NotificationLevelCardView(discord.ui.View):
             description="Configure the profile picture outline",
             color=0xFFFFFF
         )
-        
+
         config = self.get_config()
         outline_enabled = config.get("outline_enabled", True)
         outline_status = "<:OnLOGO:1407072463883472978> Enabled" if outline_enabled else "<:OffLOGO:1407072621836894380> Disabled"
-        
+
         embed.add_field(name="Status", value=outline_status, inline=True)
-        
+
         if config.get("outline_color"):
             color = config["outline_color"]
             embed.add_field(
@@ -409,13 +408,13 @@ class NotificationLevelCardView(discord.ui.View):
             description="Configure text elements of the notification card",
             color=0xFFFFFF
         )
-        
+
         config = self.get_config()
         text_outline_enabled = config.get("text_outline_enabled", True)
         text_outline_status = "<:OnLOGO:1407072463883472978> Enabled" if text_outline_enabled else "<:OffLOGO:1407072621836894380> Disabled"
-        
+
         embed.add_field(name="Text Outline", value=text_outline_status, inline=True)
-        
+
         if config.get("text_outline_color"):
             color = config["text_outline_color"]
             embed.add_field(
@@ -431,7 +430,7 @@ class NotificationLevelCardView(discord.ui.View):
 
     def get_text_element_embed(self, element_type):
         config = self.get_config()
-        
+
         if element_type == "level":
             embed = discord.Embed(
                 title="<a:XPLOGO:1409634015043915827> Level Text Settings",
@@ -460,7 +459,7 @@ class NotificationLevelCardView(discord.ui.View):
                 color=0xFFFFFF
             )
             color = config.get("info_text_color", [200, 200, 200])
-        
+
         embed.add_field(
             name="Current Color",
             value=f"RGB({color[0]}, {color[1]}, {color[2]})",
@@ -645,13 +644,13 @@ class NotificationLevelCardView(discord.ui.View):
     def draw_text_with_outline(self, draw, text, position, font, color, outline_color, outline_width):
         """Draw text with outline"""
         x, y = position
-        
+
         # Draw outline
         for dx in range(-outline_width, outline_width + 1):
             for dy in range(-outline_width, outline_width + 1):
                 if dx != 0 or dy != 0:
                     draw.text((x + dx, y + dy), text, font=font, fill=outline_color)
-        
+
         # Draw main text
         draw.text((x, y), text, font=font, fill=color)
 
@@ -713,14 +712,14 @@ class NotificationLevelCardView(discord.ui.View):
 
             attachment = message.attachments[0]
             allowed_extensions = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.svg']
-            
+
             if not any(attachment.filename.lower().endswith(ext) for ext in allowed_extensions):
                 # Invalid file type
                 try:
                     await message.delete()
                 except:
                     pass
-                
+
                 error_embed = discord.Embed(
                     title="<:ErrorLOGO:1407071682031648850> Invalid File Type",
                     description="Please upload only image files with these extensions:\n`.png`, `.jpg`, `.jpeg`, `.gif`, `.webp`, `.bmp`, `.svg`",
@@ -729,8 +728,8 @@ class NotificationLevelCardView(discord.ui.View):
                 await message.channel.send(embed=error_embed, delete_after=5)
                 return False
 
-            # Download and upload image
-            local_file = await self.download_image_to_github(attachment.url)
+            # Download and upload image to GitHub
+            local_file = await view.download_image_to_github(attachment.url)
             if not local_file:
                 return False
 
@@ -741,119 +740,10 @@ class NotificationLevelCardView(discord.ui.View):
 
             # Apply image based on current mode
             config = view.get_config()
-            
+
             if view.current_image_type == "background":
                 # For background, use proportional resizing to fill entire 1080x1080 area
-                processed_url = await self.process_background_image(local_file, 1080, 1080)
-                if processed_url:
-                    config["background_image"] = processed_url
-                    config.pop("background_color", None)
-                else:
-                    config["background_image"] = local_file
-                    config.pop("background_color", None)
-            elif view.current_image_type == "profile_outline":
-                # For profile outline, process to match outline shape
-                config["outline_image"] = local_file
-            elif view.current_image_type in ["level_text", "username_text", "messages_text", "information_text"]:
-                # For text overlays, process to fit text area
-                text_key = f"{view.current_image_type.replace('_text', '')}_text_image"
-                
-                # Get text dimensions for processing
-                text_area_width = 400  # Default text area width
-                text_area_height = 100  # Default text area height
-                
-                # Process image to fit text area
-                processed_url = await self.process_text_image(local_file, text_area_width, text_area_height)
-                if processed_url:
-                    config[text_key] = processed_url
-                else:
-                    config[text_key] = local_file
-
-            view.save_config(config)
-            view.waiting_for_image = False
-
-            # Generate new preview
-            await view.generate_preview_image(message.author)
-
-            # Update view mode
-            view.mode = view.current_image_type
-
-            # Get appropriate embed
-            if view.current_image_type == "background":
-                embed = view.get_background_embed()
-                embed.title = "<:ImageLOGO:1407072328134951043> Background Image"
-                embed.description = "Set a custom background image"
-            elif view.current_image_type == "profile_outline":
-                embed = view.get_profile_outline_embed()
-                embed.title = "<:ImageLOGO:1407072328134951043> Profile Outline Image"
-                embed.description = "Set a custom profile outline image"
-            elif view.current_image_type in ["level_text", "username_text", "messages_text", "information_text"]:
-                element_type = view.current_image_type.replace("_text", "")
-                embed = view.get_text_element_embed(element_type)
-                embed.title = f"<:ImageLOGO:1407072328134951043> {element_type.title()} Text Image"
-                embed.description = f"Set a custom {element_type} text image overlay"
-            else:
-                embed = view.get_main_embed()
-
-            view.update_buttons()
-
-            # Find and update the original message
-            try:
-                channel = message.channel
-                async for msg in channel.history(limit=50):
-                    if msg.author == self.bot.user and msg.embeds:
-                        if "Upload Image" in msg.embeds[0].title:
-                            await msg.edit(embed=embed, view=view)
-                            break
-            except Exception as e:
-                print(f"Error updating message: {e}")
-
-            return True
-
-        except Exception as e:
-            print(f"Error handling image upload: {e}")
-            return False
-
-    async def handle_image_upload(self, message, view):
-        """Handle image uploads for notification card customization"""
-        try:
-            if not message.attachments:
-                return False
-
-            attachment = message.attachments[0]
-            allowed_extensions = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.svg']
-            
-            if not any(attachment.filename.lower().endswith(ext) for ext in allowed_extensions):
-                # Invalid file type
-                try:
-                    await message.delete()
-                except:
-                    pass
-                
-                error_embed = discord.Embed(
-                    title="<:ErrorLOGO:1407071682031648850> Invalid File Type",
-                    description="Please upload only image files with these extensions:\n`.png`, `.jpg`, `.jpeg`, `.gif`, `.webp`, `.bmp`, `.svg`",
-                    color=discord.Color.red()
-                )
-                await message.channel.send(embed=error_embed, delete_after=5)
-                return False
-
-            # Download and upload image
-            local_file = await self.download_image_to_github(attachment.url)
-            if not local_file:
-                return False
-
-            try:
-                await message.delete()
-            except:
-                pass
-
-            # Apply image based on current mode
-            config = view.get_config()
-            
-            if view.current_image_type == "background":
-                # For background, use proportional resizing to fill entire 1080x1080 area
-                processed_url = await self.process_background_image(local_file, 1080, 1080)
+                processed_url = await view.process_background_image(local_file, 1080, 1080)
                 if processed_url:
                     config["background_image"] = processed_url
                 else:
@@ -865,13 +755,13 @@ class NotificationLevelCardView(discord.ui.View):
             elif view.current_image_type in ["level_text", "username_text", "messages_text", "information_text"]:
                 # For text overlays, process to fit text area
                 text_key = f"{view.current_image_type.replace('_text', '')}_text_image"
-                
+
                 # Get text dimensions for processing
                 text_area_width = 400  # Default text area width
                 text_area_height = 100  # Default text area height
-                
+
                 # Process image to fit text area
-                processed_url = await self.process_text_image(local_file, text_area_width, text_area_height)
+                processed_url = await view.process_text_image(local_file, text_area_width, text_area_height)
                 if processed_url:
                     config[text_key] = processed_url
                 else:
@@ -976,10 +866,10 @@ class NotificationLevelCardView(discord.ui.View):
         """Create notification level card (1080x1080)"""
         try:
             config = self.get_config()
-            
+
             # Create 1080x1080 background
             background = Image.new("RGBA", (1080, 1080), (0, 0, 0, 0))
-            
+
             # Set background
             if config.get("background_image"):
                 bg_data = await self.download_image(config["background_image"])
@@ -993,7 +883,7 @@ class NotificationLevelCardView(discord.ui.View):
             else:
                 bg_color = tuple(config.get("background_color", [245, 55, 48])) + (255,)
                 background = Image.new("RGBA", (1080, 1080), bg_color)
-            
+
             # Download user avatar
             avatar_url = user.display_avatar.url
             avatar_data = await self.download_image(avatar_url)
@@ -1002,39 +892,39 @@ class NotificationLevelCardView(discord.ui.View):
                 avatar_pos = config.get("avatar_position", {"x": 190, "y": 190, "size": 300})
                 size = avatar_pos["size"]
                 avatar = avatar.resize((size, size), Image.Resampling.LANCZOS)
-                
+
                 # Make avatar circular
                 mask = self.create_circle_mask((size, size))
                 avatar.putalpha(mask)
-                
+
                 # Paste avatar
                 background.paste(avatar, (avatar_pos["x"], avatar_pos["y"]), avatar)
-                
+
                 # Add outline if enabled
                 if config.get("outline_enabled", True):
                     outline_pos = config.get("outline_position", {"x": 190, "y": 190, "size": 300})
                     outline_url = "https://raw.githubusercontent.com/TheBlueEL/pictures/refs/heads/main/ProfileOutline.png"
-                    
+
                     if config.get("outline_image"):
                         outline_url = config["outline_image"]
-                    
+
                     outline_data = await self.download_image(outline_url)
                     if outline_data:
                         outline = Image.open(io.BytesIO(outline_data)).convert("RGBA")
                         outline = outline.resize((outline_pos["size"], outline_pos["size"]), Image.Resampling.LANCZOS)
-                        
+
                         # Apply color if specified and not using custom image
                         if config.get("outline_color") and not config.get("outline_image"):
                             color_override = config["outline_color"]
                             colored_outline = Image.new("RGBA", outline.size, tuple(color_override + [255]))
                             colored_outline.putalpha(outline.split()[-1])
                             outline = colored_outline
-                        
+
                         background.paste(outline, (outline_pos["x"], outline_pos["y"]), outline)
-            
+
             # Add text
             draw = ImageDraw.Draw(background)
-            
+
             # Load fonts
             try:
                 font_username = ImageFont.truetype("PlayPretend.otf", config.get("username_position", {}).get("font_size", 80))
@@ -1046,18 +936,18 @@ class NotificationLevelCardView(discord.ui.View):
                 font_level = ImageFont.load_default()
                 font_message = ImageFont.load_default()
                 font_info = ImageFont.load_default()
-            
+
             # Text outline settings
             text_outline_enabled = config.get("text_outline_enabled", True)
             outline_color = tuple(config.get("text_outline_color", [0, 0, 0]))
             outline_width = config.get("text_outline_width", 2)
-            
+
             # Draw username with optional image overlay
             username_pos = config.get("username_position", {"x": 540, "y": 200})
             username_color = tuple(config.get("username_color", [255, 255, 255]))
             username_text = user.name
             username_image_url = config.get("username_text_image")
-            
+
             if username_image_url and username_image_url != "None":
                 username_surface = await self.create_text_with_image_overlay(
                     username_text, font_username, username_color, username_image_url
@@ -1071,13 +961,13 @@ class NotificationLevelCardView(discord.ui.View):
                                               font_username, username_color, outline_color, outline_width)
                 else:
                     draw.text((username_pos["x"], username_pos["y"]), username_text, font=font_username, fill=username_color)
-            
+
             # Draw level with optional image overlay
             level_pos = config.get("level_position", {"x": 540, "y": 300})
             level_color = tuple(config.get("level_text_color", [255, 255, 255]))
             level_text = f"LEVEL {level}"
             level_image_url = config.get("level_text_image")
-            
+
             if level_image_url and level_image_url != "None":
                 level_surface = await self.create_text_with_image_overlay(
                     level_text, font_level, level_color, level_image_url
@@ -1091,13 +981,13 @@ class NotificationLevelCardView(discord.ui.View):
                                               font_level, level_color, outline_color, outline_width)
                 else:
                     draw.text((level_pos["x"], level_pos["y"]), level_text, font=font_level, fill=level_color)
-            
+
             # Draw message with optional image overlay
             message_pos = config.get("message_position", {"x": 540, "y": 450})
             message_color = tuple(config.get("message_text_color", [255, 255, 255]))
             message_text = "You just reached a new level !"
             message_image_url = config.get("message_text_image")
-            
+
             if message_image_url and message_image_url != "None":
                 message_surface = await self.create_text_with_image_overlay(
                     message_text, font_message, message_color, message_image_url
@@ -1111,13 +1001,13 @@ class NotificationLevelCardView(discord.ui.View):
                                               font_message, message_color, outline_color, outline_width)
                 else:
                     draw.text((message_pos["x"], message_pos["y"]), message_text, font=font_message, fill=message_color)
-            
+
             # Draw info with optional image overlay
             info_pos = config.get("info_position", {"x": 540, "y": 550})
             info_color = tuple(config.get("info_text_color", [200, 200, 200]))
             info_text = "Type /level for more information"
             info_image_url = config.get("information_text_image")
-            
+
             if info_image_url and info_image_url != "None":
                 info_surface = await self.create_text_with_image_overlay(
                     info_text, font_info, info_color, info_image_url
@@ -1131,12 +1021,12 @@ class NotificationLevelCardView(discord.ui.View):
                                               font_info, info_color, outline_color, outline_width)
                 else:
                     draw.text((info_pos["x"], info_pos["y"]), info_text, font=font_info, fill=info_color)
-            
+
             output = io.BytesIO()
             background.save(output, format='PNG')
             output.seek(0)
             return output
-            
+
         except Exception as e:
             print(f"Error creating notification level card: {e}")
             return None
@@ -1145,7 +1035,7 @@ class NotificationLevelCardView(discord.ui.View):
         """Generate preview image and upload to GitHub"""
         try:
             preview_image = await self.create_notification_level_card(interaction_user, 50)
-            
+
             if preview_image:
                 # Save preview to temp file
                 os.makedirs('images', exist_ok=True)
@@ -1153,36 +1043,36 @@ class NotificationLevelCardView(discord.ui.View):
                 timestamp = int(time.time())
                 filename = f"notification_level_preview_{self.user_id}_{timestamp}.png"
                 file_path = os.path.join('images', filename)
-                
+
                 with open(file_path, 'wb') as f:
                     f.write(preview_image.getvalue())
-                
+
                 # Upload to GitHub
                 try:
                     from github_sync import GitHubSync
                     github_sync = GitHubSync()
                     sync_success = await github_sync.sync_image_to_pictures_repo(file_path)
-                    
+
                     if sync_success:
                         try:
                             os.remove(file_path)
                         except:
                             pass
-                        
+
                         filename = os.path.basename(file_path)
                         self.preview_image_url = f"https://raw.githubusercontent.com/TheBlueEL/pictures/main/{filename}?t={timestamp}"
                         return True
                 except ImportError:
                     print("GitHub sync not available")
-            
+
         except Exception as e:
             print(f"Error generating preview: {e}")
-        
+
         return False
 
     def update_buttons(self):
         self.clear_items()
-        
+
         if self.waiting_for_image:
             back_button = discord.ui.Button(
                 label="Back",
@@ -1191,7 +1081,7 @@ class NotificationLevelCardView(discord.ui.View):
             )
             back_button.callback = self.back_from_image_upload
             self.add_item(back_button)
-            
+
         elif self.mode == "main":
             # Main buttons
             background_button = discord.ui.Button(
@@ -1201,7 +1091,7 @@ class NotificationLevelCardView(discord.ui.View):
                 row=0
             )
             background_button.callback = self.background_settings
-            
+
             profile_outline_button = discord.ui.Button(
                 label="Profile Outline",
                 style=discord.ButtonStyle.secondary,
@@ -1209,7 +1099,7 @@ class NotificationLevelCardView(discord.ui.View):
                 row=0
             )
             profile_outline_button.callback = self.profile_outline_settings
-            
+
             text_settings_button = discord.ui.Button(
                 label="Text Settings",
                 style=discord.ButtonStyle.secondary,
@@ -1217,7 +1107,7 @@ class NotificationLevelCardView(discord.ui.View):
                 row=0
             )
             text_settings_button.callback = self.text_settings
-            
+
             back_button = discord.ui.Button(
                 label="Back",
                 style=discord.ButtonStyle.gray,
@@ -1225,12 +1115,12 @@ class NotificationLevelCardView(discord.ui.View):
                 row=1
             )
             back_button.callback = self.back_to_notification
-            
+
             self.add_item(background_button)
             self.add_item(profile_outline_button)
             self.add_item(text_settings_button)
             self.add_item(back_button)
-            
+
         elif self.mode == "background":
             # Background buttons
             color_button = discord.ui.Button(
@@ -1239,63 +1129,63 @@ class NotificationLevelCardView(discord.ui.View):
                 emoji="<:ColorLOGO:1408828590241615883>"
             )
             color_button.callback = self.background_color_settings
-            
+
             image_button = discord.ui.Button(
                 label="Image",
                 style=discord.ButtonStyle.secondary,
                 emoji="<:ImageLOGO:1407072328134951043>"
             )
             image_button.callback = self.background_image_settings
-            
+
             back_button = discord.ui.Button(
                 label="Back",
                 style=discord.ButtonStyle.gray,
                 emoji="<:BackLOGO:1407071474233114766>"
             )
             back_button.callback = self.back_to_main
-            
+
             self.add_item(color_button)
             self.add_item(image_button)
             self.add_item(back_button)
-            
+
         elif self.mode == "profile_outline":
             # Profile outline buttons
             config = self.get_config()
             outline_enabled = config.get("outline_enabled", True)
-            
+
             toggle_button = discord.ui.Button(
                 label="ON" if outline_enabled else "OFF",
                 style=discord.ButtonStyle.success if outline_enabled else discord.ButtonStyle.danger,
                 emoji="<:OnLOGO:1407072463883472978>" if outline_enabled else "<:OffLOGO:1407072621836894380>"
             )
             toggle_button.callback = self.toggle_profile_outline
-            
+
             color_button = discord.ui.Button(
                 label="Color",
                 style=discord.ButtonStyle.secondary,
                 emoji="<:ColorLOGO:1408828590241615883>"
             )
             color_button.callback = self.profile_outline_color_settings
-            
+
             image_button = discord.ui.Button(
                 label="Image",
                 style=discord.ButtonStyle.secondary,
                 emoji="<:ImageLOGO:1407072328134951043>"
             )
             image_button.callback = self.profile_outline_image_settings
-            
+
             back_button = discord.ui.Button(
                 label="Back",
                 style=discord.ButtonStyle.gray,
                 emoji="<:BackLOGO:1407071474233114766>"
             )
             back_button.callback = self.back_to_main
-            
+
             self.add_item(toggle_button)
             self.add_item(color_button)
             self.add_item(image_button)
             self.add_item(back_button)
-            
+
         elif self.mode == "text_settings":
             # Text settings buttons
             level_button = discord.ui.Button(
@@ -1305,7 +1195,7 @@ class NotificationLevelCardView(discord.ui.View):
                 row=0
             )
             level_button.callback = self.level_text_settings
-            
+
             username_button = discord.ui.Button(
                 label="Username",
                 style=discord.ButtonStyle.secondary,
@@ -1313,7 +1203,7 @@ class NotificationLevelCardView(discord.ui.View):
                 row=0
             )
             username_button.callback = self.username_text_settings
-            
+
             messages_button = discord.ui.Button(
                 label="Messages", 
                 style=discord.ButtonStyle.secondary,
@@ -1321,7 +1211,7 @@ class NotificationLevelCardView(discord.ui.View):
                 row=1
             )
             messages_button.callback = self.messages_text_settings
-            
+
             information_button = discord.ui.Button(
                 label="Information",
                 style=discord.ButtonStyle.secondary,
@@ -1329,7 +1219,7 @@ class NotificationLevelCardView(discord.ui.View):
                 row=1
             )
             information_button.callback = self.information_text_settings
-            
+
             back_button = discord.ui.Button(
                 label="Back",
                 style=discord.ButtonStyle.gray,
@@ -1337,13 +1227,13 @@ class NotificationLevelCardView(discord.ui.View):
                 row=2
             )
             back_button.callback = self.back_to_main
-            
+
             self.add_item(level_button)
             self.add_item(username_button)
             self.add_item(messages_button)
             self.add_item(information_button)
             self.add_item(back_button)
-            
+
         elif self.mode in ["level_text", "username_text", "messages_text", "information_text"]:
             # Text element buttons
             color_button = discord.ui.Button(
@@ -1352,25 +1242,25 @@ class NotificationLevelCardView(discord.ui.View):
                 emoji="<:ColorLOGO:1408828590241615883>"
             )
             color_button.callback = self.text_color_settings
-            
+
             image_button = discord.ui.Button(
                 label="Image",
                 style=discord.ButtonStyle.secondary,
                 emoji="<:ImageLOGO:1407072328134951043>"
             )
             image_button.callback = self.text_image_settings
-            
+
             back_button = discord.ui.Button(
                 label="Back",
                 style=discord.ButtonStyle.gray,
                 emoji="<:BackLOGO:1407071474233114766>"
             )
             back_button.callback = self.back_to_text_settings
-            
+
             self.add_item(color_button)
             self.add_item(image_button)
             self.add_item(back_button)
-            
+
         elif self.mode.endswith("_color"):
             # Color settings buttons
             hex_button = discord.ui.Button(
@@ -1379,25 +1269,25 @@ class NotificationLevelCardView(discord.ui.View):
                 emoji="<:HEXcodeLOGO:1408833347404304434>"
             )
             hex_button.callback = self.hex_color_modal
-            
+
             rgb_button = discord.ui.Button(
                 label="RGB Code",
                 style=discord.ButtonStyle.secondary,
                 emoji="<:RGBcodeLOGO:1408831982141575290>"
             )
             rgb_button.callback = self.rgb_color_modal
-            
+
             back_button = discord.ui.Button(
                 label="Back",
                 style=discord.ButtonStyle.gray,
                 emoji="<:BackLOGO:1407071474233114766>"
             )
             back_button.callback = self.back_to_parent_mode
-            
+
             self.add_item(hex_button)
             self.add_item(rgb_button)
             self.add_item(back_button)
-            
+
         elif self.mode.endswith("_image"):
             # Image settings buttons
             url_button = discord.ui.Button(
@@ -1406,14 +1296,14 @@ class NotificationLevelCardView(discord.ui.View):
                 emoji="<:URLLOGO:1407071963809054931>"
             )
             url_button.callback = self.image_url_modal
-            
+
             upload_button = discord.ui.Button(
                 label="Upload Image",
                 style=discord.ButtonStyle.secondary,
                 emoji="<:UploadLOGO:1407072005567545478>"
             )
             upload_button.callback = self.upload_image
-            
+
             # Show clear button if image exists
             config = self.get_config()
             has_image = False
@@ -1424,7 +1314,7 @@ class NotificationLevelCardView(discord.ui.View):
             elif self.mode.endswith("_text_image"):
                 text_key = f"{self.mode.replace('_text_image', '')}_text_image"
                 has_image = config.get(text_key) and config[text_key] != "None"
-            
+
             if has_image:
                 clear_button = discord.ui.Button(
                     label="Clear Image",
@@ -1433,14 +1323,14 @@ class NotificationLevelCardView(discord.ui.View):
                 )
                 clear_button.callback = self.clear_image
                 self.add_item(clear_button)
-            
+
             back_button = discord.ui.Button(
                 label="Back",
                 style=discord.ButtonStyle.gray,
                 emoji="<:BackLOGO:1407071474233114766>"
             )
             back_button.callback = self.back_to_parent_mode
-            
+
             self.add_item(url_button)
             self.add_item(upload_button)
             self.add_item(back_button)
@@ -1501,7 +1391,7 @@ class NotificationLevelCardView(discord.ui.View):
         config = self.get_config()
         config["outline_enabled"] = not config.get("outline_enabled", True)
         self.save_config(config)
-        
+
         await self.generate_preview_image(interaction.user)
         embed = self.get_profile_outline_embed()
         self.update_buttons()
@@ -1574,7 +1464,7 @@ class NotificationLevelCardView(discord.ui.View):
         await interaction.response.defer()
 
         config = self.get_config()
-        
+
         if self.mode == "background_image":
             config.pop("background_image", None)
             # Restore default background color
@@ -1622,7 +1512,7 @@ class NotificationLevelCardView(discord.ui.View):
             self.mode = self.mode.replace("_color", "")
         elif self.mode.endswith("_image"):
             self.mode = self.mode.replace("_image", "")
-        
+
         if self.mode == "background":
             embed = self.get_background_embed()
         elif self.mode == "profile_outline":
@@ -1632,14 +1522,14 @@ class NotificationLevelCardView(discord.ui.View):
             embed = self.get_text_element_embed(element_type)
         else:
             embed = self.get_main_embed()
-            
+
         self.update_buttons()
         await interaction.response.edit_message(embed=embed, view=self)
 
     async def back_from_image_upload(self, interaction: discord.Interaction):
         self.waiting_for_image = False
         self.mode = self.current_image_type + "_image"
-        
+
         if self.mode == "background_image":
             embed = self.get_background_embed()
             embed.title = "<:ImageLOGO:1407072328134951043> Background Image"
@@ -1650,7 +1540,7 @@ class NotificationLevelCardView(discord.ui.View):
             embed.description = "Set a custom profile outline image"
         else:
             embed = self.get_main_embed()
-            
+
         self.update_buttons()
         await interaction.response.edit_message(embed=embed, view=self)
 
@@ -1700,7 +1590,7 @@ class NotificationHexColorModal(discord.ui.Modal):
 
             self.view.save_config(config)
             await self.view.generate_preview_image(interaction.user)
-            
+
             # Return to appropriate embed
             self.view.mode = self.view.mode.replace("_color", "")
             if self.view.mode == "background":
@@ -1710,10 +1600,10 @@ class NotificationHexColorModal(discord.ui.Modal):
             elif self.view.mode in ["level_text", "username_text", "messages_text", "information_text"]:
                 element_type = self.view.mode.replace("_text", "")
                 embed = self.view.get_text_element_embed(element_type)
-            
+
             self.view.update_buttons()
             await interaction.edit_original_response(embed=embed, view=self.view)
-            
+
         except ValueError:
             error_embed = discord.Embed(
                 title="<:ErrorLOGO:1407071682031648850> Invalid Hex Color",
@@ -1779,7 +1669,7 @@ class NotificationRGBColorModal(discord.ui.Modal):
 
             self.view.save_config(config)
             await self.view.generate_preview_image(interaction.user)
-            
+
             # Return to appropriate embed
             self.view.mode = self.view.mode.replace("_color", "")
             if self.view.mode == "background":
@@ -1789,10 +1679,10 @@ class NotificationRGBColorModal(discord.ui.Modal):
             elif self.view.mode in ["level_text", "username_text", "messages_text", "information_text"]:
                 element_type = self.view.mode.replace("_text", "")
                 embed = self.view.get_text_element_embed(element_type)
-            
+
             self.view.update_buttons()
             await interaction.edit_original_response(embed=embed, view=self.view)
-            
+
         except ValueError:
             error_embed = discord.Embed(
                 title="<:ErrorLOGO:1407071682031648850> Invalid RGB Values",
@@ -1837,13 +1727,13 @@ class NotificationImageURLModal(discord.ui.Modal):
 
         self.view.save_config(config)
         await self.view.generate_preview_image(interaction.user)
-        
+
         # Return to appropriate embed
         self.view.mode = self.view.mode.replace("_image", "")
         if self.view.mode == "background":
             embed = self.view.get_background_embed()
         elif self.view.mode == "profile_outline":
             embed = self.view.get_profile_outline_embed()
-        
+
         self.view.update_buttons()
         await interaction.edit_original_response(embed=embed, view=self.view)
