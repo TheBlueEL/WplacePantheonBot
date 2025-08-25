@@ -1722,6 +1722,23 @@ class LevelSystemMainView(discord.ui.View):
         self.bot = bot
         self.user = user
         self.demo_card_url = None
+        
+        # Initialize toggle button state based on current system status
+        data = load_leveling_data()
+        system_enabled = data["leveling_settings"]["enabled"]
+        
+        # Find and update the toggle button
+        for item in self.children:
+            if hasattr(item, 'callback') and hasattr(item.callback, 'callback') and item.callback.callback.__name__ == 'toggle_system':
+                if system_enabled:
+                    item.label = "ON"
+                    item.style = discord.ButtonStyle.success
+                    item.emoji = "<:OnLOGO:1407072463883472978>"
+                else:
+                    item.label = "OFF"
+                    item.style = discord.ButtonStyle.danger
+                    item.emoji = "<:OffLOGO:1407072621836894380>"
+                break
 
     def get_main_embed(self):
         data = load_leveling_data()
@@ -1782,7 +1799,7 @@ class LevelSystemMainView(discord.ui.View):
         embed = view.get_main_embed()
         await interaction.response.edit_message(embed=embed, view=view)
 
-    @discord.ui.button(label="", style=discord.ButtonStyle.success, emoji="<:OnLOGO:1407072463883472978>")
+    @discord.ui.button(label="ON", style=discord.ButtonStyle.success, emoji="<:OnLOGO:1407072463883472978>")
     async def toggle_system(self, interaction: discord.Interaction, button: discord.ui.Button):
         data = load_leveling_data()
         current_state = data["leveling_settings"]["enabled"]
@@ -1801,29 +1818,6 @@ class LevelSystemMainView(discord.ui.View):
 
         embed = self.get_main_embed()
         await interaction.response.edit_message(embed=embed, view=self)
-    
-    def __init__(self, bot, user):
-        super().__init__(timeout=300)
-        self.bot = bot
-        self.user = user
-        self.demo_card_url = None
-        
-        # Initialize toggle button state
-        data = load_leveling_data()
-        system_enabled = data["leveling_settings"]["enabled"]
-        
-        # Update the toggle button based on current state
-        for item in self.children:
-            if hasattr(item, 'callback') and item.callback.__name__ == 'toggle_system':
-                if system_enabled:
-                    item.label = "ON"
-                    item.style = discord.ButtonStyle.success
-                    item.emoji = "<:OnLOGO:1407072463883472978>"
-                else:
-                    item.label = "OFF"
-                    item.style = discord.ButtonStyle.danger
-                    item.emoji = "<:OffLOGO:1407072621836894380>"
-                break
 
 class RewardSettingsView(discord.ui.View):
     def __init__(self, bot, user):
