@@ -124,6 +124,33 @@ class LevelingSystem(commands.Cog):
         draw.ellipse((0, 0, size[0], size[1]), fill=255)
         return mask
 
+    def resize_xp_bar_image_proportionally(self, image, target_width, target_height):
+        """Resize XP bar image maintaining proportions and cropping from center"""
+        try:
+            # Calculate aspect ratios
+            original_ratio = image.width / image.height
+            target_ratio = target_width / target_height
+
+            if original_ratio > target_ratio:
+                # Image is wider, crop width from center
+                new_height = image.height
+                new_width = int(new_height * target_ratio)
+                left = (image.width - new_width) // 2
+                cropped = image.crop((left, 0, left + new_width, new_height))
+            else:
+                # Image is taller, crop height from center
+                new_width = image.width
+                new_height = int(new_width / target_ratio)
+                top = (image.height - new_height) // 2
+                cropped = image.crop((0, top, new_width, top + new_height))
+
+            # Resize to exact target size
+            return cropped.resize((target_width, target_height), Image.Resampling.LANCZOS)
+
+        except Exception as e:
+            print(f"Error resizing XP bar image: {e}")
+            return image.resize((target_width, target_height), Image.Resampling.LANCZOS)
+
     async def apply_text_image_overlay(self, text_image_url, text_surface, text_bbox):
         """Apply image overlay to text using mask technique"""
         try:
@@ -157,6 +184,39 @@ class LevelingSystem(commands.Cog):
         except Exception as e:
             print(f"Error applying text image overlay: {e}")
             return text_surface
+
+    async def create_text_with_image_overlay(self, text, font, color, image_url=None):
+        """Create text with optional image overlay"""
+        try:
+            # Create text surface
+            text_bbox = font.getbbox(text)
+            text_width = text_bbox[2] - text_bbox[0]
+            text_height = text_bbox[3] - text_bbox[1]
+            
+            # Create temporary image for text
+            temp_img = Image.new('RGBA', (text_width + 20, text_height + 20), (0, 0, 0, 0))
+            temp_draw = ImageDraw.Draw(temp_img)
+            
+            # Draw text
+            temp_draw.text((10, 10), text, font=font, fill=tuple(color))
+            
+            # Apply image overlay if provided
+            if image_url and image_url != "None":
+                text_bbox_adjusted = (10, 10, 10 + text_width, 10 + text_height)
+                temp_img = await self.apply_text_image_overlay(image_url, temp_img, text_bbox_adjusted)
+            
+            return temp_img
+            
+        except Exception as e:
+            print(f"Error creating text with image overlay: {e}")
+            # Fallback to basic text
+            text_bbox = font.getbbox(text)
+            text_width = text_bbox[2] - text_bbox[0]
+            text_height = text_bbox[3] - text_bbox[1]
+            temp_img = Image.new('RGBA', (text_width + 20, text_height + 20), (0, 0, 0, 0))
+            temp_draw = ImageDraw.Draw(temp_img)
+            temp_draw.text((10, 10), text, font=font, fill=tuple(color))
+            return temp_img
 
     def calculate_user_ranking(self, user_id):
         """Calculate user's ranking position compared to all other users"""
@@ -423,7 +483,12 @@ class LevelingSystem(commands.Cog):
                 if "x" in xp_bar_config and "y" in xp_bar_config:
                     # Use custom position and resize if width/height specified
                     if "width" in xp_bar_config and "height" in xp_bar_config:
-                        levelbar = levelbar.resize((xp_bar_config["width"], xp_bar_config["height"]), Image.Resampling.LANCZOS)
+                        # Use proportional resizing to maintain aspect ratio
+                        levelbar = self.resize_xp_bar_image_proportionally(
+                            levelbar, 
+                            xp_bar_config["width"], 
+                            xp_bar_config["height"]
+                        )
                     levelbar_x = xp_bar_config["x"]
                     levelbar_y = xp_bar_config["y"]
                 else:
@@ -521,11 +586,21 @@ class LevelingSystem(commands.Cog):
                     font_username = ImageFont.load_default()
                     font_level = ImageFont.load_default()
 
-            # Draw username with configurable color
+            # Draw username with configurable color and optional image overlay
             username = user.name
             username_color = config.get("username_color", [255, 255, 255]) # Default white
-            draw.text((positions["username"]["x"], positions["username"]["y"]),
-                     username, font=font_username, fill=tuple(username_color))
+            username_image_url = config.get("username_image")
+            
+            if username_image_url and username_image_url != "None":
+                username_surface = await self.create_text_with_image_overlay(
+                    username, font_username, username_color, username_image_url
+                )
+                background.paste(username_surface, 
+                               (positions["username"]["x"] - 10, positions["username"]["y"] - 10), 
+                               username_surface)
+            else:
+                draw.text((positions["username"]["x"], positions["username"]["y"]),
+                         username, font=font_username, fill=tuple(username_color))
 
             # Draw discriminator next to username
             discriminator_config = config.get("discriminator_position", {})
@@ -544,17 +619,28 @@ class LevelingSystem(commands.Cog):
                 draw.text((positions["discriminator"]["x"], positions["discriminator"]["y"]),
                          discriminator, font=font_discriminator, fill=tuple(discriminator_color))
 
-            # Draw level with configurable color
+            # Draw level with configurable color and optional image overlay
             level_text = f"LEVEL {user_data['level']}"
             level_color = config.get("level_color", [245, 55, 48]) # Default red
-            draw.text((positions["level"]["x"], positions["level"]["y"]),
-                     level_text, font=font_level, fill=tuple(level_color))
+            level_image_url = config.get("level_text_image")
+            
+            if level_image_url and level_image_url != "None":
+                level_surface = await self.create_text_with_image_overlay(
+                    level_text, font_level, level_color, level_image_url
+                )
+                background.paste(level_surface, 
+                               (positions["level"]["x"] - 10, positions["level"]["y"] - 10), 
+                               level_surface)
+            else:
+                draw.text((positions["level"]["x"], positions["level"]["y"]),
+                         level_text, font=font_level, fill=tuple(level_color))
 
-            # Draw ranking position
+            # Draw ranking position with optional image overlay
             ranking_config = config.get("ranking_position", {})
             if ranking_config:
                 ranking_text = f"#{user_ranking}"
                 ranking_color = ranking_config.get("color", [255, 255, 255])
+                ranking_image_url = ranking_config.get("background_image")
 
                 try:
                     font_ranking = ImageFont.truetype("PlayPretend.otf", ranking_config.get("font_size", 60))
@@ -564,12 +650,21 @@ class LevelingSystem(commands.Cog):
                     except IOError:
                         font_ranking = ImageFont.load_default()
 
-                draw.text((positions["ranking"]["x"], positions["ranking"]["y"]),
-                         ranking_text, font=font_ranking, fill=tuple(ranking_color))
+                if ranking_image_url and ranking_image_url != "None":
+                    ranking_surface = await self.create_text_with_image_overlay(
+                        ranking_text, font_ranking, ranking_color, ranking_image_url
+                    )
+                    background.paste(ranking_surface, 
+                                   (positions["ranking"]["x"] - 10, positions["ranking"]["y"] - 10), 
+                                   ranking_surface)
+                else:
+                    draw.text((positions["ranking"]["x"], positions["ranking"]["y"]),
+                             ranking_text, font=font_ranking, fill=tuple(ranking_color))
 
-            # Draw XP progress text
+            # Draw XP progress text with optional image overlay
             xp_needed, current_xp_in_level = get_xp_for_next_level(user_data["xp"])
             xp_text = f"{current_xp_in_level}/{xp_needed} XP"
+            xp_info_image_url = config.get("xp_info_image")
 
             try:
                 font_xp = ImageFont.truetype("PlayPretend.otf", config["xp_text_position"]["font_size"])
@@ -580,8 +675,16 @@ class LevelingSystem(commands.Cog):
                 except IOError:
                     font_xp = ImageFont.load_default()
 
-            # Position XP text using dynamic positions
-            draw.text((positions["xp_text"]["x"], positions["xp_text"]["y"]), xp_text, font=font_xp, fill=tuple(config.get("xp_text_color", [255, 255, 255])))
+            if xp_info_image_url and xp_info_image_url != "None":
+                xp_surface = await self.create_text_with_image_overlay(
+                    xp_text, font_xp, config.get("xp_text_color", [255, 255, 255]), xp_info_image_url
+                )
+                background.paste(xp_surface, 
+                               (positions["xp_text"]["x"] - 10, positions["xp_text"]["y"] - 10), 
+                               xp_surface)
+            else:
+                draw.text((positions["xp_text"]["x"], positions["xp_text"]["y"]), 
+                         xp_text, font=font_xp, fill=tuple(config.get("xp_text_color", [255, 255, 255])))
 
 
             # If it's an animated GIF, process all frames
