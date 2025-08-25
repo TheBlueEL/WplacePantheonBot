@@ -213,49 +213,21 @@ class LevelingSystem(commands.Cog):
                     text_y = padding
                     
                     # Épaissir le masque en dessinant le texte plusieurs fois avec de légers décalages
-                    for dx in range(-2, 3):
-                        for dy in range(-2, 3):
+                    for dx in range(-3, 4):
+                        for dy in range(-3, 4):
                             mask_draw.text((text_x + dx, text_y + dy), text, font=font, fill=255)
                     
-                    # Redimensionner l'image de texture pour qu'elle soit plus grande que le texte
-                    scale_factor = 1.5  # Agrandir l'image de 50%
-                    scaled_width = int(text_width * scale_factor)
-                    scaled_height = int(text_height * scale_factor)
+                    # Redimensionner l'image de texture pour couvrir ENTIÈREMENT le canvas
+                    # Au lieu de rogner en hauteur, on va s'assurer que l'image couvre tout
+                    overlay_resized = overlay_img.resize((canvas_width, canvas_height), Image.Resampling.LANCZOS)
                     
-                    # Calculer le ratio pour couvrir complètement le texte
-                    original_ratio = overlay_img.width / overlay_img.height
-                    target_ratio = scaled_width / scaled_height
-                    
-                    if original_ratio > target_ratio:
-                        # Image plus large, ajuster sur la hauteur
-                        new_height = scaled_height
-                        new_width = int(new_height * original_ratio)
-                    else:
-                        # Image plus haute, ajuster sur la largeur
-                        new_width = scaled_width
-                        new_height = int(new_width / original_ratio)
-                    
-                    # Redimensionner l'image
-                    overlay_resized = overlay_img.resize((new_width, new_height), Image.Resampling.LANCZOS)
-                    
-                    # Rogner depuis le centre
-                    left = (new_width - scaled_width) // 2
-                    top = (new_height - scaled_height) // 2
-                    right = left + scaled_width
-                    bottom = top + scaled_height
-                    overlay_cropped = overlay_resized.crop((left, top, right, bottom))
-                    
-                    # Créer l'image finale
+                    # Créer l'image finale avec la texture qui couvre tout le canvas
                     result = Image.new('RGBA', (canvas_width, canvas_height), (0, 0, 0, 0))
                     
-                    # Centrer l'image de texture sur le canvas
-                    texture_x = (canvas_width - scaled_width) // 2
-                    texture_y = (canvas_height - scaled_height) // 2
+                    # Coller l'image de texture sur tout le canvas
+                    result.paste(overlay_resized, (0, 0))
                     
-                    # Coller l'image de texture
-                    result.paste(overlay_cropped, (texture_x, texture_y))
-                    
-                    # Appliquer le masque de texte
+                    # Appliquer le masque de texte pour ne garder que la partie du texte
                     result.putalpha(text_mask)
                     
                     return result
