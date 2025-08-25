@@ -2999,7 +2999,7 @@ class LevelCardManagerView(discord.ui.View):
             # Leveling Bar main buttons
             xp_info_button = discord.ui.Button(
                 label="XP Info",
-                style=discord.ButtonStyle.primary,
+                style=discord.ButtonStyle.secondary,
                 emoji="<:XPInfoLOGO:1409633663389405294>"
             )
             xp_info_button.callback = self.xp_info_settings
@@ -3230,7 +3230,7 @@ class LevelCardManagerView(discord.ui.View):
             # Content main buttons
             level_button = discord.ui.Button(
                 label="Level",
-                style=discord.ButtonStyle.primary,
+                style=discord.ButtonStyle.secondary,
                 emoji="<a:XPLOGO:1409634015043915827>"
             )
             level_button.callback = self.level_text_settings
