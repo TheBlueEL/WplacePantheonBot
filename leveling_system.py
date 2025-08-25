@@ -66,41 +66,6 @@ def load_leveling_data():
                     }
                 }
             },
-            "level_settings": {
-                "max_level": 100
-            },
-            "notification_settings": {
-                "enabled": True,
-                "level_notifications": {
-                    "enabled": True,
-                    "cycle": 1,
-                    "level_card": {
-                        "background_image": "https://raw.githubusercontent.com/TheBlueEL/pictures/refs/heads/main/LevelBar.png",
-                        "background_color": [15, 17, 16],
-                        "username_color": [255, 255, 255],
-                        "level_text_color": [245, 55, 48],
-                        "message1_color": [255, 255, 255],
-                        "message2_color": [154, 154, 154],
-                        "outline_enabled": True,
-                        "outline_color": [255, 255, 255],
-                        "outline_image": "https://raw.githubusercontent.com/TheBlueEL/pictures/refs/heads/main/ProfileOutline.png",
-                        "positions": {
-                            "username": {"x": 540, "y": 200, "font_size": 60},
-                            "level_text": {"x": 540, "y": 280, "font_size": 80},
-                            "message1": {"x": 540, "y": 400, "font_size": 40},
-                            "message2": {"x": 540, "y": 460, "font_size": 30},
-                            "avatar": {"x": 390, "y": 540, "size": 300},
-                            "outline": {"x": 390, "y": 540, "size": 300}
-                        }
-                    }
-                },
-                "role_notifications": {
-                    "enabled": False
-                },
-                "custom_notifications": {
-                    "enabled": False
-                }
-            },
             "user_data": {},
             "user_level_cards": {}
         }
@@ -1246,39 +1211,15 @@ class LevelingSystem(commands.Cog):
 
         if xp_gained > 0:
             old_level = get_level_from_xp(user_data["xp"])
-            max_level = data.get("level_settings", {}).get("max_level", 100)
-            
-            # Check if user is already at max level
-            if old_level >= max_level:
-                # Don't gain XP if at max level
-                max_xp = calculate_xp_for_level(max_level)
-                user_data["xp"] = max_xp
-                user_data["level"] = max_level
-            else:
-                # Add XP but cap at max level
-                user_data["xp"] += xp_gained
-                new_level = get_level_from_xp(user_data["xp"])
-                
-                # Cap at max level
-                if new_level > max_level:
-                    new_level = max_level
-                    user_data["xp"] = calculate_xp_for_level(max_level)
-                
-                user_data["level"] = new_level
+            user_data["xp"] += xp_gained
+            new_level = get_level_from_xp(user_data["xp"])
+            user_data["level"] = new_level
 
-                save_leveling_data(data)
+            save_leveling_data(data)
 
-                # Check for role rewards and notifications
-                if new_level > old_level:
-                    await self.check_level_rewards(message.author, new_level)
-                    
-                    # Send level notification
-                    try:
-                        notification_system = self.bot.get_cog('LevelNotificationSystem')
-                        if notification_system:
-                            await notification_system.send_level_notification(message.author, new_level)
-                    except Exception as e:
-                        print(f"Error sending level notification: {e}")
+            # Check for role rewards
+            if new_level > old_level:
+                await self.check_level_rewards(message.author, new_level)
 
     async def download_image_to_github(self, image_url):
         """Download image and upload to GitHub, similar to welcome system"""
@@ -1744,19 +1685,19 @@ class LevelSystemMainView(discord.ui.View):
 
         return embed
 
-    @discord.ui.button(label="Reward Settings", style=discord.ButtonStyle.secondary, emoji="<:SettingLOGO:1407071854593839239>", row=0)
+    @discord.ui.button(label="Reward Settings", style=discord.ButtonStyle.secondary, emoji="<:SettingLOGO:1407071854593839239>")
     async def reward_settings(self, interaction: discord.Interaction, button: discord.ui.Button):
         view = RewardSettingsView(self.bot, self.user)
         embed = view.get_embed()
         await interaction.response.edit_message(embed=embed, view=view)
 
-    @discord.ui.button(label="XP Settings", style=discord.ButtonStyle.secondary, emoji="<:SettingLOGO:1407071854593839239>", row=0)
+    @discord.ui.button(label="XP Settings", style=discord.ButtonStyle.secondary, emoji="<:SettingLOGO:1407071854593839239>")
     async def xp_settings(self, interaction: discord.Interaction, button: discord.ui.Button):
         view = XPSettingsView(self.bot, self.user)
         embed = view.get_embed()
         await interaction.response.edit_message(embed=embed, view=view)
 
-    @discord.ui.button(label="Level Card", style=discord.ButtonStyle.secondary, emoji="<:CardLOGO:1409586383047233536>", row=0)
+    @discord.ui.button(label="Level Card", style=discord.ButtonStyle.secondary, emoji="<:CardLOGO:1409586383047233536>")
     async def level_card(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.defer()
 
@@ -1771,20 +1712,7 @@ class LevelSystemMainView(discord.ui.View):
 
         await interaction.edit_original_response(embed=embed, view=view)
 
-    @discord.ui.button(label="Level Settings", style=discord.ButtonStyle.secondary, emoji="<a:XPLOGO:1409634015043915827>", row=1)
-    async def level_settings(self, interaction: discord.Interaction, button: discord.ui.Button):
-        view = LevelSettingsView(self.bot, self.user)
-        embed = view.get_embed()
-        await interaction.response.edit_message(embed=embed, view=view)
-
-    @discord.ui.button(label="Notification", style=discord.ButtonStyle.secondary, emoji="<:NotificationLOGO:1409638740073132062>", row=1)
-    async def notification_settings(self, interaction: discord.Interaction, button: discord.ui.Button):
-        from level_notification_system import NotificationSettingsView
-        view = NotificationSettingsView(self.bot, self.user)
-        embed = view.get_embed()
-        await interaction.response.edit_message(embed=embed, view=view)
-
-    @discord.ui.button(label="ON", style=discord.ButtonStyle.success, emoji="<:OnLOGO:1407072463883472978>", row=1)
+    @discord.ui.button(label="OFF", style=discord.ButtonStyle.danger, emoji="<:OffLOGO:1407072621836894380>")
     async def toggle_system(self, interaction: discord.Interaction, button: discord.ui.Button):
         data = load_leveling_data()
         current_state = data["leveling_settings"]["enabled"]
@@ -2997,70 +2925,6 @@ class LevelCardManagerView(discord.ui.View):
                 file_header = preview_image.read(10)
                 preview_image.seek(0)
 
-
-class LevelSettingsView(discord.ui.View):
-    def __init__(self, bot, user):
-        super().__init__(timeout=300)
-        self.bot = bot
-        self.user = user
-
-    def get_embed(self):
-        data = load_leveling_data()
-        max_level = data.get("level_settings", {}).get("max_level", 100)
-
-        embed = discord.Embed(
-            title="<a:XPLOGO:1409634015043915827> Level Settings",
-            description="Configure level system parameters:",
-            color=0xFFFFFF
-        )
-
-        embed.add_field(name="Maximum Level", value=str(max_level), inline=True)
-        embed.add_field(name="Info", value="Users cannot gain XP beyond max level", inline=True)
-
-        return embed
-
-    @discord.ui.button(label="Level Max", style=discord.ButtonStyle.primary, emoji="<:LimitLOGO:1409636533618610266>")
-    async def level_max(self, interaction: discord.Interaction, button: discord.ui.Button):
-        modal = LevelMaxModal()
-        await interaction.response.send_modal(modal)
-
-    @discord.ui.button(label="Back", style=discord.ButtonStyle.gray, emoji="<:BackLOGO:1407071474233114766>")
-    async def back(self, interaction: discord.Interaction, button: discord.ui.Button):
-        view = LevelSystemMainView(self.bot, self.user)
-        embed = view.get_main_embed()
-        await interaction.response.edit_message(embed=embed, view=view)
-
-class LevelMaxModal(discord.ui.Modal):
-    def __init__(self):
-        super().__init__(title="Set Maximum Level")
-
-        data = load_leveling_data()
-        current_max = data.get("level_settings", {}).get("max_level", 100)
-
-        self.max_level = discord.ui.TextInput(
-            label="Maximum Level (1-1000)",
-            placeholder="Enter maximum level (default: 100)...",
-            default=str(current_max),
-            min_length=1,
-            max_length=4
-        )
-        self.add_item(self.max_level)
-
-    async def on_submit(self, interaction: discord.Interaction):
-        try:
-            max_level_value = int(self.max_level.value)
-            if 1 <= max_level_value <= 1000:
-                data = load_leveling_data()
-                if "level_settings" not in data:
-                    data["level_settings"] = {}
-                data["level_settings"]["max_level"] = max_level_value
-                save_leveling_data(data)
-                await interaction.response.send_message(f"<:SucessLOGO:1407071637840592977> Maximum level set to {max_level_value}!", ephemeral=True)
-            else:
-                await interaction.response.send_message("<:ErrorLOGO:1407071682031648850> Maximum level must be between 1 and 1000!", ephemeral=True)
-        except ValueError:
-            await interaction.response.send_message("<:ErrorLOGO:1407071682031648850> Please enter a valid number!", ephemeral=True)
-
                 if file_header.startswith(b'GIF'):
                     filename = f"level_preview_{self.user_id}_{timestamp}.gif"
                 else:
@@ -3463,7 +3327,7 @@ class LevelMaxModal(discord.ui.Modal):
             )
             content_button.callback = self.content_settings
 
-            # Add Close button for DMs or Back button for regular channels
+            # Add Close button for DMs only (no Back button)
             if hasattr(self, 'is_dm') and self.is_dm:
                 close_button = discord.ui.Button(
                     label="Close",
@@ -3473,15 +3337,6 @@ class LevelMaxModal(discord.ui.Modal):
                 )
                 close_button.callback = self.close_dm
                 self.add_item(close_button)
-            else:
-                back_button = discord.ui.Button(
-                    label="Back",
-                    style=discord.ButtonStyle.gray,
-                    emoji="<:BackLOGO:1407071474233114766>",
-                    row=1
-                )
-                back_button.callback = self.back_to_level_system
-                self.add_item(back_button)
 
             self.add_item(leveling_bar_button)
             self.add_item(background_button)
