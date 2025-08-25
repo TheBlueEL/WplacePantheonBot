@@ -204,18 +204,14 @@ class LevelingSystem(commands.Cog):
                 if overlay_data:
                     overlay_img = Image.open(io.BytesIO(overlay_data)).convert("RGBA")
                     
-                    # Créer d'abord le masque de texte avec des contours plus nets
+                    # Créer d'abord le masque de texte PRÉCIS qui suit exactement la forme des lettres
                     text_mask = Image.new('L', (canvas_width, canvas_height), 0)
                     mask_draw = ImageDraw.Draw(text_mask)
                     
-                    # Dessiner le texte plusieurs fois pour épaissir les contours
+                    # Dessiner le texte UNE SEULE FOIS pour garder la forme exacte
                     text_x = padding
                     text_y = padding
-                    
-                    # Épaissir le masque en dessinant le texte plusieurs fois avec de légers décalages
-                    for dx in range(-3, 4):
-                        for dy in range(-3, 4):
-                            mask_draw.text((text_x + dx, text_y + dy), text, font=font, fill=255)
+                    mask_draw.text((text_x, text_y), text, font=font, fill=255)
                     
                     # Redimensionner l'image pour qu'elle ait la même largeur que le canvas
                     original_ratio = overlay_img.width / overlay_img.height
@@ -236,14 +232,22 @@ class LevelingSystem(commands.Cog):
                         paste_y = (canvas_height - new_height) // 2
                         overlay_cropped.paste(overlay_resized, (0, paste_y))
                     
-                    # Créer l'image finale avec la texture qui couvre exactement le canvas
+                    # Créer l'image finale avec transparence complète
                     result = Image.new('RGBA', (canvas_width, canvas_height), (0, 0, 0, 0))
                     
-                    # Coller l'image de texture
-                    result.paste(overlay_cropped, (0, 0))
+                    # Appliquer la texture UNIQUEMENT aux pixels des lettres
+                    # Convertir le masque en array pour manipulation pixel par pixel
+                    import numpy as np
+                    mask_array = np.array(text_mask)
+                    overlay_array = np.array(overlay_cropped)
+                    result_array = np.array(result)
                     
-                    # Appliquer le masque de texte pour ne garder que la partie du texte
-                    result.putalpha(text_mask)
+                    # Pour chaque pixel où le masque n'est pas 0 (donc où il y a du texte)
+                    text_pixels = mask_array > 0
+                    result_array[text_pixels] = overlay_array[text_pixels]
+                    
+                    # Reconvertir en image PIL
+                    result = Image.fromarray(result_array, 'RGBA')
                     
                     return result
             
