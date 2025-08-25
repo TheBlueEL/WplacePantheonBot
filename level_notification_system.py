@@ -814,6 +814,114 @@ class NotificationLevelCardView(discord.ui.View):
             print(f"Error handling image upload: {e}")
             return False
 
+    async def handle_image_upload(self, message, view):
+        """Handle image uploads for notification card customization"""
+        try:
+            if not message.attachments:
+                return False
+
+            attachment = message.attachments[0]
+            allowed_extensions = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.svg']
+            
+            if not any(attachment.filename.lower().endswith(ext) for ext in allowed_extensions):
+                # Invalid file type
+                try:
+                    await message.delete()
+                except:
+                    pass
+                
+                error_embed = discord.Embed(
+                    title="<:ErrorLOGO:1407071682031648850> Invalid File Type",
+                    description="Please upload only image files with these extensions:\n`.png`, `.jpg`, `.jpeg`, `.gif`, `.webp`, `.bmp`, `.svg`",
+                    color=discord.Color.red()
+                )
+                await message.channel.send(embed=error_embed, delete_after=5)
+                return False
+
+            # Download and upload image
+            local_file = await self.download_image_to_github(attachment.url)
+            if not local_file:
+                return False
+
+            try:
+                await message.delete()
+            except:
+                pass
+
+            # Apply image based on current mode
+            config = view.get_config()
+            
+            if view.current_image_type == "background":
+                # For background, use proportional resizing to fill entire 1080x1080 area
+                processed_url = await self.process_background_image(local_file, 1080, 1080)
+                if processed_url:
+                    config["background_image"] = processed_url
+                else:
+                    config["background_image"] = local_file
+                config.pop("background_color", None)
+            elif view.current_image_type == "profile_outline":
+                # For profile outline, process to match outline shape
+                config["outline_image"] = local_file
+            elif view.current_image_type in ["level_text", "username_text", "messages_text", "information_text"]:
+                # For text overlays, process to fit text area
+                text_key = f"{view.current_image_type.replace('_text', '')}_text_image"
+                
+                # Get text dimensions for processing
+                text_area_width = 400  # Default text area width
+                text_area_height = 100  # Default text area height
+                
+                # Process image to fit text area
+                processed_url = await self.process_text_image(local_file, text_area_width, text_area_height)
+                if processed_url:
+                    config[text_key] = processed_url
+                else:
+                    config[text_key] = local_file
+
+            view.save_config(config)
+            view.waiting_for_image = False
+
+            # Generate new preview
+            await view.generate_preview_image(message.author)
+
+            # Update view mode
+            view.mode = view.current_image_type
+
+            # Get appropriate embed
+            if view.current_image_type == "background":
+                embed = view.get_background_embed()
+                embed.title = "<:ImageLOGO:1407072328134951043> Background Image"
+                embed.description = "Set a custom background image"
+            elif view.current_image_type == "profile_outline":
+                embed = view.get_profile_outline_embed()
+                embed.title = "<:ImageLOGO:1407072328134951043> Profile Outline Image"
+                embed.description = "Set a custom profile outline image"
+            elif view.current_image_type in ["level_text", "username_text", "messages_text", "information_text"]:
+                element_type = view.current_image_type.replace("_text", "")
+                embed = view.get_text_element_embed(element_type)
+                embed.title = f"<:ImageLOGO:1407072328134951043> {element_type.title()} Text Image"
+                embed.description = f"Set a custom {element_type} text image overlay"
+            else:
+                embed = view.get_main_embed()
+
+            view.update_buttons()
+
+            # Find and update the original message
+            try:
+                channel = message.channel
+                async for msg in channel.history(limit=50):
+                    if msg.author == view.bot.user and msg.embeds:
+                        if "Upload Image" in msg.embeds[0].title:
+                            await msg.edit(embed=embed, view=view)
+                            break
+            except Exception as e:
+                print(f"Error updating message: {e}")
+
+            return True
+
+        except Exception as e:
+            print(f"Error handling image upload: {e}")
+            return False
+
     async def process_background_image(self, image_url, target_width, target_height):
         """Process background image - resize/crop from center for background filling"""
         try:
