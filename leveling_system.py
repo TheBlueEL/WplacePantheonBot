@@ -1211,15 +1211,33 @@ class LevelingSystem(commands.Cog):
 
         if xp_gained > 0:
             old_level = get_level_from_xp(user_data["xp"])
-            user_data["xp"] += xp_gained
-            new_level = get_level_from_xp(user_data["xp"])
-            user_data["level"] = new_level
+            max_level = data["leveling_settings"].get("max_level", 100)
+            
+            # Check if user has reached max level
+            if old_level >= max_level:
+                # User is at max level, no more XP gained
+                user_data["level"] = max_level
+                # Set XP to exactly what's needed for max level with 0 extra
+                user_data["xp"] = calculate_xp_for_level(max_level)
+            else:
+                user_data["xp"] += xp_gained
+                new_level = get_level_from_xp(user_data["xp"])
+                
+                # Cap level at max_level
+                if new_level > max_level:
+                    new_level = max_level
+                    user_data["xp"] = calculate_xp_for_level(max_level)
+                
+                user_data["level"] = new_level
 
-            save_leveling_data(data)
+                save_leveling_data(data)
 
-            # Check for role rewards
-            if new_level > old_level:
-                await self.check_level_rewards(message.author, new_level)
+                # Check for role rewards
+                if new_level > old_level:
+                    await self.check_level_rewards(message.author, new_level)
+                    
+                    # Check for level notifications
+                    await self.check_level_notifications(message.author, new_level)
 
     async def download_image_to_github(self, image_url):
         """Download image and upload to GitHub, similar to welcome system"""
@@ -1376,6 +1394,45 @@ class LevelingSystem(commands.Cog):
                         await user.add_roles(role, reason=f"Level {level} reward")
                 except Exception as e:
                     print(f"Error assigning role reward: {e}")
+
+    async def check_level_notifications(self, user, level):
+        """Check and send level notifications"""
+        try:
+            data = load_leveling_data()
+            notification_settings = data.get("notification_settings", {}).get("level_notifications", {})
+            
+            if not notification_settings.get("enabled", True):
+                return
+            
+            cycle = notification_settings.get("cycle", 1)
+            
+            # Check if this level should trigger a notification
+            if level % cycle == 0:
+                # Import here to avoid circular import
+                from level_notification_system import NotificationLevelCardView
+                
+                # Create notification card
+                card_view = NotificationLevelCardView(self.bot, user.id)
+                level_card = await card_view.create_notification_level_card(user, level)
+                
+                if level_card:
+                    try:
+                        # Send to user's DM
+                        dm_channel = await user.create_dm()
+                        embed = discord.Embed(
+                            title="🎉 Level Up!",
+                            description=f"Congratulations {user.mention}! You've reached level {level}!",
+                            color=0x00ff00
+                        )
+                        file = discord.File(level_card, filename=f"level_{level}_notification.png")
+                        await dm_channel.send(embed=embed, file=file)
+                    except:
+                        # If DM fails, try to send in a channel (if in guild)
+                        if hasattr(user, 'guild') and user.guild:
+                            # You could implement channel notification fallback here
+                            pass
+        except Exception as e:
+            print(f"Error sending level notification: {e}")
 
     async def create_demo_level_card(self, bot_user):
         """Create demo level card for bot user showing level 100 and rank #1"""
@@ -1712,7 +1769,20 @@ class LevelSystemMainView(discord.ui.View):
 
         await interaction.edit_original_response(embed=embed, view=view)
 
-    @discord.ui.button(label="OFF", style=discord.ButtonStyle.danger, emoji="<:OffLOGO:1407072621836894380>")
+    @discord.ui.button(label="Level Settings", style=discord.ButtonStyle.secondary, emoji="<:SettingLOGO:1407071854593839239>")
+    async def level_settings(self, interaction: discord.Interaction, button: discord.ui.Button):
+        view = LevelSettingsView(self.bot, self.user)
+        embed = view.get_embed()
+        await interaction.response.edit_message(embed=embed, view=view)
+
+    @discord.ui.button(label="Notification", style=discord.ButtonStyle.secondary, emoji="<:NotificationLOGO:1409635458765914122>")
+    async def notification_settings(self, interaction: discord.Interaction, button: discord.ui.Button):
+        from level_notification_system import NotificationSystemView
+        view = NotificationSystemView(self.bot, self.user)
+        embed = view.get_main_embed()
+        await interaction.response.edit_message(embed=embed, view=view)
+
+    @discord.ui.button(label="", style=discord.ButtonStyle.success, emoji="<:OnLOGO:1407072463883472978>")
     async def toggle_system(self, interaction: discord.Interaction, button: discord.ui.Button):
         data = load_leveling_data()
         current_state = data["leveling_settings"]["enabled"]
@@ -1731,6 +1801,29 @@ class LevelSystemMainView(discord.ui.View):
 
         embed = self.get_main_embed()
         await interaction.response.edit_message(embed=embed, view=self)
+    
+    def __init__(self, bot, user):
+        super().__init__(timeout=300)
+        self.bot = bot
+        self.user = user
+        self.demo_card_url = None
+        
+        # Initialize toggle button state
+        data = load_leveling_data()
+        system_enabled = data["leveling_settings"]["enabled"]
+        
+        # Update the toggle button based on current state
+        for item in self.children:
+            if hasattr(item, 'callback') and item.callback.__name__ == 'toggle_system':
+                if system_enabled:
+                    item.label = "ON"
+                    item.style = discord.ButtonStyle.success
+                    item.emoji = "<:OnLOGO:1407072463883472978>"
+                else:
+                    item.label = "OFF"
+                    item.style = discord.ButtonStyle.danger
+                    item.emoji = "<:OffLOGO:1407072621836894380>"
+                break
 
 class RewardSettingsView(discord.ui.View):
     def __init__(self, bot, user):
@@ -2432,6 +2525,63 @@ class CharacterCooldownModal(discord.ui.Modal):
                 await interaction.response.send_message("<:ErrorLOGO:1407071682031648850> Values must be 0 or higher!", ephemeral=True)
         except ValueError:
             await interaction.response.send_message("<:ErrorLOGO:1407071682031648850> Please enter valid numbers!", ephemeral=True)
+
+class LevelSettingsView(discord.ui.View):
+    def __init__(self, bot, user):
+        super().__init__(timeout=300)
+        self.bot = bot
+        self.user = user
+
+    def get_embed(self):
+        data = load_leveling_data()
+        max_level = data["leveling_settings"].get("max_level", 100)
+        
+        embed = discord.Embed(
+            title="<:SettingLOGO:1407071854593839239> Level Settings",
+            description="Configure level system limitations and rules:",
+            color=0xFFFFFF
+        )
+        
+        embed.add_field(name="Maximum Level", value=str(max_level), inline=True)
+        embed.add_field(name="XP Cap", value="Users stop gaining XP at max level", inline=True)
+        
+        return embed
+
+    @discord.ui.button(label="Level Max", style=discord.ButtonStyle.primary, emoji="<a:XPLOGO:1409634015043915827>")
+    async def set_max_level(self, interaction: discord.Interaction, button: discord.ui.Button):
+        modal = MaxLevelModal()
+        await interaction.response.send_modal(modal)
+
+    @discord.ui.button(label="Back", style=discord.ButtonStyle.gray, emoji="<:BackLOGO:1407071474233114766>")
+    async def back(self, interaction: discord.Interaction, button: discord.ui.Button):
+        view = LevelSystemMainView(self.bot, self.user)
+        embed = view.get_main_embed()
+        await interaction.response.edit_message(embed=embed, view=view)
+
+class MaxLevelModal(discord.ui.Modal):
+    def __init__(self):
+        super().__init__(title="Set Maximum Level")
+
+    max_level = discord.ui.TextInput(
+        label="Maximum Level",
+        placeholder="Enter maximum level (default: 100)...",
+        min_length=1,
+        max_length=3
+    )
+
+    async def on_submit(self, interaction: discord.Interaction):
+        try:
+            max_level_value = int(self.max_level.value)
+            if 1 <= max_level_value <= 999:
+                data = load_leveling_data()
+                data["leveling_settings"]["max_level"] = max_level_value
+                save_leveling_data(data)
+                
+                await interaction.response.send_message(f"<:SucessLOGO:1407071637840592977> Maximum level set to {max_level_value}!", ephemeral=True)
+            else:
+                await interaction.response.send_message("<:ErrorLOGO:1407071682031648850> Maximum level must be between 1 and 999!", ephemeral=True)
+        except ValueError:
+            await interaction.response.send_message("<:ErrorLOGO:1407071682031648850> Please enter a valid number!", ephemeral=True)
 
 class BackToMainButton(discord.ui.Button):
     def __init__(self, bot, user):
@@ -3327,7 +3477,7 @@ class LevelCardManagerView(discord.ui.View):
             )
             content_button.callback = self.content_settings
 
-            # Add Close button for DMs only (no Back button)
+            # Add Close button for DMs, Back button for non-DMs
             if hasattr(self, 'is_dm') and self.is_dm:
                 close_button = discord.ui.Button(
                     label="Close",
@@ -3337,6 +3487,15 @@ class LevelCardManagerView(discord.ui.View):
                 )
                 close_button.callback = self.close_dm
                 self.add_item(close_button)
+            else:
+                back_button = discord.ui.Button(
+                    label="Back",
+                    style=discord.ButtonStyle.gray,
+                    emoji="<:BackLOGO:1407071474233114766>",
+                    row=1
+                )
+                back_button.callback = self.back_to_level_system
+                self.add_item(back_button)
 
             self.add_item(leveling_bar_button)
             self.add_item(background_button)
