@@ -1048,16 +1048,15 @@ class LevelingSystem(commands.Cog):
         user_id = message.author.id
         
         # Check for notification card image uploads
+        from level_notification_system import NotificationLevelCardView
         for view in self.bot._connection._view_store._synced_message_views.values():
             if (hasattr(view, 'user_id') and view.user_id == user_id and
                 hasattr(view, 'waiting_for_image') and view.waiting_for_image and
-                hasattr(view, 'handle_image_upload') and message.attachments):
+                isinstance(view, NotificationLevelCardView) and message.attachments):
                 
-                from level_notification_system import NotificationLevelCardView
-                if isinstance(view, NotificationLevelCardView):
-                    success = await view.handle_image_upload(message, view)
-                    if success:
-                        return
+                success = await view.handle_image_upload(message, view)
+                if success:
+                    return
         
         # Check if user has an active level card manager
         for view in self.bot._connection._view_store._synced_message_views.values():
