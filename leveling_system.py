@@ -629,14 +629,19 @@ class LevelingSystem(commands.Cog):
                 # Add profile outline if enabled
                 profile_outline_config = config.get("profile_outline", {})
                 if profile_outline_config.get("enabled", True):
-                    outline_url = profile_outline_config.get("url")
+                    # Check for custom image first
+                    if profile_outline_config.get("custom_image"):
+                        outline_url = profile_outline_config["custom_image"]
+                    else:
+                        outline_url = profile_outline_config.get("url")
+                    
                     if outline_url:
                         outline_data = await self.download_image(outline_url)
                         if outline_data:
                             outline = Image.open(io.BytesIO(outline_data)).convert("RGBA")
 
-                            # Apply color override if specified
-                            if profile_outline_config.get("color_override"):
+                            # Apply color override if specified (only for default outline, not custom image)
+                            if profile_outline_config.get("color_override") and not profile_outline_config.get("custom_image"):
                                 color_override = profile_outline_config["color_override"]
                                 colored_outline = Image.new("RGBA", outline.size, tuple(color_override + [255]))
                                 colored_outline.putalpha(outline.split()[-1])
@@ -924,10 +929,13 @@ class LevelingSystem(commands.Cog):
                             view.config["background_image"] = local_file
                             view.config.pop("background_color", None)
                         elif view.current_image_type == "profile_outline":
-                            if "profile_outline" not in view.config:
-                                view.config["profile_outline"] = {}
-                            view.config["profile_outline"]["custom_image"] = local_file
-                            view.config["profile_outline"].pop("color_override", None)
+                            # Process profile outline image with masking
+                            processed_url = await self.process_profile_outline_image(local_file)
+                            if processed_url:
+                                if "profile_outline" not in view.config:
+                                    view.config["profile_outline"] = {}
+                                view.config["profile_outline"]["custom_image"] = processed_url
+                                view.config["profile_outline"].pop("color_override", None)
                         elif view.current_image_type == "username":
                             view.config["username_image"] = local_file
                         elif view.current_image_type == "xp_info":
@@ -1124,6 +1132,95 @@ class LevelingSystem(commands.Cog):
             return None
         except Exception as e:
             print(f"Error downloading image: {e}")
+            return None
+
+    async def process_profile_outline_image(self, image_url):
+        """Process profile outline image - resize/crop from center and apply outline mask"""
+        try:
+            # Download custom image
+            async with aiohttp.ClientSession() as session:
+                async with session.get(image_url) as response:
+                    if response.status == 200:
+                        image_data = await response.read()
+
+            # Download the default profile outline to use as mask
+            data = load_leveling_data()
+            config = data["leveling_settings"]["level_card"]
+            outline_url = config.get("profile_outline", {}).get("url", "https://raw.githubusercontent.com/TheBlueEL/pictures/refs/heads/main/ProfileOutline.png")
+            
+            async with aiohttp.ClientSession() as session:
+                async with session.get(outline_url) as response:
+                    if response.status == 200:
+                        mask_data = await response.read()
+                    else:
+                        print("Failed to download profile outline for masking")
+                        return None
+
+            # Open and process images
+            custom_image = Image.open(io.BytesIO(image_data)).convert("RGBA")
+            mask_image = Image.open(io.BytesIO(mask_data)).convert("RGBA")
+
+            # Resize custom image to match mask size while maintaining aspect ratio
+            custom_width, custom_height = custom_image.size
+            mask_width, mask_height = mask_image.size
+
+            # Calculate scaling factor to fit the custom image into the mask
+            scale_factor = max(mask_width / custom_width, mask_height / custom_height)
+            new_width = int(custom_width * scale_factor)
+            new_height = int(custom_height * scale_factor)
+
+            # Resize the custom image
+            custom_resized = custom_image.resize((new_width, new_height), Image.Resampling.LANCZOS)
+
+            # Center crop to match mask size
+            if new_width > mask_width or new_height > mask_height:
+                left = (new_width - mask_width) // 2
+                top = (new_height - mask_height) // 2
+                custom_cropped = custom_resized.crop((left, top, left + mask_width, top + mask_height))
+            else:
+                # If smaller, center it on a transparent background
+                custom_cropped = Image.new('RGBA', (mask_width, mask_height), (0, 0, 0, 0))
+                paste_x = (mask_width - new_width) // 2
+                paste_y = (mask_height - new_height) // 2
+                custom_cropped.paste(custom_resized, (paste_x, paste_y))
+
+            # Apply the mask from the profile outline (use alpha channel as mask)
+            alpha_mask = mask_image.split()[-1]  # Get alpha channel from outline
+
+            # Create final masked image
+            masked_image = Image.new("RGBA", custom_cropped.size, (0, 0, 0, 0))
+            masked_image.paste(custom_cropped, (0, 0))
+            masked_image.putalpha(alpha_mask)
+
+            # Save processed image
+            os.makedirs('images', exist_ok=True)
+            filename = f"{uuid.uuid4()}_outline_processed.png"
+            file_path = os.path.join('images', filename)
+            masked_image.save(file_path, 'PNG')
+
+            # Upload to GitHub
+            try:
+                from github_sync import GitHubSync
+                github_sync = GitHubSync()
+                sync_success = await github_sync.sync_image_to_pictures_repo(file_path)
+
+                if sync_success:
+                    # Delete local file after successful sync
+                    try:
+                        os.remove(file_path)
+                    except:
+                        pass
+
+                    # Return GitHub raw URL
+                    filename = os.path.basename(file_path)
+                    github_url = f"https://raw.githubusercontent.com/TheBlueEL/pictures/main/{filename}"
+                    return github_url
+            except ImportError:
+                print("GitHub sync not available")
+
+            return None
+        except Exception as e:
+            print(f"Error processing profile outline image: {e}")
             return None
 
     async def check_level_rewards(self, user, level):
