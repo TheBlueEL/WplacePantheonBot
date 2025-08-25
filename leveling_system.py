@@ -4998,13 +4998,12 @@ class UserLevelCardManagerView(LevelCardManagerView):
             self.add_item(close_button)
 
     async def close_dm(self, interaction: discord.Interaction):
-        """Close the DM interface"""
-        embed = discord.Embed(
-            title="<:SucessLOGO:1407071637840592977> Settings Closed",
-            description="Level card settings have been closed.",
-            color=discord.Color.green()
-        )
-        await interaction.response.edit_message(embed=embed, view=None)
+        """Close the DM message"""
+        try:
+            await interaction.message.delete()
+        except:
+            # If we can't delete the message, just respond with an ephemeral message
+            await interaction.response.send_message("Settings closed.", ephemeral=True)
 
     def check_permission(self, category, permission_type):
         """Check if user has permission for specific customization"""
