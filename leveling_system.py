@@ -2340,7 +2340,7 @@ class CharacterXPView(discord.ui.View):
         modal = CharacterXPModal()
         await interaction.response.send_modal(modal)
 
-    @discord.ui.button(label="Set Limit", style=discord.ButtonStyle.secondary, emoji="📝")
+    @discord.ui.button(label="Set Limit", style=discord.ButtonStyle.secondary, emoji="<:LimitLOGO:1409636533618610266>")
     async def set_limit(self, interaction: discord.Interaction, button: discord.ui.Button):
         modal = CharacterLimitModal()
         await interaction.response.send_modal(modal)
@@ -4134,7 +4134,7 @@ class ImageURLModal(discord.ui.Modal):
 
 class LevelCardRGBColorModal(discord.ui.Modal):
     def __init__(self, view):
-        super().__init__(title='<:RGBcodeLOGO:1408831982141575290> RGB Color')
+        super().__init__(title='RGB Color')
         self.view = view
 
         # Get current color values
@@ -4584,7 +4584,7 @@ class CustomCharacterXPView(discord.ui.View):
         modal = CustomCharacterXPModal()
         await interaction.response.send_modal(modal)
 
-    @discord.ui.button(label="Character Limit", style=discord.ButtonStyle.secondary, emoji="<:Limit:1409636533618610266>")
+    @discord.ui.button(label="Character Limit", style=discord.ButtonStyle.secondary, emoji="<:LimitLOGO:1409636533618610266>")
     async def set_limit(self, interaction: discord.Interaction, button: discord.ui.Button):
         modal = CustomCharacterLimitModal()
         await interaction.response.send_modal(modal)
@@ -4679,69 +4679,6 @@ class AddCustomRewardView(discord.ui.View):
         self.reward_name = None
         self.reward_level = None
         self.reward_description = None
-
-    def get_embed(self):
-        embed = discord.Embed(
-            title="<:CreateLOGO:1407071205026168853> Add Custom Reward",
-            description="Create a new custom reward:",
-            color=0xFFFFFF
-        )
-
-        if self.reward_name:
-            embed.add_field(name="Reward Name", value=self.reward_name, inline=False)
-        if self.reward_level:
-            embed.add_field(name="Required Level", value=str(self.reward_level), inline=False)
-        if self.reward_description:
-            embed.add_field(name="Description", value=self.reward_description, inline=False)
-
-        return embed
-
-    @discord.ui.button(label="Set Name", style=discord.ButtonStyle.primary, emoji="📝")
-    async def set_name(self, interaction: discord.Interaction, button: discord.ui.Button):
-        modal = CustomRewardNameModal(self)
-        await interaction.response.send_modal(modal)
-
-    @discord.ui.button(label="Set Level", style=discord.ButtonStyle.secondary, emoji="📊")
-    async def set_level(self, interaction: discord.Interaction, button: discord.ui.Button):
-        modal = CustomRewardLevelModal(self)
-        await interaction.response.send_modal(modal)
-
-    @discord.ui.button(label="Set Description", style=discord.ButtonStyle.secondary, emoji="📄")
-    async def set_description(self, interaction: discord.Interaction, button: discord.ui.Button):
-        modal = CustomRewardDescriptionModal(self)
-        await interaction.response.send_modal(modal)
-
-    @discord.ui.button(label="Create Reward", style=discord.ButtonStyle.success, emoji="<:ConfirmLOGO:1407072680267481249>")
-    async def create_reward(self, interaction: discord.Interaction, button: discord.ui.Button):
-        if not all([self.reward_name, self.reward_level, self.reward_description]):
-            await interaction.response.send_message(
-                "<:ErrorLOGO:1407071682031648850> Please fill in all fields before creating the reward.",
-                ephemeral=True
-            )
-            return
-
-        data = load_leveling_data()
-        reward_id = str(len(data["leveling_settings"]["rewards"]["custom"]) + 1)
-        data["leveling_settings"]["rewards"]["custom"][reward_id] = {
-            "name": self.reward_name,
-            "level": self.reward_level,
-            "description": self.reward_description
-        }
-        save_leveling_data(data)
-
-        embed = discord.Embed(
-            title="<:SucessLOGO:1407071637840592977> Custom Reward Created",
-            description=f"Custom reward '{self.reward_name}' has been created for level {self.reward_level}!",
-            color=0x00ff00
-        )
-        view = CustomRewardsView(self.bot, self.user)
-        await interaction.response.edit_message(embed=embed, view=view)
-
-    @discord.ui.button(label="Back", style=discord.ButtonStyle.gray, emoji="<:BackLOGO:1407071474233114766>")
-    async def back(self, interaction: discord.Interaction, button: discord.ui.Button):
-        view = CustomRewardsView(self.bot, self.user)
-        embed = view.get_embed()
-        await interaction.response.edit_message(embed=embed, view=view)
 
 class EditCustomRewardView(discord.ui.View):
     def __init__(self, bot, user):
@@ -5054,7 +4991,7 @@ class LevelCardSettingsButtonView(discord.ui.View):
         super().__init__(timeout=300)
         self.card_owner = card_owner
 
-    @discord.ui.button(label="Settings", style=discord.ButtonStyle.secondary, emoji="⚙️")
+    @discord.ui.button(label="Settings", style=discord.ButtonStyle.secondary, emoji="<:SettingLOGO:1407071854593839239>")
     async def settings(self, interaction: discord.Interaction, button: discord.ui.Button):
         # Only the card owner can click the settings button
         if interaction.user.id != self.card_owner.id:
@@ -5163,13 +5100,17 @@ class UserLevelCardManagerView(LevelCardManagerView):
                 elif item.label == "Content":
                     item.disabled = not self.has_permission_for_feature("content", "color")
                 elif item.label == "XP Info":
-                    item.disabled = not self.has_permission_for_feature("content", "color")
+                    # XP Info est désactivé si l'utilisateur n'a pas accès au contenu OU à la barre de progression
+                    item.disabled = not (self.has_permission_for_feature("content", "color") and 
+                                        self.has_permission_for_feature("bar_progress", "color"))
                 elif item.label == "XP Bar":
                     item.disabled = not self.has_permission_for_feature("bar_progress", "color")
                 elif item.label == "XP Progress":
                     item.disabled = not self.has_permission_for_feature("bar_progress", "color")
                 elif item.label == "Level":
-                    item.disabled = not self.has_permission_for_feature("content", "color")
+                    # Level est dans Content mais affiché via Leveling Bar, donc vérifier les deux
+                    item.disabled = not (self.has_permission_for_feature("content", "color") and 
+                                        self.has_permission_for_feature("bar_progress", "color"))
                 elif item.label == "Classement":
                     item.disabled = not self.has_permission_for_feature("content", "color")
                 elif item.label == "Color":
