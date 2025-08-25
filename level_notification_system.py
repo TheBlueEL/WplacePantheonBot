@@ -1,3 +1,4 @@
+
 import discord
 from discord.ext import commands
 from discord import app_commands
@@ -34,7 +35,10 @@ def load_notification_data():
                             "message_position": {"x": 540, "y": 450, "font_size": 60},
                             "info_position": {"x": 540, "y": 550, "font_size": 40},
                             "avatar_position": {"x": 190, "y": 190, "size": 300},
-                            "outline_position": {"x": 190, "y": 190, "size": 300}
+                            "outline_position": {"x": 190, "y": 190, "size": 300},
+                            "text_outline_enabled": True,
+                            "text_outline_color": [0, 0, 0],
+                            "text_outline_width": 2
                         }
                     },
                     "role_notifications": {
@@ -68,7 +72,10 @@ def load_notification_data():
                         "message_position": {"x": 540, "y": 450, "font_size": 60},
                         "info_position": {"x": 540, "y": 550, "font_size": 40},
                         "avatar_position": {"x": 190, "y": 190, "size": 300},
-                        "outline_position": {"x": 190, "y": 190, "size": 300}
+                        "outline_position": {"x": 190, "y": 190, "size": 300},
+                        "text_outline_enabled": True,
+                        "text_outline_color": [0, 0, 0],
+                        "text_outline_width": 2
                     }
                 },
                 "role_notifications": {
@@ -319,6 +326,10 @@ class NotificationLevelCardView(discord.ui.View):
         outline_status = "<:OnLOGO:1407072463883472978> Enabled" if outline_enabled else "<:OffLOGO:1407072621836894380> Disabled"
         config_status += f"<:ProfileLOGO:1408830057819930806> Profile Outline: {outline_status}\n"
         
+        text_outline_enabled = config.get("text_outline_enabled", True)
+        text_outline_status = "<:OnLOGO:1407072463883472978> Enabled" if text_outline_enabled else "<:OffLOGO:1407072621836894380> Disabled"
+        config_status += f"<:DescriptionLOGO:1407733417172533299> Text Outline: {text_outline_status}\n"
+        
         embed.add_field(name="Current Configuration", value=config_status, inline=False)
         
         # Add preview image if available
@@ -331,6 +342,134 @@ class NotificationLevelCardView(discord.ui.View):
                 image_url = self.preview_image_url + f"?refresh={timestamp}"
             embed.set_image(url=image_url)
         
+        return embed
+
+    def get_background_embed(self):
+        embed = discord.Embed(
+            title="<:BackgroundLOGO:1408834163309805579> Background Settings",
+            description="Configure the background of your notification card",
+            color=0xFFFFFF
+        )
+        
+        config = self.get_config()
+        if config.get("background_color"):
+            bg = config["background_color"]
+            embed.add_field(
+                name="Current Background",
+                value=f"Color: RGB({bg[0]}, {bg[1]}, {bg[2]})",
+                inline=False
+            )
+        elif config.get("background_image"):
+            embed.add_field(
+                name="Current Background",
+                value="Custom Image",
+                inline=False
+            )
+        else:
+            embed.add_field(
+                name="Current Background",
+                value="Default",
+                inline=False
+            )
+
+        if hasattr(self, 'preview_image_url') and self.preview_image_url:
+            embed.set_image(url=self.preview_image_url)
+
+        return embed
+
+    def get_profile_outline_embed(self):
+        embed = discord.Embed(
+            title="<:ProfileLOGO:1408830057819930806> Profile Outline Settings",
+            description="Configure the profile picture outline",
+            color=0xFFFFFF
+        )
+        
+        config = self.get_config()
+        outline_enabled = config.get("outline_enabled", True)
+        outline_status = "<:OnLOGO:1407072463883472978> Enabled" if outline_enabled else "<:OffLOGO:1407072621836894380> Disabled"
+        
+        embed.add_field(name="Status", value=outline_status, inline=True)
+        
+        if config.get("outline_color"):
+            color = config["outline_color"]
+            embed.add_field(
+                name="Color",
+                value=f"RGB({color[0]}, {color[1]}, {color[2]})",
+                inline=True
+            )
+
+        if hasattr(self, 'preview_image_url') and self.preview_image_url:
+            embed.set_image(url=self.preview_image_url)
+
+        return embed
+
+    def get_text_settings_embed(self):
+        embed = discord.Embed(
+            title="<:DescriptionLOGO:1407733417172533299> Text Settings",
+            description="Configure text elements of the notification card",
+            color=0xFFFFFF
+        )
+        
+        config = self.get_config()
+        text_outline_enabled = config.get("text_outline_enabled", True)
+        text_outline_status = "<:OnLOGO:1407072463883472978> Enabled" if text_outline_enabled else "<:OffLOGO:1407072621836894380> Disabled"
+        
+        embed.add_field(name="Text Outline", value=text_outline_status, inline=True)
+        
+        if config.get("text_outline_color"):
+            color = config["text_outline_color"]
+            embed.add_field(
+                name="Outline Color",
+                value=f"RGB({color[0]}, {color[1]}, {color[2]})",
+                inline=True
+            )
+
+        if hasattr(self, 'preview_image_url') and self.preview_image_url:
+            embed.set_image(url=self.preview_image_url)
+
+        return embed
+
+    def get_text_element_embed(self, element_type):
+        config = self.get_config()
+        
+        if element_type == "level":
+            embed = discord.Embed(
+                title="<a:XPLOGO:1409634015043915827> Level Text Settings",
+                description="Configure the level text display",
+                color=0xFFFFFF
+            )
+            color = config.get("level_text_color", [255, 255, 255])
+        elif element_type == "username":
+            embed = discord.Embed(
+                title="<:ParticipantsLOGO:1407733929389199460> Username Text Settings", 
+                description="Configure the username text display",
+                color=0xFFFFFF
+            )
+            color = config.get("username_color", [255, 255, 255])
+        elif element_type == "messages":
+            embed = discord.Embed(
+                title="<:MessagesLOGO:1409586848577093837> Message Text Settings",
+                description="Configure the message text display",
+                color=0xFFFFFF
+            )
+            color = config.get("message_text_color", [255, 255, 255])
+        elif element_type == "information":
+            embed = discord.Embed(
+                title="<:InfoLOGO:1409635426507583508> Information Text Settings",
+                description="Configure the information text display", 
+                color=0xFFFFFF
+            )
+            color = config.get("info_text_color", [200, 200, 200])
+        
+        embed.add_field(
+            name="Current Color",
+            value=f"RGB({color[0]}, {color[1]}, {color[2]})",
+            inline=False
+        )
+
+        if hasattr(self, 'preview_image_url') and self.preview_image_url:
+            embed.set_image(url=self.preview_image_url)
+
         return embed
 
     async def download_image(self, url):
@@ -351,6 +490,19 @@ class NotificationLevelCardView(discord.ui.View):
         draw = ImageDraw.Draw(mask)
         draw.ellipse((0, 0, size[0], size[1]), fill=255)
         return mask
+
+    def draw_text_with_outline(self, draw, text, position, font, color, outline_color, outline_width):
+        """Draw text with outline"""
+        x, y = position
+        
+        # Draw outline
+        for dx in range(-outline_width, outline_width + 1):
+            for dy in range(-outline_width, outline_width + 1):
+                if dx != 0 or dy != 0:
+                    draw.text((x + dx, y + dy), text, font=font, fill=outline_color)
+        
+        # Draw main text
+        draw.text((x, y), text, font=font, fill=color)
 
     async def create_notification_level_card(self, user, level):
         """Create notification level card (1080x1080)"""
@@ -427,25 +579,54 @@ class NotificationLevelCardView(discord.ui.View):
                 font_message = ImageFont.load_default()
                 font_info = ImageFont.load_default()
             
+            # Text outline settings
+            text_outline_enabled = config.get("text_outline_enabled", True)
+            outline_color = tuple(config.get("text_outline_color", [0, 0, 0]))
+            outline_width = config.get("text_outline_width", 2)
+            
             # Draw username
             username_pos = config.get("username_position", {"x": 540, "y": 200})
             username_color = tuple(config.get("username_color", [255, 255, 255]))
-            draw.text((username_pos["x"], username_pos["y"]), user.name, font=font_username, fill=username_color)
+            username_text = user.name
+            
+            if text_outline_enabled:
+                self.draw_text_with_outline(draw, username_text, (username_pos["x"], username_pos["y"]), 
+                                          font_username, username_color, outline_color, outline_width)
+            else:
+                draw.text((username_pos["x"], username_pos["y"]), username_text, font=font_username, fill=username_color)
             
             # Draw level
             level_pos = config.get("level_position", {"x": 540, "y": 300})
             level_color = tuple(config.get("level_text_color", [255, 255, 255]))
-            draw.text((level_pos["x"], level_pos["y"]), f"LEVEL {level}", font=font_level, fill=level_color)
+            level_text = f"LEVEL {level}"
+            
+            if text_outline_enabled:
+                self.draw_text_with_outline(draw, level_text, (level_pos["x"], level_pos["y"]), 
+                                          font_level, level_color, outline_color, outline_width)
+            else:
+                draw.text((level_pos["x"], level_pos["y"]), level_text, font=font_level, fill=level_color)
             
             # Draw message
             message_pos = config.get("message_position", {"x": 540, "y": 450})
             message_color = tuple(config.get("message_text_color", [255, 255, 255]))
-            draw.text((message_pos["x"], message_pos["y"]), "You just reached a new level !", font=font_message, fill=message_color)
+            message_text = "You just reached a new level !"
+            
+            if text_outline_enabled:
+                self.draw_text_with_outline(draw, message_text, (message_pos["x"], message_pos["y"]), 
+                                          font_message, message_color, outline_color, outline_width)
+            else:
+                draw.text((message_pos["x"], message_pos["y"]), message_text, font=font_message, fill=message_color)
             
             # Draw info
             info_pos = config.get("info_position", {"x": 540, "y": 550})
             info_color = tuple(config.get("info_text_color", [200, 200, 200]))
-            draw.text((info_pos["x"], info_pos["y"]), "Type /level for more information", font=font_info, fill=info_color)
+            info_text = "Type /level for more information"
+            
+            if text_outline_enabled:
+                self.draw_text_with_outline(draw, info_text, (info_pos["x"], info_pos["y"]), 
+                                          font_info, info_color, outline_color, outline_width)
+            else:
+                draw.text((info_pos["x"], info_pos["y"]), info_text, font=font_info, fill=info_color)
             
             output = io.BytesIO()
             background.save(output, format='PNG')
@@ -498,7 +679,16 @@ class NotificationLevelCardView(discord.ui.View):
     def update_buttons(self):
         self.clear_items()
         
-        if self.mode == "main":
+        if self.waiting_for_image:
+            back_button = discord.ui.Button(
+                label="Back",
+                style=discord.ButtonStyle.gray,
+                emoji="<:BackLOGO:1407071474233114766>"
+            )
+            back_button.callback = self.back_from_image_upload
+            self.add_item(back_button)
+            
+        elif self.mode == "main":
             # Main buttons
             background_button = discord.ui.Button(
                 label="Background",
@@ -508,21 +698,21 @@ class NotificationLevelCardView(discord.ui.View):
             )
             background_button.callback = self.background_settings
             
-            text_button = discord.ui.Button(
-                label="Text Settings",
-                style=discord.ButtonStyle.secondary,
-                emoji="<:DescriptionLOGO:1407733417172533299>",
-                row=0
-            )
-            text_button.callback = self.text_settings
-            
-            outline_button = discord.ui.Button(
+            profile_outline_button = discord.ui.Button(
                 label="Profile Outline",
                 style=discord.ButtonStyle.secondary,
                 emoji="<:ProfileLOGO:1408830057819930806>",
                 row=0
             )
-            outline_button.callback = self.outline_settings
+            profile_outline_button.callback = self.profile_outline_settings
+            
+            text_settings_button = discord.ui.Button(
+                label="Text Settings",
+                style=discord.ButtonStyle.secondary,
+                emoji="<:DescriptionLOGO:1407733417172533299>",
+                row=0
+            )
+            text_settings_button.callback = self.text_settings
             
             back_button = discord.ui.Button(
                 label="Back",
@@ -533,21 +723,569 @@ class NotificationLevelCardView(discord.ui.View):
             back_button.callback = self.back_to_notification
             
             self.add_item(background_button)
-            self.add_item(text_button)
-            self.add_item(outline_button)
+            self.add_item(profile_outline_button)
+            self.add_item(text_settings_button)
+            self.add_item(back_button)
+            
+        elif self.mode == "background":
+            # Background buttons
+            color_button = discord.ui.Button(
+                label="Color",
+                style=discord.ButtonStyle.secondary,
+                emoji="<:ColorLOGO:1408828590241615883>"
+            )
+            color_button.callback = self.background_color_settings
+            
+            image_button = discord.ui.Button(
+                label="Image",
+                style=discord.ButtonStyle.secondary,
+                emoji="<:ImageLOGO:1407072328134951043>"
+            )
+            image_button.callback = self.background_image_settings
+            
+            back_button = discord.ui.Button(
+                label="Back",
+                style=discord.ButtonStyle.gray,
+                emoji="<:BackLOGO:1407071474233114766>"
+            )
+            back_button.callback = self.back_to_main
+            
+            self.add_item(color_button)
+            self.add_item(image_button)
+            self.add_item(back_button)
+            
+        elif self.mode == "profile_outline":
+            # Profile outline buttons
+            config = self.get_config()
+            outline_enabled = config.get("outline_enabled", True)
+            
+            toggle_button = discord.ui.Button(
+                label="ON" if outline_enabled else "OFF",
+                style=discord.ButtonStyle.success if outline_enabled else discord.ButtonStyle.danger,
+                emoji="<:OnLOGO:1407072463883472978>" if outline_enabled else "<:OffLOGO:1407072621836894380>"
+            )
+            toggle_button.callback = self.toggle_profile_outline
+            
+            color_button = discord.ui.Button(
+                label="Color",
+                style=discord.ButtonStyle.secondary,
+                emoji="<:ColorLOGO:1408828590241615883>"
+            )
+            color_button.callback = self.profile_outline_color_settings
+            
+            image_button = discord.ui.Button(
+                label="Image",
+                style=discord.ButtonStyle.secondary,
+                emoji="<:ImageLOGO:1407072328134951043>"
+            )
+            image_button.callback = self.profile_outline_image_settings
+            
+            back_button = discord.ui.Button(
+                label="Back",
+                style=discord.ButtonStyle.gray,
+                emoji="<:BackLOGO:1407071474233114766>"
+            )
+            back_button.callback = self.back_to_main
+            
+            self.add_item(toggle_button)
+            self.add_item(color_button)
+            self.add_item(image_button)
+            self.add_item(back_button)
+            
+        elif self.mode == "text_settings":
+            # Text settings buttons
+            level_button = discord.ui.Button(
+                label="Level",
+                style=discord.ButtonStyle.secondary,
+                emoji="<a:XPLOGO:1409634015043915827>",
+                row=0
+            )
+            level_button.callback = self.level_text_settings
+            
+            username_button = discord.ui.Button(
+                label="Username",
+                style=discord.ButtonStyle.secondary,
+                emoji="<:ParticipantsLOGO:1407733929389199460>",
+                row=0
+            )
+            username_button.callback = self.username_text_settings
+            
+            messages_button = discord.ui.Button(
+                label="Messages", 
+                style=discord.ButtonStyle.secondary,
+                emoji="<:MessagesLOGO:1409586848577093837>",
+                row=1
+            )
+            messages_button.callback = self.messages_text_settings
+            
+            information_button = discord.ui.Button(
+                label="Information",
+                style=discord.ButtonStyle.secondary,
+                emoji="<:InfoLOGO:1409635426507583508>", 
+                row=1
+            )
+            information_button.callback = self.information_text_settings
+            
+            back_button = discord.ui.Button(
+                label="Back",
+                style=discord.ButtonStyle.gray,
+                emoji="<:BackLOGO:1407071474233114766>",
+                row=2
+            )
+            back_button.callback = self.back_to_main
+            
+            self.add_item(level_button)
+            self.add_item(username_button)
+            self.add_item(messages_button)
+            self.add_item(information_button)
+            self.add_item(back_button)
+            
+        elif self.mode in ["level_text", "username_text", "messages_text", "information_text"]:
+            # Text element buttons
+            color_button = discord.ui.Button(
+                label="Color",
+                style=discord.ButtonStyle.secondary,
+                emoji="<:ColorLOGO:1408828590241615883>"
+            )
+            color_button.callback = self.text_color_settings
+            
+            image_button = discord.ui.Button(
+                label="Image",
+                style=discord.ButtonStyle.secondary,
+                emoji="<:ImageLOGO:1407072328134951043>"
+            )
+            image_button.callback = self.text_image_settings
+            
+            back_button = discord.ui.Button(
+                label="Back",
+                style=discord.ButtonStyle.gray,
+                emoji="<:BackLOGO:1407071474233114766>"
+            )
+            back_button.callback = self.back_to_text_settings
+            
+            self.add_item(color_button)
+            self.add_item(image_button)
+            self.add_item(back_button)
+            
+        elif self.mode.endswith("_color"):
+            # Color settings buttons
+            hex_button = discord.ui.Button(
+                label="Hex Code",
+                style=discord.ButtonStyle.secondary,
+                emoji="<:HEXcodeLOGO:1408833347404304434>"
+            )
+            hex_button.callback = self.hex_color_modal
+            
+            rgb_button = discord.ui.Button(
+                label="RGB Code",
+                style=discord.ButtonStyle.secondary,
+                emoji="<:RGBcodeLOGO:1408831982141575290>"
+            )
+            rgb_button.callback = self.rgb_color_modal
+            
+            back_button = discord.ui.Button(
+                label="Back",
+                style=discord.ButtonStyle.gray,
+                emoji="<:BackLOGO:1407071474233114766>"
+            )
+            back_button.callback = self.back_to_parent_mode
+            
+            self.add_item(hex_button)
+            self.add_item(rgb_button)
+            self.add_item(back_button)
+            
+        elif self.mode.endswith("_image"):
+            # Image settings buttons
+            url_button = discord.ui.Button(
+                label="Set URL",
+                style=discord.ButtonStyle.secondary,
+                emoji="<:URLLOGO:1407071963809054931>"
+            )
+            url_button.callback = self.image_url_modal
+            
+            upload_button = discord.ui.Button(
+                label="Upload Image",
+                style=discord.ButtonStyle.secondary,
+                emoji="<:UploadLOGO:1407072005567545478>"
+            )
+            upload_button.callback = self.upload_image
+            
+            back_button = discord.ui.Button(
+                label="Back",
+                style=discord.ButtonStyle.gray,
+                emoji="<:BackLOGO:1407071474233114766>"
+            )
+            back_button.callback = self.back_to_parent_mode
+            
+            self.add_item(url_button)
+            self.add_item(upload_button)
             self.add_item(back_button)
 
-    # Button callbacks would be implemented here...
+    # Button callbacks
     async def background_settings(self, interaction: discord.Interaction):
-        await interaction.response.send_message("Background settings coming soon!", ephemeral=True)
+        self.mode = "background"
+        embed = self.get_background_embed()
+        self.update_buttons()
+        await interaction.response.edit_message(embed=embed, view=self)
+
+    async def profile_outline_settings(self, interaction: discord.Interaction):
+        self.mode = "profile_outline"
+        embed = self.get_profile_outline_embed()
+        self.update_buttons()
+        await interaction.response.edit_message(embed=embed, view=self)
 
     async def text_settings(self, interaction: discord.Interaction):
-        await interaction.response.send_message("Text settings coming soon!", ephemeral=True)
+        self.mode = "text_settings"
+        embed = self.get_text_settings_embed()
+        self.update_buttons()
+        await interaction.response.edit_message(embed=embed, view=self)
 
-    async def outline_settings(self, interaction: discord.Interaction):
-        await interaction.response.send_message("Outline settings coming soon!", ephemeral=True)
+    async def background_color_settings(self, interaction: discord.Interaction):
+        self.mode = "background_color"
+        embed = self.get_background_embed()
+        embed.title = "<:ColorLOGO:1408828590241615883> Background Color"
+        embed.description = "Choose how to set your background color"
+        self.update_buttons()
+        await interaction.response.edit_message(embed=embed, view=self)
+
+    async def background_image_settings(self, interaction: discord.Interaction):
+        self.mode = "background_image"
+        embed = self.get_background_embed()
+        embed.title = "<:ImageLOGO:1407072328134951043> Background Image"
+        embed.description = "Set a custom background image"
+        self.update_buttons()
+        await interaction.response.edit_message(embed=embed, view=self)
+
+    async def profile_outline_color_settings(self, interaction: discord.Interaction):
+        self.mode = "profile_outline_color"
+        embed = self.get_profile_outline_embed()
+        embed.title = "<:ColorLOGO:1408828590241615883> Profile Outline Color"
+        embed.description = "Choose how to set your profile outline color"
+        self.update_buttons()
+        await interaction.response.edit_message(embed=embed, view=self)
+
+    async def profile_outline_image_settings(self, interaction: discord.Interaction):
+        self.mode = "profile_outline_image"
+        embed = self.get_profile_outline_embed()
+        embed.title = "<:ImageLOGO:1407072328134951043> Profile Outline Image"
+        embed.description = "Set a custom profile outline image"
+        self.update_buttons()
+        await interaction.response.edit_message(embed=embed, view=self)
+
+    async def toggle_profile_outline(self, interaction: discord.Interaction):
+        await interaction.response.defer()
+        config = self.get_config()
+        config["outline_enabled"] = not config.get("outline_enabled", True)
+        self.save_config(config)
+        
+        await self.generate_preview_image(interaction.user)
+        embed = self.get_profile_outline_embed()
+        self.update_buttons()
+        await interaction.edit_original_response(embed=embed, view=self)
+
+    async def level_text_settings(self, interaction: discord.Interaction):
+        self.mode = "level_text"
+        embed = self.get_text_element_embed("level")
+        self.update_buttons()
+        await interaction.response.edit_message(embed=embed, view=self)
+
+    async def username_text_settings(self, interaction: discord.Interaction):
+        self.mode = "username_text"
+        embed = self.get_text_element_embed("username")
+        self.update_buttons()
+        await interaction.response.edit_message(embed=embed, view=self)
+
+    async def messages_text_settings(self, interaction: discord.Interaction):
+        self.mode = "messages_text"
+        embed = self.get_text_element_embed("messages")
+        self.update_buttons()
+        await interaction.response.edit_message(embed=embed, view=self)
+
+    async def information_text_settings(self, interaction: discord.Interaction):
+        self.mode = "information_text"
+        embed = self.get_text_element_embed("information")
+        self.update_buttons()
+        await interaction.response.edit_message(embed=embed, view=self)
+
+    async def text_color_settings(self, interaction: discord.Interaction):
+        self.mode = self.mode + "_color"
+        embed = self.get_text_element_embed(self.mode.replace("_text_color", ""))
+        embed.title = embed.title.replace("Settings", "Color")
+        embed.description = "Choose how to set the text color"
+        self.update_buttons()
+        await interaction.response.edit_message(embed=embed, view=self)
+
+    async def text_image_settings(self, interaction: discord.Interaction):
+        self.mode = self.mode + "_image"
+        embed = self.get_text_element_embed(self.mode.replace("_text_image", ""))
+        embed.title = embed.title.replace("Settings", "Image")
+        embed.description = "Set a custom text image overlay"
+        self.update_buttons()
+        await interaction.response.edit_message(embed=embed, view=self)
+
+    async def hex_color_modal(self, interaction: discord.Interaction):
+        modal = NotificationHexColorModal(self)
+        await interaction.response.send_modal(modal)
+
+    async def rgb_color_modal(self, interaction: discord.Interaction):
+        modal = NotificationRGBColorModal(self)
+        await interaction.response.send_modal(modal)
+
+    async def image_url_modal(self, interaction: discord.Interaction):
+        modal = NotificationImageURLModal(self)
+        await interaction.response.send_modal(modal)
+
+    async def upload_image(self, interaction: discord.Interaction):
+        self.waiting_for_image = True
+        self.current_image_type = self.mode.replace("_image", "")
+        embed = discord.Embed(
+            title="<:UploadLOGO:1407072005567545478> Upload Image",
+            description="Please send an image file in this channel.\n\n**Only you can upload the image for security reasons.**",
+            color=0xFFFFFF
+        )
+        self.update_buttons()
+        await interaction.response.edit_message(embed=embed, view=self)
+
+    # Navigation callbacks
+    async def back_to_main(self, interaction: discord.Interaction):
+        self.mode = "main"
+        embed = self.get_main_embed()
+        self.update_buttons()
+        await interaction.response.edit_message(embed=embed, view=self)
+
+    async def back_to_text_settings(self, interaction: discord.Interaction):
+        self.mode = "text_settings"
+        embed = self.get_text_settings_embed()
+        self.update_buttons()
+        await interaction.response.edit_message(embed=embed, view=self)
+
+    async def back_to_parent_mode(self, interaction: discord.Interaction):
+        if self.mode.endswith("_color"):
+            self.mode = self.mode.replace("_color", "")
+        elif self.mode.endswith("_image"):
+            self.mode = self.mode.replace("_image", "")
+        
+        if self.mode == "background":
+            embed = self.get_background_embed()
+        elif self.mode == "profile_outline":
+            embed = self.get_profile_outline_embed()
+        elif self.mode in ["level_text", "username_text", "messages_text", "information_text"]:
+            element_type = self.mode.replace("_text", "")
+            embed = self.get_text_element_embed(element_type)
+        else:
+            embed = self.get_main_embed()
+            
+        self.update_buttons()
+        await interaction.response.edit_message(embed=embed, view=self)
+
+    async def back_from_image_upload(self, interaction: discord.Interaction):
+        self.waiting_for_image = False
+        self.mode = self.current_image_type + "_image"
+        
+        if self.mode == "background_image":
+            embed = self.get_background_embed()
+            embed.title = "<:ImageLOGO:1407072328134951043> Background Image"
+            embed.description = "Set a custom background image"
+        elif self.mode == "profile_outline_image":
+            embed = self.get_profile_outline_embed()
+            embed.title = "<:ImageLOGO:1407072328134951043> Profile Outline Image"
+            embed.description = "Set a custom profile outline image"
+        else:
+            embed = self.get_main_embed()
+            
+        self.update_buttons()
+        await interaction.response.edit_message(embed=embed, view=self)
 
     async def back_to_notification(self, interaction: discord.Interaction):
-        view = LevelNotificationView(self.bot, interaction.user)
+        view = LevelNotificationView(self.bot, self.user_id)
         embed = view.get_embed()
         await interaction.response.edit_message(embed=embed, view=view)
+
+# Modal classes
+class NotificationHexColorModal(discord.ui.Modal):
+    def __init__(self, view):
+        super().__init__(title='Hex Color')
+        self.view = view
+
+        self.hex_input = discord.ui.TextInput(
+            label='Hex Color Code',
+            placeholder='#FFFFFF or FFFFFF',
+            required=True,
+            max_length=7
+        )
+        self.add_item(self.hex_input)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        await interaction.response.defer()
+
+        hex_value = self.hex_input.value.strip()
+        if hex_value.startswith('#'):
+            hex_value = hex_value[1:]
+
+        try:
+            rgb = tuple(int(hex_value[i:i+2], 16) for i in (0, 2, 4))
+            config = self.view.get_config()
+
+            if self.view.mode == "background_color":
+                config["background_color"] = list(rgb)
+                config.pop("background_image", None)
+            elif self.view.mode == "profile_outline_color":
+                config["outline_color"] = list(rgb)
+            elif self.view.mode == "level_text_color":
+                config["level_text_color"] = list(rgb)
+            elif self.view.mode == "username_text_color":
+                config["username_color"] = list(rgb)
+            elif self.view.mode == "messages_text_color":
+                config["message_text_color"] = list(rgb)
+            elif self.view.mode == "information_text_color":
+                config["info_text_color"] = list(rgb)
+
+            self.view.save_config(config)
+            await self.view.generate_preview_image(interaction.user)
+            
+            # Return to appropriate embed
+            self.view.mode = self.view.mode.replace("_color", "")
+            if self.view.mode == "background":
+                embed = self.view.get_background_embed()
+            elif self.view.mode == "profile_outline":
+                embed = self.view.get_profile_outline_embed()
+            elif self.view.mode in ["level_text", "username_text", "messages_text", "information_text"]:
+                element_type = self.view.mode.replace("_text", "")
+                embed = self.view.get_text_element_embed(element_type)
+            
+            self.view.update_buttons()
+            await interaction.edit_original_response(embed=embed, view=self.view)
+            
+        except ValueError:
+            error_embed = discord.Embed(
+                title="<:ErrorLOGO:1407071682031648850> Invalid Hex Color",
+                description="Please enter a valid hex color code (e.g., #FF0000 or FF0000)",
+                color=discord.Color.red()
+            )
+            await interaction.followup.send(embed=error_embed, ephemeral=True)
+
+class NotificationRGBColorModal(discord.ui.Modal):
+    def __init__(self, view):
+        super().__init__(title='RGB Color')
+        self.view = view
+
+        self.red_input = discord.ui.TextInput(
+            label='Red (0-255)',
+            placeholder='255',
+            required=True,
+            max_length=3
+        )
+        self.green_input = discord.ui.TextInput(
+            label='Green (0-255)',
+            placeholder='255',
+            required=True,
+            max_length=3
+        )
+        self.blue_input = discord.ui.TextInput(
+            label='Blue (0-255)',
+            placeholder='255',
+            required=True,
+            max_length=3
+        )
+
+        self.add_item(self.red_input)
+        self.add_item(self.green_input)
+        self.add_item(self.blue_input)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        await interaction.response.defer()
+
+        try:
+            r = int(self.red_input.value)
+            g = int(self.green_input.value)
+            b = int(self.blue_input.value)
+
+            if not all(0 <= val <= 255 for val in [r, g, b]):
+                raise ValueError("Values must be between 0 and 255")
+
+            config = self.view.get_config()
+
+            if self.view.mode == "background_color":
+                config["background_color"] = [r, g, b]
+                config.pop("background_image", None)
+            elif self.view.mode == "profile_outline_color":
+                config["outline_color"] = [r, g, b]
+            elif self.view.mode == "level_text_color":
+                config["level_text_color"] = [r, g, b]
+            elif self.view.mode == "username_text_color":
+                config["username_color"] = [r, g, b]
+            elif self.view.mode == "messages_text_color":
+                config["message_text_color"] = [r, g, b]
+            elif self.view.mode == "information_text_color":
+                config["info_text_color"] = [r, g, b]
+
+            self.view.save_config(config)
+            await self.view.generate_preview_image(interaction.user)
+            
+            # Return to appropriate embed
+            self.view.mode = self.view.mode.replace("_color", "")
+            if self.view.mode == "background":
+                embed = self.view.get_background_embed()
+            elif self.view.mode == "profile_outline":
+                embed = self.view.get_profile_outline_embed()
+            elif self.view.mode in ["level_text", "username_text", "messages_text", "information_text"]:
+                element_type = self.view.mode.replace("_text", "")
+                embed = self.view.get_text_element_embed(element_type)
+            
+            self.view.update_buttons()
+            await interaction.edit_original_response(embed=embed, view=self.view)
+            
+        except ValueError:
+            error_embed = discord.Embed(
+                title="<:ErrorLOGO:1407071682031648850> Invalid RGB Values",
+                description="Please enter valid RGB values (0-255 for each color)",
+                color=discord.Color.red()
+            )
+            await interaction.followup.send(embed=error_embed, ephemeral=True)
+
+class NotificationImageURLModal(discord.ui.Modal):
+    def __init__(self, view):
+        super().__init__(title='Image URL')
+        self.view = view
+
+        self.url_input = discord.ui.TextInput(
+            label='Image URL',
+            placeholder='https://example.com/image.png',
+            required=True,
+            max_length=500
+        )
+        self.add_item(self.url_input)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        await interaction.response.defer()
+
+        url = self.url_input.value.strip()
+        if not url.startswith(('http://', 'https://')):
+            error_embed = discord.Embed(
+                title="<:ErrorLOGO:1407071682031648850> Invalid URL",
+                description="Please enter a valid HTTP or HTTPS URL",
+                color=discord.Color.red()
+            )
+            await interaction.followup.send(embed=error_embed, ephemeral=True)
+            return
+
+        config = self.view.get_config()
+
+        if self.view.mode == "background_image":
+            config["background_image"] = url
+            config.pop("background_color", None)
+        elif self.view.mode == "profile_outline_image":
+            config["outline_image"] = url
+
+        self.view.save_config(config)
+        await self.view.generate_preview_image(interaction.user)
+        
+        # Return to appropriate embed
+        self.view.mode = self.view.mode.replace("_image", "")
+        if self.view.mode == "background":
+            embed = self.view.get_background_embed()
+        elif self.view.mode == "profile_outline":
+            embed = self.view.get_profile_outline_embed()
+        
+        self.view.update_buttons()
+        await interaction.edit_original_response(embed=embed, view=self.view)
