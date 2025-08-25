@@ -122,6 +122,10 @@
         "enabled": true,
         "image_permission_level": 0,
         "color_permission_level": 10
+      },
+      "bar_progress": {
+        "enabled": true,
+        "color_permission_level": 11
       }
     }
   },
