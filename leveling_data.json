@@ -116,6 +116,13 @@
         17,
         16
       ]
+    },
+    "customization_permissions": {
+      "background": {
+        "enabled": true,
+        "image_permission_level": 0,
+        "color_permission_level": 10
+      }
     }
   },
   "user_data": {
