@@ -2369,6 +2369,48 @@ class BackToMainButton(discord.ui.Button):
         embed = view.get_main_embed()
         await interaction.response.edit_message(embed=embed, view=view)
 
+# Level Card Settings Button View for /level command
+class LevelCardSettingsButtonView(discord.ui.View):
+    def __init__(self, user):
+        super().__init__(timeout=300)
+        self.user = user
+
+    @discord.ui.button(label="Settings", style=discord.ButtonStyle.secondary, emoji="<:SettingLOGO:1407071854593839239>")
+    async def settings(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user.id != self.user.id:
+            await interaction.response.send_message("❌ Only the user can access their settings!", ephemeral=True)
+            return
+
+        # Create DM channel
+        try:
+            dm_channel = await interaction.user.create_dm()
+        except:
+            await interaction.response.send_message("❌ Unable to send DM. Please check your privacy settings.", ephemeral=True)
+            return
+
+        # Get user's current level
+        data = load_leveling_data()
+        user_data = data["user_data"].get(str(interaction.user.id), {"xp": 0, "level": 1})
+        user_level = user_data["level"]
+
+        # Create level card manager for DMs
+        view = LevelCardManagerView(interaction.client, interaction.user.id)
+        view.guild = interaction.guild
+        view.user_level = user_level  # Store user level for permission checks
+        view.is_dm = True  # Mark as DM
+
+        # Generate preview image
+        await view.generate_preview_image(interaction.user)
+
+        embed = view.get_main_embed()
+        view.update_buttons()
+
+        try:
+            await dm_channel.send(embed=embed, view=view)
+            await interaction.response.send_message("✅ Level card settings sent to your DMs!", ephemeral=True)
+        except:
+            await interaction.response.send_message("❌ Unable to send DM. Please check your privacy settings.", ephemeral=True)
+
 # Level Card Management System
 class LevelCardManagerView(discord.ui.View):
     def __init__(self, bot, user_id):
@@ -2380,6 +2422,8 @@ class LevelCardManagerView(discord.ui.View):
         self.waiting_for_image = False
         self.current_image_type = None
         self.preview_image_url = None
+        self.user_level = 1  # Will be set when created
+        self.is_dm = False  # Will be set to True when used in DMs
 
     def get_main_embed(self):
         embed = discord.Embed(
@@ -2699,6 +2743,95 @@ class LevelCardManagerView(discord.ui.View):
         data["leveling_settings"]["level_card"] = self.config
         save_leveling_data(data)
 
+    def has_permission_for_feature(self, feature_type, action_type):
+        """Check if user has permission for a specific feature and action type"""
+        try:
+            data = load_leveling_data()
+            permissions = data["leveling_settings"].get("customization_permissions", {})
+            
+            # Map features to permission categories
+            feature_mapping = {
+                "background": "background",
+                "username": "username", 
+                "profile_outline": "avatar_outline",
+                "xp_info": "content",
+                "xp_progress": "bar_progress",
+                "xp_bar": "bar_progress",
+                "level_text": "content",
+                "ranking_text": "content"
+            }
+            
+            permission_category = feature_mapping.get(feature_type, feature_type)
+            category_config = permissions.get(permission_category, {})
+            
+            # Check if category is enabled
+            if not category_config.get("enabled", True):
+                return False
+            
+            # Get required level for action type
+            required_level = 0
+            if action_type == "color":
+                required_level = category_config.get("color_permission_level", 0)
+            elif action_type == "image":
+                required_level = category_config.get("image_permission_level", 0)
+            
+            return self.user_level >= required_level
+        except Exception as e:
+            print(f"Error checking permissions: {e}")
+            return True  # Default to allowing if error
+
+    def has_current_image(self):
+        """Check if current mode has an image set"""
+        if self.mode == "xp_bar_image":
+            return self.config.get("level_bar_image") and self.config["level_bar_image"] != "https://raw.githubusercontent.com/TheBlueEL/pictures/refs/heads/main/LevelBar.png"
+        elif self.mode == "background_image":
+            return self.config.get("background_image") and self.config["background_image"] != "None"
+        elif self.mode == "profile_outline_image":
+            return self.config.get("profile_outline", {}).get("custom_image")
+        elif self.mode == "username_image":
+            return self.config.get("username_image") and self.config["username_image"] != "None"
+        elif self.mode == "xp_info_image":
+            return self.config.get("xp_info_image") and self.config["xp_info_image"] != "None"
+        elif self.mode == "xp_progress_image":
+            return self.config.get("xp_progress_image") and self.config["xp_progress_image"] != "None"
+        elif self.mode == "level_text_image":
+            return self.config.get("level_text_image") and self.config["level_text_image"] != "None"
+        elif self.mode == "ranking_text_image":
+            return self.config.get("ranking_position", {}).get("background_image") and self.config["ranking_position"]["background_image"] != "None"
+        return False
+
+    def has_modified_color(self):
+        """Check if current mode has color modified from default"""
+        default_config = {
+            "xp_text_color": [65, 65, 69],
+            "xp_bar_color": [225, 66, 53], 
+            "background_color": [15, 17, 16],
+            "username_color": [255, 255, 255],
+            "level_color": [245, 55, 48]
+        }
+        
+        if self.mode == "xp_info_color":
+            current = self.config.get("xp_text_color", default_config["xp_text_color"])
+            return current != default_config["xp_text_color"]
+        elif self.mode == "xp_progress_color":
+            current = self.config.get("xp_bar_color", default_config["xp_bar_color"])
+            return current != default_config["xp_bar_color"]
+        elif self.mode == "background_color":
+            current = self.config.get("background_color", default_config["background_color"])
+            return current != default_config["background_color"]
+        elif self.mode == "username_color":
+            current = self.config.get("username_color", default_config["username_color"])
+            return current != default_config["username_color"]
+        elif self.mode == "profile_outline_color":
+            return self.config.get("profile_outline", {}).get("color_override") is not None
+        elif self.mode == "level_text_color":
+            current = self.config.get("level_color", default_config["level_color"])
+            return current != default_config["level_color"]
+        elif self.mode == "ranking_text_color":
+            current = self.config.get("ranking_position", {}).get("color", [255, 255, 255])
+            return current != [255, 255, 255]
+        return False
+
     async def generate_preview_image(self, interaction_user):
         """Generate preview image and upload it to GitHub"""
         try:
@@ -2803,26 +2936,36 @@ class LevelCardManagerView(discord.ui.View):
 
         elif self.mode in ["xp_info_color", "xp_progress_color", "xp_bar_color", "background_color", "username_color", "profile_outline_color", "level_text_color", "ranking_text_color"]:
             # Color selection buttons
+            feature_type = self.mode.replace("_color", "")
+            has_permission = self.has_permission_for_feature(feature_type, "color")
+            
             hex_button = discord.ui.Button(
                 label="Hex Code",
-                style=discord.ButtonStyle.primary,
-                emoji="<:HEXcodeLOGO:1408833347404304434>"
+                style=discord.ButtonStyle.secondary,
+                emoji="<:HEXcodeLOGO:1408833347404304434>",
+                disabled=not has_permission
             )
             hex_button.callback = self.hex_color
 
             rgb_button = discord.ui.Button(
                 label="RGB Code",
                 style=discord.ButtonStyle.secondary,
-                emoji="<:RGBcodeLOGO:1408831982141575290>"
+                emoji="<:RGBcodeLOGO:1408831982141575290>",
+                disabled=not has_permission
             )
             rgb_button.callback = self.rgb_color
 
-            reset_button = discord.ui.Button(
-                label="Reset",
-                style=discord.ButtonStyle.danger,
-                emoji="<:UpdateLOGO:1407072818214080695>"
-            )
-            reset_button.callback = self.reset_color
+            # Only show reset button if color has been modified from default
+            has_modified_color = self.has_modified_color()
+            if has_modified_color:
+                reset_button = discord.ui.Button(
+                    label="Reset",
+                    style=discord.ButtonStyle.secondary,
+                    emoji="<:UpdateLOGO:1407072818214080695>",
+                    disabled=not has_permission
+                )
+                reset_button.callback = self.reset_color
+                self.add_item(reset_button)
 
             back_button = discord.ui.Button(
                 label="Back",
@@ -2833,31 +2976,40 @@ class LevelCardManagerView(discord.ui.View):
 
             self.add_item(hex_button)
             self.add_item(rgb_button)
-            self.add_item(reset_button)
             self.add_item(back_button)
 
         elif self.mode in ["xp_bar_image", "background_image", "profile_outline_image", "username_image", "xp_info_image", "xp_progress_image", "level_text_image", "ranking_text_image"]:
             # Image selection buttons
+            feature_type = self.mode.replace("_image", "")
+            has_permission = self.has_permission_for_feature(feature_type, "image")
+            
             url_button = discord.ui.Button(
                 label="Set URL",
-                style=discord.ButtonStyle.primary,
-                emoji="<:URLLOGO:1407071963809054931>"
+                style=discord.ButtonStyle.secondary,
+                emoji="<:URLLOGO:1407071963809054931>",
+                disabled=not has_permission
             )
             url_button.callback = self.image_url
 
             upload_button = discord.ui.Button(
                 label="Upload Image",
                 style=discord.ButtonStyle.secondary,
-                emoji="<:UploadLOGO:1407072005567545478>"
+                emoji="<:UploadLOGO:1407072005567545478>",
+                disabled=not has_permission
             )
             upload_button.callback = self.upload_image
 
-            clear_button = discord.ui.Button(
-                label="Clear Image",
-                style=discord.ButtonStyle.danger,
-                emoji="<:DeleteLOGO:1407071421363916841>"
-            )
-            clear_button.callback = self.clear_image
+            # Only show clear button if there's actually an image to clear
+            has_image = self.has_current_image()
+            if has_image:
+                clear_button = discord.ui.Button(
+                    label="Clear Image",
+                    style=discord.ButtonStyle.secondary,
+                    emoji="<:DeleteLOGO:1407071421363916841>",
+                    disabled=not has_permission
+                )
+                clear_button.callback = self.clear_image
+                self.add_item(clear_button)
 
             back_button = discord.ui.Button(
                 label="Back",
@@ -2868,15 +3020,19 @@ class LevelCardManagerView(discord.ui.View):
 
             self.add_item(url_button)
             self.add_item(upload_button)
-            self.add_item(clear_button)
             self.add_item(back_button)
 
         elif self.mode in ["xp_info", "xp_progress", "background", "username"]:
-            # Sub-category buttons
+            # Sub-category buttons with permission checks
+            feature_type = self.mode
+            has_color_permission = self.has_permission_for_feature(feature_type, "color")
+            has_image_permission = self.has_permission_for_feature(feature_type, "image")
+            
             color_button = discord.ui.Button(
                 label="Color",
-                style=discord.ButtonStyle.primary,
-                emoji="<:ColorLOGO:1408828590241615883>"
+                style=discord.ButtonStyle.secondary,
+                emoji="<:ColorLOGO:1408828590241615883>",
+                disabled=not has_color_permission
             )
             color_button.callback = self.color_settings
 
@@ -2884,7 +3040,8 @@ class LevelCardManagerView(discord.ui.View):
             image_button = discord.ui.Button(
                 label="Image",
                 style=discord.ButtonStyle.secondary,
-                emoji="<:ImageLOGO:1407072328134951043>"
+                emoji="<:ImageLOGO:1407072328134951043>",
+                disabled=not has_image_permission
             )
             image_button.callback = self.image_settings
             self.add_item(image_button)
@@ -2900,18 +3057,23 @@ class LevelCardManagerView(discord.ui.View):
             self.add_item(back_button)
 
         elif self.mode == "xp_bar":
-            # XP Bar specific buttons
+            # XP Bar specific buttons with permission checks
+            has_color_permission = self.has_permission_for_feature("xp_bar", "color")
+            has_image_permission = self.has_permission_for_feature("xp_bar", "image")
+            
             color_button = discord.ui.Button(
                 label="Color",
-                style=discord.ButtonStyle.primary,
-                emoji="<:ColorLOGO:1408828590241615883>"
+                style=discord.ButtonStyle.secondary,
+                emoji="<:ColorLOGO:1408828590241615883>",
+                disabled=not has_color_permission
             )
             color_button.callback = self.color_settings
 
             image_button = discord.ui.Button(
                 label="Image",
                 style=discord.ButtonStyle.secondary,
-                emoji="<:ImageLOGO:1407072328134951043>"
+                emoji="<:ImageLOGO:1407072328134951043>",
+                disabled=not has_image_permission
             )
             image_button.callback = self.image_settings
 
@@ -2927,25 +3089,32 @@ class LevelCardManagerView(discord.ui.View):
             self.add_item(back_button)
 
         elif self.mode == "profile_outline":
-            # Profile outline main buttons
+            # Profile outline main buttons with permission checks
+            has_color_permission = self.has_permission_for_feature("profile_outline", "color")
+            has_image_permission = self.has_permission_for_feature("profile_outline", "image")
+            
+            # Dynamic toggle button
+            is_enabled = self.config.get("profile_outline", {}).get("enabled", True)
             toggle_button = discord.ui.Button(
-                label="ON" if self.config.get("profile_outline", {}).get("enabled", True) else "OFF",
-                style=discord.ButtonStyle.success if self.config.get("profile_outline", {}).get("enabled", True) else discord.ButtonStyle.danger,
-                emoji="<:OnLOGO:1407072463883472978>" if self.config.get("profile_outline", {}).get("enabled", True) else "<:OffLOGO:1407072621836894380>"
+                label="ON" if is_enabled else "OFF",
+                style=discord.ButtonStyle.success if is_enabled else discord.ButtonStyle.danger,
+                emoji="<:OnLOGO:1407072463883472978>" if is_enabled else "<:OffLOGO:1407072621836894380>"
             )
             toggle_button.callback = self.toggle_profile_outline
 
             color_button = discord.ui.Button(
                 label="Color",
-                style=discord.ButtonStyle.primary,
-                emoji="<:ColorLOGO:1408828590241615883>"
+                style=discord.ButtonStyle.secondary,
+                emoji="<:ColorLOGO:1408828590241615883>",
+                disabled=not has_color_permission
             )
             color_button.callback = self.color_settings
 
             image_button = discord.ui.Button(
                 label="Image",
                 style=discord.ButtonStyle.secondary,
-                emoji="<:ImageLOGO:1407072328134951043>"
+                emoji="<:ImageLOGO:1407072328134951043>",
+                disabled=not has_image_permission
             )
             image_button.callback = self.image_settings
 
@@ -2989,18 +3158,23 @@ class LevelCardManagerView(discord.ui.View):
             self.add_item(back_button)
 
         elif self.mode in ["level_text", "ranking_text"]:
-            # Level/Ranking text buttons
+            # Level/Ranking text buttons with permission checks
+            has_color_permission = self.has_permission_for_feature(self.mode, "color")
+            has_image_permission = self.has_permission_for_feature(self.mode, "image")
+            
             color_button = discord.ui.Button(
                 label="Color",
-                style=discord.ButtonStyle.primary,
-                emoji="<:ColorLOGO:1408828590241615883>"
+                style=discord.ButtonStyle.secondary,
+                emoji="<:ColorLOGO:1408828590241615883>",
+                disabled=not has_color_permission
             )
             color_button.callback = self.color_settings
 
             image_button = discord.ui.Button(
                 label="Image",
                 style=discord.ButtonStyle.secondary,
-                emoji="<:ImageLOGO:1407072328134951043>"
+                emoji="<:ImageLOGO:1407072328134951043>",
+                disabled=not has_image_permission
             )
             image_button.callback = self.image_settings
 
@@ -3019,7 +3193,7 @@ class LevelCardManagerView(discord.ui.View):
             # Main buttons
             leveling_bar_button = discord.ui.Button(
                 label="Leveling Bar",
-                style=discord.ButtonStyle.primary,
+                style=discord.ButtonStyle.secondary,
                 emoji="📊",
                 row=0
             )
@@ -3057,20 +3231,31 @@ class LevelCardManagerView(discord.ui.View):
             )
             content_button.callback = self.content_settings
 
-            back_button = discord.ui.Button(
-                label="Back",
-                style=discord.ButtonStyle.gray,
-                emoji="<:BackLOGO:1407071474233114766>",
-                row=1
-            )
-            back_button.callback = self.back_to_level_system
+            # Add Close button for DMs, Back button for guild
+            if hasattr(self, 'is_dm') and self.is_dm:
+                close_button = discord.ui.Button(
+                    label="Close",
+                    style=discord.ButtonStyle.gray,
+                    emoji="❌",
+                    row=1
+                )
+                close_button.callback = self.close_dm
+                self.add_item(close_button)
+            else:
+                back_button = discord.ui.Button(
+                    label="Back",
+                    style=discord.ButtonStyle.gray,
+                    emoji="<:BackLOGO:1407071474233114766>",
+                    row=1
+                )
+                back_button.callback = self.back_to_level_system
+                self.add_item(back_button)
 
             self.add_item(leveling_bar_button)
             self.add_item(background_button)
             self.add_item(username_button)
             self.add_item(profile_outline_button)
             self.add_item(content_button)
-            self.add_item(back_button)
 
     # Main navigation callbacks
     async def leveling_bar_settings(self, interaction: discord.Interaction):
@@ -3311,20 +3496,29 @@ class LevelCardManagerView(discord.ui.View):
     async def reset_color(self, interaction: discord.Interaction):
         await interaction.response.defer()
 
+        # Get default values from the original config structure
+        default_config = {
+            "xp_text_color": [65, 65, 69],
+            "xp_bar_color": [225, 66, 53], 
+            "background_color": [15, 17, 16],
+            "username_color": [255, 255, 255],
+            "level_color": [245, 55, 48]
+        }
+
         if self.mode == "xp_info_color":
-            self.config["xp_text_color"] = [255, 255, 255]
+            self.config["xp_text_color"] = default_config["xp_text_color"]
         elif self.mode == "xp_progress_color":
-            self.config["xp_bar_color"] = [245, 55, 48]
+            self.config["xp_bar_color"] = default_config["xp_bar_color"]
         elif self.mode == "background_color":
-            self.config["background_color"] = [15, 17, 16]
+            self.config["background_color"] = default_config["background_color"]
         elif self.mode == "username_color":
-            self.config["username_color"] = [255, 255, 255]
+            self.config["username_color"] = default_config["username_color"]
         elif self.mode == "profile_outline_color":
             if "profile_outline" not in self.config:
                 self.config["profile_outline"] = {}
             self.config["profile_outline"].pop("color_override", None)
         elif self.mode == "level_text_color":
-            self.config["level_color"] = [245, 55, 48]
+            self.config["level_color"] = default_config["level_color"]
         elif self.mode == "ranking_text_color":
             if "ranking_position" not in self.config:
                 self.config["ranking_position"] = {}
@@ -3496,6 +3690,10 @@ class LevelCardManagerView(discord.ui.View):
 
         self.update_buttons()
         await interaction.response.edit_message(embed=embed, view=self)
+
+    async def close_dm(self, interaction: discord.Interaction):
+        """Close the DM message"""
+        await interaction.response.edit_message(embed=discord.Embed(title="✅ Settings Closed", description="Level card settings have been closed.", color=0x00ff00), view=None)
 
     async def back_to_level_system(self, interaction: discord.Interaction):
         """Go back to the main level system menu"""
