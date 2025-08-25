@@ -481,7 +481,7 @@ class LevelingSystem(commands.Cog):
                         )
                 else:
                     # Fallback to background color if image download fails
-                    default_bg_color = config.get("background_color", [245, 55, 48]) # Default red as per user request
+                    default_bg_color = config.get("background_color", [15, 17, 16]) # Use correct default color
                     bg_color = tuple(default_bg_color) + (255,)
                     background = Image.new("RGBA", (bg_width, bg_height), bg_color)
             elif config.get("background_color") and config["background_color"] != "None":
@@ -493,7 +493,7 @@ class LevelingSystem(commands.Cog):
                 background = Image.new("RGBA", (bg_width, bg_height), bg_color)
             else:
                 # Default to the specified background color in the config
-                default_bg_color = config.get("background_color", [245, 55, 48]) # Default red as per user request
+                default_bg_color = config.get("background_color", [15, 17, 16]) # Use correct default color
                 bg_color = tuple(default_bg_color) + (255,)
                 background = Image.new("RGBA", (bg_width, bg_height), bg_color)
 
@@ -3004,7 +3004,7 @@ class LevelCardManagerView(discord.ui.View):
             if has_image:
                 clear_button = discord.ui.Button(
                     label="Clear Image",
-                    style=discord.ButtonStyle.secondary,
+                    style=discord.ButtonStyle.danger,
                     emoji="<:DeleteLOGO:1407071421363916841>",
                     disabled=not has_permission
                 )
@@ -3237,7 +3237,7 @@ class LevelCardManagerView(discord.ui.View):
                     label="Close",
                     style=discord.ButtonStyle.gray,
                     emoji="❌",
-                    row=2
+                    row=1
                 )
                 close_button.callback = self.close_dm
                 self.add_item(close_button)
@@ -3433,6 +3433,9 @@ class LevelCardManagerView(discord.ui.View):
             self.config.pop("level_bar_image", None)
         elif self.mode == "background_image":
             self.config.pop("background_image", None)
+            # Restore default background color when clearing image
+            if "background_color" not in self.config:
+                self.config["background_color"] = [15, 17, 16]
         elif self.mode == "profile_outline_image":
             if "profile_outline" not in self.config:
                 self.config["profile_outline"] = {}
