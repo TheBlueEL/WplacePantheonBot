@@ -132,9 +132,9 @@
   },
   "user_data": {
     "723144097015136296": {
-      "xp": 1040,
+      "xp": 1100,
       "level": 8,
-      "last_message": 1756159966.3953316
+      "last_message": 1756163148.1993778
     },
     "1259812166349881378": {
       "xp": 20,
@@ -173,12 +173,32 @@
           48
         ],
         "background_image": "https://raw.githubusercontent.com/TheBlueEL/pictures/refs/heads/main/Background.png",
-        "username_color": [255,255,255],
-        "level_text_color": [255,255,255],
-        "message_text_color": [255,255,255],
-        "info_text_color": [20,20,20],
+        "username_color": [
+          255,
+          255,
+          255
+        ],
+        "level_text_color": [
+          255,
+          255,
+          255
+        ],
+        "message_text_color": [
+          255,
+          255,
+          255
+        ],
+        "info_text_color": [
+          20,
+          20,
+          20
+        ],
         "outline_enabled": true,
-        "outline_color": [255,255,255],
+        "outline_color": [
+          255,
+          255,
+          255
+        ],
         "outline_image": null,
         "username_position": {
           "x": 275,
