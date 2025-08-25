@@ -53,7 +53,7 @@
         "enabled": true,
         "url": "https://raw.githubusercontent.com/TheBlueEL/pictures/refs/heads/main/ProfileOutline.png",
         "size": 400,
-        "custom_image": "https://raw.githubusercontent.com/TheBlueEL/pictures/main/a1c29da4-d588-45ed-95d2-d97495d18e57.png"
+        "custom_image": "https://raw.githubusercontent.com/TheBlueEL/pictures/main/cc53bee6-bba5-4baf-b666-1522356e4b1c.png"
       },
       "username_position": {
         "x": 550,
@@ -94,8 +94,7 @@
           245,
           55,
           48
-        ],
-        "background_image": "None"
+        ]
       },
       "discriminator_position": {
         "x": 1050,
@@ -118,7 +117,7 @@
         17,
         16
       ],
-      "level_text_image": "https://raw.githubusercontent.com/TheBlueEL/pictures/main/cd9fd821-c45d-4902-a94d-c9e83756b3ed.png"
+      "level_bar_image": "https://raw.githubusercontent.com/TheBlueEL/pictures/main/66107071-a484-4a00-afd1-db0d13636ac6.png"
     }
   },
   "user_data": {
