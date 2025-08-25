@@ -203,8 +203,34 @@ class LevelingSystem(commands.Cog):
                 if overlay_data:
                     overlay_img = Image.open(io.BytesIO(overlay_data)).convert("RGBA")
                     
-                    # Resize overlay to match text dimensions
-                    overlay_resized = overlay_img.resize((text_width, text_height), Image.Resampling.LANCZOS)
+                    # Proportional scaling to fit text width while maintaining aspect ratio
+                    img_ratio = overlay_img.height / overlay_img.width
+                    new_width = text_width
+                    new_height = int(text_width * img_ratio)
+                    
+                    # If height is too big, scale by height instead
+                    if new_height > text_height:
+                        new_height = text_height
+                        new_width = int(text_height / img_ratio)
+                    
+                    # Resize overlay proportionally
+                    overlay_resized = overlay_img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+                    
+                    # Center crop to exact text dimensions
+                    if new_width > text_width or new_height > text_height:
+                        # Calculate crop box to center the image
+                        left = max(0, (new_width - text_width) // 2)
+                        top = max(0, (new_height - text_height) // 2)
+                        right = left + text_width
+                        bottom = top + text_height
+                        
+                        overlay_cropped = overlay_resized.crop((left, top, right, bottom))
+                    else:
+                        overlay_cropped = overlay_resized
+                    
+                    # Final resize to exact text dimensions if needed
+                    if overlay_cropped.size != (text_width, text_height):
+                        overlay_cropped = overlay_cropped.resize((text_width, text_height), Image.Resampling.LANCZOS)
                     
                     # Create text mask
                     text_mask = Image.new('L', (text_width + 20, text_height + 20), 0)
@@ -213,7 +239,7 @@ class LevelingSystem(commands.Cog):
                     
                     # Create masked overlay
                     masked_overlay = Image.new('RGBA', (text_width + 20, text_height + 20), (0, 0, 0, 0))
-                    masked_overlay.paste(overlay_resized, (10, 10))
+                    masked_overlay.paste(overlay_cropped, (10, 10))
                     masked_overlay.putalpha(text_mask)
                     
                     return masked_overlay
@@ -518,7 +544,7 @@ class LevelingSystem(commands.Cog):
                 # Paste the level bar background first
                 background.paste(levelbar, (levelbar_x, levelbar_y), levelbar)
 
-                # Create XP progress bar overlay
+                # Create XP progress bar overlay with rounded corners
                 xp_needed, current_xp_in_level = get_xp_for_next_level(user_data["xp"])
                 if xp_needed > 0:
                     progress = current_xp_in_level / xp_needed
@@ -531,16 +557,45 @@ class LevelingSystem(commands.Cog):
                     xp_bar_color = tuple(xp_bar_color_rgb) + (255,)
                     progress_width = int(levelbar.width * progress)
 
-                    # Create a mask for the progress bar to match the levelbar shape
-                    progress_bar = Image.new("RGBA", (progress_width, levelbar.height), xp_bar_color)
+                    if progress_width > 0:
+                        # Create rounded progress bar
+                        progress_bar = Image.new("RGBA", (progress_width, levelbar.height), (0, 0, 0, 0))
+                        progress_draw = ImageDraw.Draw(progress_bar)
+                        
+                        # Calculate radius for half-circle (half of height)
+                        radius = levelbar.height // 2
+                        
+                        # Draw rounded rectangle with proper half-circles
+                        if progress_width >= levelbar.height:
+                            # Full rounded rectangle when progress is wide enough
+                            progress_draw.rounded_rectangle(
+                                [(0, 0), (progress_width - 1, levelbar.height - 1)],
+                                radius=radius,
+                                fill=xp_bar_color
+                            )
+                        else:
+                            # Just a circle/partial circle for small progress
+                            progress_draw.ellipse(
+                                [(0, 0), (min(progress_width * 2, levelbar.height) - 1, levelbar.height - 1)],
+                                fill=xp_bar_color
+                            )
 
-                    # Create a temporary image to apply the levelbar as a mask
-                    temp_levelbar = levelbar.copy()
-                    temp_levelbar = temp_levelbar.crop((0, 0, progress_width, levelbar.height))
+                        # Create a mask from the original levelbar to respect its shape
+                        levelbar_mask = levelbar.copy().convert('L')
+                        
+                        # Apply the levelbar mask to the progress bar
+                        progress_bar_masked = Image.new("RGBA", (progress_width, levelbar.height), (0, 0, 0, 0))
+                        progress_bar_masked.paste(progress_bar, (0, 0))
+                        
+                        # Crop the mask to match progress width
+                        if progress_width < levelbar.width:
+                            cropped_mask = levelbar_mask.crop((0, 0, progress_width, levelbar.height))
+                            progress_bar_masked.putalpha(cropped_mask)
+                        else:
+                            progress_bar_masked.putalpha(levelbar_mask)
 
-                    # Composite the progress bar with the levelbar shape as mask
-                    if temp_levelbar.size[0] > 0:
-                        background.paste(progress_bar, (levelbar_x, levelbar_y), temp_levelbar)
+                        # Paste the masked progress bar
+                        background.paste(progress_bar_masked, (levelbar_x, levelbar_y), progress_bar_masked)
 
 
             # Download user avatar
@@ -2970,6 +3025,18 @@ class LevelCardManagerView(discord.ui.View):
             if "profile_outline" not in self.config:
                 self.config["profile_outline"] = {}
             self.config["profile_outline"].pop("custom_image", None)
+        elif self.mode == "username_image":
+            self.config.pop("username_image", None)
+        elif self.mode == "xp_info_image":
+            self.config.pop("xp_info_image", None)
+        elif self.mode == "xp_progress_image":
+            self.config.pop("xp_progress_image", None)
+        elif self.mode == "level_text_image":
+            self.config.pop("level_text_image", None)
+        elif self.mode == "ranking_text_image":
+            if "ranking_position" not in self.config:
+                self.config["ranking_position"] = {}
+            self.config["ranking_position"].pop("background_image", None)
 
         self.save_config()
         await self.generate_preview_image(interaction.user)
@@ -2977,6 +3044,8 @@ class LevelCardManagerView(discord.ui.View):
         # Go back to appropriate embed
         if self.mode == "xp_bar_image":
             embed = self.get_xp_bar_embed()
+            embed.title = "<:ImageLOGO:1407072328134951043> XP Bar Image"
+            embed.description = "Set a custom XP bar image"
         elif self.mode == "background_image":
             embed = self.get_background_embed()
             embed.title = "<:ImageLOGO:1407072328134951043> Background Image"
@@ -2985,6 +3054,29 @@ class LevelCardManagerView(discord.ui.View):
             embed = self.get_profile_outline_embed()
             embed.title = "<:ImageLOGO:1407072328134951043> Profile Outline Image"
             embed.description = "Set a custom profile outline image"
+        elif self.mode == "username_image":
+            embed = self.get_username_embed()
+            embed.title = "<:ImageLOGO:1407072328134951043> Username Image"
+            embed.description = "Set a custom username image overlay"
+        elif self.mode == "xp_info_image":
+            embed = self.get_xp_info_embed()
+            embed.title = "<:ImageLOGO:1407072328134951043> XP Info Image"
+            embed.description = "Set a custom XP text image overlay"
+        elif self.mode == "xp_progress_image":
+            embed = self.get_xp_progress_embed()
+            embed.title = "<:ImageLOGO:1407072328134951043> XP Progress Image"
+            embed.description = "Set a custom XP progress image overlay"
+        elif self.mode == "level_text_image":
+            embed = self.get_level_text_embed()
+            embed.title = "<:ImageLOGO:1407072328134951043> Level Text Image"
+            embed.description = "Set a custom level text image overlay"
+        elif self.mode == "ranking_text_image":
+            embed = self.get_ranking_text_embed()
+            embed.title = "<:ImageLOGO:1407072328134951043> Ranking Text Image"
+            embed.description = "Set a custom ranking text image overlay"
+        else:
+            # Fallback to main embed if mode not recognized
+            embed = self.get_main_embed()
 
         self.update_buttons()
         await interaction.edit_original_response(embed=embed, view=self)
