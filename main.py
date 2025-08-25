@@ -79,6 +79,13 @@ async def on_ready():
     except Exception as e:
         print(f'Failed to load ticket_system: {e}')
 
+    # Load AdministratorCommands cog
+    try:
+        await client.load_extension('administrator_command')
+        print('Administrator command loaded!')
+    except Exception as e:
+        print(f'Failed to load administrator_command: {e}')
+
     # Synchroniser les commandes slash
     try:
         synced = await client.tree.sync()
