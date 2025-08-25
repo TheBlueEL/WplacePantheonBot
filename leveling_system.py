@@ -124,32 +124,37 @@ class LevelingSystem(commands.Cog):
         draw.ellipse((0, 0, size[0], size[1]), fill=255)
         return mask
 
-    def resize_xp_bar_image_proportionally(self, image, target_width, target_height):
-        """Resize XP bar image maintaining proportions and cropping from center"""
+    def resize_image_proportionally_centered(self, image, target_width, target_height):
+        """Resize image maintaining proportions and cropping from center - universal method"""
         try:
-            # Calculate aspect ratios
-            original_ratio = image.width / image.height
-            target_ratio = target_width / target_height
-
-            if original_ratio > target_ratio:
-                # Image is wider, crop width from center
-                new_height = image.height
-                new_width = int(new_height * target_ratio)
-                left = (image.width - new_width) // 2
-                cropped = image.crop((left, 0, left + new_width, new_height))
-            else:
-                # Image is taller, crop height from center
-                new_width = image.width
-                new_height = int(new_width / target_ratio)
-                top = (image.height - new_height) // 2
-                cropped = image.crop((0, top, new_width, top + new_height))
-
-            # Resize to exact target size
-            return cropped.resize((target_width, target_height), Image.Resampling.LANCZOS)
+            # Calculate scaling factor to make image fit target dimensions
+            scale_factor = max(target_width / image.width, target_height / image.height)
+            
+            # Calculate new dimensions after scaling
+            new_width = int(image.width * scale_factor)
+            new_height = int(image.height * scale_factor)
+            
+            # Resize image to new dimensions
+            resized_image = image.resize((new_width, new_height), Image.Resampling.LANCZOS)
+            
+            # Calculate crop coordinates to center the image
+            left = (new_width - target_width) // 2
+            top = (new_height - target_height) // 2
+            right = left + target_width
+            bottom = top + target_height
+            
+            # Crop to exact target size, centered
+            cropped_image = resized_image.crop((left, top, right, bottom))
+            
+            return cropped_image
 
         except Exception as e:
-            print(f"Error resizing XP bar image: {e}")
+            print(f"Error resizing image proportionally: {e}")
             return image.resize((target_width, target_height), Image.Resampling.LANCZOS)
+
+    def resize_xp_bar_image_proportionally(self, image, target_width, target_height):
+        """Resize XP bar image maintaining proportions and cropping from center"""
+        return self.resize_image_proportionally_centered(image, target_width, target_height)
 
     async def apply_text_image_overlay(self, text_image_url, text_surface, text_bbox):
         """Apply image overlay to text using mask technique"""
@@ -454,25 +459,10 @@ class LevelingSystem(commands.Cog):
                             original_bg.seek(frame_idx)
                             frame = original_bg.copy().convert("RGBA")
 
-                            # Calculate aspect ratios
-                            original_ratio = frame.width / frame.height
-                            target_ratio = bg_width / bg_height
-
-                            if original_ratio > target_ratio:
-                                # Image is wider, crop width
-                                new_height = frame.height
-                                new_width = int(new_height * target_ratio)
-                                left = (frame.width - new_width) // 2
-                                cropped = frame.crop((left, 0, left + new_width, new_height))
-                            else:
-                                # Image is taller, crop height
-                                new_width = frame.width
-                                new_height = int(new_width / target_ratio)
-                                top = (frame.height - new_height) // 2
-                                cropped = frame.crop((0, top, new_width, top + new_height))
-
-                            # Resize to final size
-                            processed_frame = cropped.resize((bg_width, bg_height), Image.Resampling.LANCZOS)
+                            # Use centered proportional resizing for animated frame
+                            processed_frame = self.resize_image_proportionally_centered(
+                                frame, bg_width, bg_height
+                            )
                             frames.append(processed_frame)
 
                             # Récupérer la durée de la frame
@@ -485,25 +475,10 @@ class LevelingSystem(commands.Cog):
                         # Image statique
                         original_bg = original_bg.convert("RGBA")
 
-                        # Calculate aspect ratios
-                        original_ratio = original_bg.width / original_bg.height
-                        target_ratio = bg_width / bg_height
-
-                        if original_ratio > target_ratio:
-                            # Image is wider, crop width
-                            new_height = original_bg.height
-                            new_width = int(new_height * target_ratio)
-                            left = (original_bg.width - new_width) // 2
-                            cropped = original_bg.crop((left, 0, left + new_width, new_height))
-                        else:
-                            # Image is taller, crop height
-                            new_width = original_bg.width
-                            new_height = int(new_width / target_ratio)
-                            top = (original_bg.height - new_height) // 2
-                            cropped = original_bg.crop((0, top, new_width, top + new_height))
-
-                        # Resize to final size
-                        background = cropped.resize((bg_width, bg_height), Image.Resampling.LANCZOS)
+                        # Use centered proportional resizing for background
+                        background = self.resize_image_proportionally_centered(
+                            original_bg, bg_width, bg_height
+                        )
                 else:
                     # Fallback to background color if image download fails
                     default_bg_color = config.get("background_color", [245, 55, 48]) # Default red as per user request
@@ -537,8 +512,8 @@ class LevelingSystem(commands.Cog):
                     # Only resize if width/height specified AND it's not the default LevelBar
                     if "width" in xp_bar_config and "height" in xp_bar_config:
                         if config.get("level_bar_image") != "https://raw.githubusercontent.com/TheBlueEL/pictures/refs/heads/main/LevelBar.png":
-                            # Custom image - use proportional resizing
-                            levelbar = self.resize_xp_bar_image_proportionally(
+                            # Custom image - use proportional resizing from center
+                            levelbar = self.resize_image_proportionally_centered(
                                 levelbar, 
                                 xp_bar_config["width"], 
                                 xp_bar_config["height"]
@@ -1160,29 +1135,11 @@ class LevelingSystem(commands.Cog):
             custom_image = Image.open(io.BytesIO(image_data)).convert("RGBA")
             mask_image = Image.open(io.BytesIO(mask_data)).convert("RGBA")
 
-            # Resize custom image to match mask size while maintaining aspect ratio
-            custom_width, custom_height = custom_image.size
+            # Use centered proportional resizing for profile outline
             mask_width, mask_height = mask_image.size
-
-            # Calculate scaling factor to fit the custom image into the mask
-            scale_factor = max(mask_width / custom_width, mask_height / custom_height)
-            new_width = int(custom_width * scale_factor)
-            new_height = int(custom_height * scale_factor)
-
-            # Resize the custom image
-            custom_resized = custom_image.resize((new_width, new_height), Image.Resampling.LANCZOS)
-
-            # Center crop to match mask size
-            if new_width > mask_width or new_height > mask_height:
-                left = (new_width - mask_width) // 2
-                top = (new_height - mask_height) // 2
-                custom_cropped = custom_resized.crop((left, top, left + mask_width, top + mask_height))
-            else:
-                # If smaller, center it on a transparent background
-                custom_cropped = Image.new('RGBA', (mask_width, mask_height), (0, 0, 0, 0))
-                paste_x = (mask_width - new_width) // 2
-                paste_y = (mask_height - new_height) // 2
-                custom_cropped.paste(custom_resized, (paste_x, paste_y))
+            custom_cropped = self.resize_image_proportionally_centered(
+                custom_image, mask_width, mask_height
+            )
 
             # Apply the mask from the profile outline (use alpha channel as mask)
             alpha_mask = mask_image.split()[-1]  # Get alpha channel from outline
@@ -1264,22 +1221,10 @@ class LevelingSystem(commands.Cog):
                     else:
                         frame = original_bg.convert("RGBA")
 
-                    # Calculate aspect ratios and resize
-                    original_ratio = frame.width / frame.height
-                    target_ratio = bg_width / bg_height
-
-                    if original_ratio > target_ratio:
-                        new_height = frame.height
-                        new_width = int(new_height * target_ratio)
-                        left = (frame.width - new_width) // 2
-                        cropped = frame.crop((left, 0, left + new_width, new_height))
-                    else:
-                        new_width = frame.width
-                        new_height = int(new_width / target_ratio)
-                        top = (frame.height - new_height) // 2
-                        cropped = frame.crop((0, top, new_width, top + new_height))
-
-                    background = cropped.resize((bg_width, bg_height), Image.Resampling.LANCZOS)
+                    # Use centered proportional resizing for demo background
+                    background = self.resize_image_proportionally_centered(
+                        frame, bg_width, bg_height
+                    )
                 else:
                     default_bg_color = config.get("background_color", [245, 55, 48])
                     bg_color = tuple(default_bg_color) + (255,)
