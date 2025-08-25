@@ -162,7 +162,7 @@ class LevelNotificationView(discord.ui.View):
         
         # Update toggle button based on current state
         for item in self.children:
-            if hasattr(item, 'callback') and item.callback.__name__ == 'toggle_level_notifications':
+            if hasattr(item, 'callback') and hasattr(item.callback, 'callback') and item.callback.callback.__name__ == 'toggle_level_notifications':
                 if level_enabled:
                     item.label = "ON"
                     item.style = discord.ButtonStyle.success
