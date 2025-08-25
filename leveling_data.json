@@ -19,18 +19,11 @@
       "custom": {}
     },
     "level_card": {
-      "background_color": [
-        15,
-        17,
-        16
-      ],
       "default_background_color": [
         15,
         17,
         16
       ],
-      "background_image": "None",
-      "level_bar_image": "https://raw.githubusercontent.com/TheBlueEL/pictures/refs/heads/main/LevelBar.png",
       "username_color": [
         255,
         255,
@@ -59,8 +52,8 @@
       "profile_outline": {
         "enabled": true,
         "url": "https://raw.githubusercontent.com/TheBlueEL/pictures/refs/heads/main/ProfileOutline.png",
-        "color_override": null,
-        "size": 400
+        "size": 400,
+        "custom_image": "https://raw.githubusercontent.com/TheBlueEL/pictures/main/a1c29da4-d588-45ed-95d2-d97495d18e57.png"
       },
       "username_position": {
         "x": 550,
@@ -119,7 +112,12 @@
           0
         ],
         "background_image": "None"
-      }
+      },
+      "background_color": [
+        15,
+        17,
+        16
+      ]
     }
   },
   "user_data": {
