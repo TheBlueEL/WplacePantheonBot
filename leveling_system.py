@@ -217,15 +217,30 @@ class LevelingSystem(commands.Cog):
                         for dy in range(-3, 4):
                             mask_draw.text((text_x + dx, text_y + dy), text, font=font, fill=255)
                     
-                    # Redimensionner l'image de texture pour couvrir ENTIÈREMENT le canvas
-                    # Au lieu de rogner en hauteur, on va s'assurer que l'image couvre tout
-                    overlay_resized = overlay_img.resize((canvas_width, canvas_height), Image.Resampling.LANCZOS)
+                    # Redimensionner l'image pour qu'elle ait la même largeur que le canvas
+                    original_ratio = overlay_img.width / overlay_img.height
+                    new_width = canvas_width
+                    new_height = int(new_width / original_ratio)
                     
-                    # Créer l'image finale avec la texture qui couvre tout le canvas
+                    # Redimensionner l'image avec la nouvelle largeur
+                    overlay_resized = overlay_img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+                    
+                    # Rogner l'image centrée pour qu'elle ait la même hauteur que le canvas
+                    if new_height > canvas_height:
+                        # L'image est plus haute, rogner du centre
+                        crop_top = (new_height - canvas_height) // 2
+                        overlay_cropped = overlay_resized.crop((0, crop_top, new_width, crop_top + canvas_height))
+                    else:
+                        # L'image est plus petite ou égale, la centrer sur le canvas
+                        overlay_cropped = Image.new('RGBA', (canvas_width, canvas_height), (0, 0, 0, 0))
+                        paste_y = (canvas_height - new_height) // 2
+                        overlay_cropped.paste(overlay_resized, (0, paste_y))
+                    
+                    # Créer l'image finale avec la texture qui couvre exactement le canvas
                     result = Image.new('RGBA', (canvas_width, canvas_height), (0, 0, 0, 0))
                     
-                    # Coller l'image de texture sur tout le canvas
-                    result.paste(overlay_resized, (0, 0))
+                    # Coller l'image de texture
+                    result.paste(overlay_cropped, (0, 0))
                     
                     # Appliquer le masque de texte pour ne garder que la partie du texte
                     result.putalpha(text_mask)
