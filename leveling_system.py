@@ -197,14 +197,29 @@ class LevelingSystem(commands.Cog):
             temp_img = Image.new('RGBA', (text_width + 20, text_height + 20), (0, 0, 0, 0))
             temp_draw = ImageDraw.Draw(temp_img)
             
-            # Draw text
-            temp_draw.text((10, 10), text, font=font, fill=tuple(color))
-            
-            # Apply image overlay if provided
             if image_url and image_url != "None":
-                text_bbox_adjusted = (10, 10, 10 + text_width, 10 + text_height)
-                temp_img = await self.apply_text_image_overlay(image_url, temp_img, text_bbox_adjusted)
+                # Download overlay image
+                overlay_data = await self.download_image(image_url)
+                if overlay_data:
+                    overlay_img = Image.open(io.BytesIO(overlay_data)).convert("RGBA")
+                    
+                    # Resize overlay to match text dimensions
+                    overlay_resized = overlay_img.resize((text_width, text_height), Image.Resampling.LANCZOS)
+                    
+                    # Create text mask
+                    text_mask = Image.new('L', (text_width + 20, text_height + 20), 0)
+                    mask_draw = ImageDraw.Draw(text_mask)
+                    mask_draw.text((10, 10), text, font=font, fill=255)
+                    
+                    # Create masked overlay
+                    masked_overlay = Image.new('RGBA', (text_width + 20, text_height + 20), (0, 0, 0, 0))
+                    masked_overlay.paste(overlay_resized, (10, 10))
+                    masked_overlay.putalpha(text_mask)
+                    
+                    return masked_overlay
             
+            # Fallback to regular colored text
+            temp_draw.text((10, 10), text, font=font, fill=tuple(color))
             return temp_img
             
         except Exception as e:
@@ -481,16 +496,20 @@ class LevelingSystem(commands.Cog):
                 # Position level bar using config
                 xp_bar_config = config.get("xp_bar_position", {})
                 if "x" in xp_bar_config and "y" in xp_bar_config:
-                    # Use custom position and resize if width/height specified
-                    if "width" in xp_bar_config and "height" in xp_bar_config:
-                        # Use proportional resizing to maintain aspect ratio
-                        levelbar = self.resize_xp_bar_image_proportionally(
-                            levelbar, 
-                            xp_bar_config["width"], 
-                            xp_bar_config["height"]
-                        )
                     levelbar_x = xp_bar_config["x"]
                     levelbar_y = xp_bar_config["y"]
+                    # Only resize if width/height specified AND it's not the default LevelBar
+                    if "width" in xp_bar_config and "height" in xp_bar_config:
+                        if config.get("level_bar_image") != "https://raw.githubusercontent.com/TheBlueEL/pictures/refs/heads/main/LevelBar.png":
+                            # Custom image - use proportional resizing
+                            levelbar = self.resize_xp_bar_image_proportionally(
+                                levelbar, 
+                                xp_bar_config["width"], 
+                                xp_bar_config["height"]
+                            )
+                        else:
+                            # Default LevelBar - maintain original size and proportions
+                            pass
                 else:
                     # Default positioning
                     levelbar_x = 30
@@ -841,6 +860,18 @@ class LevelingSystem(commands.Cog):
                                 view.config["profile_outline"] = {}
                             view.config["profile_outline"]["custom_image"] = local_file
                             view.config["profile_outline"].pop("color_override", None)
+                        elif view.current_image_type == "username":
+                            view.config["username_image"] = local_file
+                        elif view.current_image_type == "xp_info":
+                            view.config["xp_info_image"] = local_file
+                        elif view.current_image_type == "xp_progress":
+                            view.config["xp_progress_image"] = local_file
+                        elif view.current_image_type == "level_text":
+                            view.config["level_text_image"] = local_file
+                        elif view.current_image_type == "ranking_text":
+                            if "ranking_position" not in view.config:
+                                view.config["ranking_position"] = {}
+                            view.config["ranking_position"]["background_image"] = local_file
 
                         view.save_config()
                         view.waiting_for_image = False
@@ -849,21 +880,42 @@ class LevelingSystem(commands.Cog):
                         await view.generate_preview_image(message.author)
 
                         # Update the manager view
+                        view.mode = view.current_image_type + "_image"
+                        
                         if view.current_image_type == "xp_bar":
-                            view.mode = "xp_bar_image"
                             embed = view.get_xp_bar_embed()
                             embed.title = "<:ImageLOGO:1407072328134951043> XP Bar Image"
                             embed.description = "Set a custom XP bar image"
                         elif view.current_image_type == "background":
-                            view.mode = "background_image"
                             embed = view.get_background_embed()
                             embed.title = "<:ImageLOGO:1407072328134951043> Background Image"
                             embed.description = "Set a custom background image"
                         elif view.current_image_type == "profile_outline":
-                            view.mode = "profile_outline_image"
                             embed = view.get_profile_outline_embed()
                             embed.title = "<:ImageLOGO:1407072328134951043> Profile Outline Image"
                             embed.description = "Set a custom profile outline image"
+                        elif view.current_image_type == "username":
+                            embed = view.get_username_embed()
+                            embed.title = "<:ImageLOGO:1407072328134951043> Username Image"
+                            embed.description = "Set a custom username image overlay"
+                        elif view.current_image_type == "xp_info":
+                            embed = view.get_xp_info_embed()
+                            embed.title = "<:ImageLOGO:1407072328134951043> XP Info Image"
+                            embed.description = "Set a custom XP text image overlay"
+                        elif view.current_image_type == "xp_progress":
+                            embed = view.get_xp_progress_embed()
+                            embed.title = "<:ImageLOGO:1407072328134951043> XP Progress Image"
+                            embed.description = "Set a custom XP progress image overlay"
+                        elif view.current_image_type == "level_text":
+                            embed = view.get_level_text_embed()
+                            embed.title = "<:ImageLOGO:1407072328134951043> Level Text Image"
+                            embed.description = "Set a custom level text image overlay"
+                        elif view.current_image_type == "ranking_text":
+                            embed = view.get_ranking_text_embed()
+                            embed.title = "<:ImageLOGO:1407072328134951043> Ranking Text Image"
+                            embed.description = "Set a custom ranking text image overlay"
+                        else:
+                            embed = view.get_main_embed()
 
                         view.update_buttons()
 
@@ -1272,7 +1324,11 @@ class LevelingSystem(commands.Cog):
     @app_commands.command(name="level_system", description="Manage the server leveling system")
     async def level_system(self, interaction: discord.Interaction):
         """Main level system management command"""
-        await interaction.response.defer()
+        try:
+            await interaction.response.defer()
+        except discord.NotFound:
+            # Interaction has already been responded to or expired
+            return
 
         view = LevelSystemMainView(self.bot, interaction.user)
 
@@ -1280,7 +1336,11 @@ class LevelingSystem(commands.Cog):
         await self.generate_demo_card_for_main_view(view)
 
         embed = view.get_main_embed()
-        await interaction.followup.send(embed=embed, view=view)
+        try:
+            await interaction.followup.send(embed=embed, view=view)
+        except discord.NotFound:
+            # Interaction has expired, send as a new message
+            await interaction.channel.send(embed=embed, view=view)
 
     @app_commands.command(name="level", description="View your level card")
     async def level_command(self, interaction: discord.Interaction):
@@ -3091,6 +3151,29 @@ class LevelCardManagerView(discord.ui.View):
             embed = self.get_profile_outline_embed()
             embed.title = "<:ImageLOGO:1407072328134951043> Profile Outline Image"
             embed.description = "Set a custom profile outline image"
+        elif self.mode == "username_image":
+            embed = self.get_username_embed()
+            embed.title = "<:ImageLOGO:1407072328134951043> Username Image"
+            embed.description = "Set a custom username image overlay"
+        elif self.mode == "xp_info_image":
+            embed = self.get_xp_info_embed()
+            embed.title = "<:ImageLOGO:1407072328134951043> XP Info Image"
+            embed.description = "Set a custom XP text image overlay"
+        elif self.mode == "xp_progress_image":
+            embed = self.get_xp_progress_embed()
+            embed.title = "<:ImageLOGO:1407072328134951043> XP Progress Image"
+            embed.description = "Set a custom XP progress image overlay"
+        elif self.mode == "level_text_image":
+            embed = self.get_level_text_embed()
+            embed.title = "<:ImageLOGO:1407072328134951043> Level Text Image"
+            embed.description = "Set a custom level text image overlay"
+        elif self.mode == "ranking_text_image":
+            embed = self.get_ranking_text_embed()
+            embed.title = "<:ImageLOGO:1407072328134951043> Ranking Text Image"
+            embed.description = "Set a custom ranking text image overlay"
+        else:
+            # Fallback
+            embed = self.get_main_embed()
 
         self.update_buttons()
         await interaction.response.edit_message(embed=embed, view=self)
