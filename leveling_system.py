@@ -1792,7 +1792,7 @@ class LevelSystemMainView(discord.ui.View):
         embed = view.get_embed()
         await interaction.response.edit_message(embed=embed, view=view)
 
-    @discord.ui.button(label="Notification", style=discord.ButtonStyle.secondary, emoji="<:NotificationLOGO:1409635458765914122>")
+    @discord.ui.button(label="Notification", style=discord.ButtonStyle.secondary, emoji="🔔")
     async def notification_settings(self, interaction: discord.Interaction, button: discord.ui.Button):
         from level_notification_system import NotificationSystemView
         view = NotificationSystemView(self.bot, self.user)
