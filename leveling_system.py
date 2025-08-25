@@ -1862,7 +1862,7 @@ class AddRoleRewardView(discord.ui.View):
     async def role_select(self, interaction: discord.Interaction, select: discord.ui.RoleSelect):
         self.selected_role = select.values[0]
         if not hasattr(self, 'level_button'):
-            self.level_button = discord.ui.Button(label="Set Level", style=discord.ButtonStyle.secondary, emoji="📊")
+            self.level_button = discord.ui.Button(label="Set Level", style=discord.ButtonStyle.secondary, emoji="<a:XPLOGO:1409634015043915827>")
             self.level_button.callback = self.set_level
             self.add_item(self.level_button)
 
@@ -2099,7 +2099,7 @@ class CustomRewardsView(discord.ui.View):
         embed = view.get_embed()
         await interaction.response.edit_message(embed=embed, view=view)
 
-    @discord.ui.button(label="Bar Progress", style=discord.ButtonStyle.secondary, emoji="📊", row=1)
+    @discord.ui.button(label="Bar Progress", style=discord.ButtonStyle.secondary, emoji="<:XPprogressLOGO:1409633736387199117>", row=1)
     async def bar_progress_permissions(self, interaction: discord.Interaction, button: discord.ui.Button):
         view = CustomizationCategoryView(self.bot, self.user, "bar_progress")
         embed = view.get_embed()
@@ -2211,7 +2211,7 @@ class MessageXPView(discord.ui.View):
 
         return embed
 
-    @discord.ui.button(label="Set XP", style=discord.ButtonStyle.primary, emoji="⚡")
+    @discord.ui.button(label="Set XP", style=discord.ButtonStyle.primary, emoji="<a:XPLOGO:1409634015043915827>")
     async def set_xp(self, interaction: discord.Interaction, button: discord.ui.Button):
         modal = MessageXPModal()
         await interaction.response.send_modal(modal)
@@ -2335,7 +2335,7 @@ class CharacterXPView(discord.ui.View):
 
         return embed
 
-    @discord.ui.button(label="Set XP", style=discord.ButtonStyle.primary, emoji="⚡")
+    @discord.ui.button(label="Set XP", style=discord.ButtonStyle.primary, emoji="<a:XPLOGO:1409634015043915827>")
     async def set_xp(self, interaction: discord.Interaction, button: discord.ui.Button):
         modal = CharacterXPModal()
         await interaction.response.send_modal(modal)
@@ -2345,7 +2345,7 @@ class CharacterXPView(discord.ui.View):
         modal = CharacterLimitModal()
         await interaction.response.send_modal(modal)
 
-    @discord.ui.button(label="Set Cooldown", style=discord.ButtonStyle.secondary, emoji="⏰")
+    @discord.ui.button(label="Set Cooldown", style=discord.ButtonStyle.secondary, emoji="<:CooldownLOGO:1409586926071054448>")
     async def set_cooldown(self, interaction: discord.Interaction, button: discord.ui.Button):
         modal = CharacterCooldownModal()
         await interaction.response.send_modal(modal)
@@ -2453,14 +2453,14 @@ class LevelCardSettingsButtonView(discord.ui.View):
     @discord.ui.button(label="Settings", style=discord.ButtonStyle.secondary, emoji="<:SettingLOGO:1407071854593839239>")
     async def settings(self, interaction: discord.Interaction, button: discord.ui.Button):
         if interaction.user.id != self.user.id:
-            await interaction.response.send_message("❌ Only the user can access their settings!", ephemeral=True)
+            await interaction.response.send_message("<:ErrorLOGO:1407071682031648850> Only the user can access their settings!", ephemeral=True)
             return
 
         # Create DM channel
         try:
             dm_channel = await interaction.user.create_dm()
         except:
-            await interaction.response.send_message("❌ Unable to send DM. Please check your privacy settings.", ephemeral=True)
+            await interaction.response.send_message("<:ErrorLOGO:1407071682031648850> Unable to send DM. Please check your privacy settings.", ephemeral=True)
             return
 
         # Get user's current level
@@ -2482,9 +2482,9 @@ class LevelCardSettingsButtonView(discord.ui.View):
 
         try:
             await dm_channel.send(embed=embed, view=view)
-            await interaction.response.send_message("✅ Level card settings sent to your DMs!", ephemeral=True)
+            await interaction.response.send_message("<:SucessLOGO:1407071637840592977> Level card settings sent to your DMs!", ephemeral=True)
         except:
-            await interaction.response.send_message("❌ Unable to send DM. Please check your privacy settings.", ephemeral=True)
+            await interaction.response.send_message("<:ErrorLOGO:1407071682031648850> Unable to send DM. Please check your privacy settings.", ephemeral=True)
 
 # Level Card Management System
 class LevelCardManagerView(discord.ui.View):
@@ -2502,7 +2502,7 @@ class LevelCardManagerView(discord.ui.View):
 
     def get_main_embed(self):
         embed = discord.Embed(
-            title="🎴 Level Card Manager",
+            title="<:CardLOGO:1409586383047233536> Level Card Manager",
             description="Configure your level card design and settings",
             color=0xFFFFFF
         )
@@ -2515,7 +2515,7 @@ class LevelCardManagerView(discord.ui.View):
             bg = self.config["background_color"]
             config_status += f"<:BackgroundLOGO:1408834163309805579> Background: RGB({bg[0]}, {bg[1]}, {bg[2]})\n"
         else:
-            config_status += "⚪ Background: Default\n"
+            config_status += "Background: Default\n"
 
         if self.config.get("profile_outline", {}).get("enabled", True):
             config_status += "<:ProfileLOGO:1408830057819930806> Profile Outline: <:OnLOGO:1407072463883472978> Enabled\n"
@@ -3000,21 +3000,21 @@ class LevelCardManagerView(discord.ui.View):
             xp_info_button = discord.ui.Button(
                 label="XP Info",
                 style=discord.ButtonStyle.primary,
-                emoji="ℹ️"
+                emoji="<:XPInfoLOGO:1409633663389405294>"
             )
             xp_info_button.callback = self.xp_info_settings
 
             xp_bar_button = discord.ui.Button(
                 label="XP Bar",
                 style=discord.ButtonStyle.secondary,
-                emoji="📊"
+                emoji="<:XPbarLOGO:1409633757018984531>"
             )
             xp_bar_button.callback = self.xp_bar_settings
 
             xp_progress_button = discord.ui.Button(
                 label="XP Progress",
                 style=discord.ButtonStyle.secondary,
-                emoji="⚡"
+                emoji="<:XPprogressLOGO:1409633736387199117>"
             )
             xp_progress_button.callback = self.xp_progress_settings
 
@@ -3231,14 +3231,14 @@ class LevelCardManagerView(discord.ui.View):
             level_button = discord.ui.Button(
                 label="Level",
                 style=discord.ButtonStyle.primary,
-                emoji="📊"
+                emoji="<a:XPLOGO:1409634015043915827>"
             )
             level_button.callback = self.level_text_settings
 
             ranking_button = discord.ui.Button(
                 label="Classement",
                 style=discord.ButtonStyle.secondary,
-                emoji="🏆"
+                emoji="<:WinnerLOGO:1409635881198948593>"
             )
             ranking_button.callback = self.ranking_text_settings
 
@@ -3290,7 +3290,7 @@ class LevelCardManagerView(discord.ui.View):
             leveling_bar_button = discord.ui.Button(
                 label="Leveling Bar",
                 style=discord.ButtonStyle.secondary,
-                emoji="📊",
+                emoji="<:XPprogressLOGO:1409633736387199117>",
                 row=0
             )
             leveling_bar_button.callback = self.leveling_bar_settings
@@ -3322,7 +3322,7 @@ class LevelCardManagerView(discord.ui.View):
             content_button = discord.ui.Button(
                 label="Content",
                 style=discord.ButtonStyle.secondary,
-                emoji="📝",
+                emoji="<:DescriptionLOGO:1407733417172533299>",
                 row=1
             )
             content_button.callback = self.content_settings
@@ -3798,7 +3798,7 @@ class LevelCardManagerView(discord.ui.View):
 # Modal classes for Level Card
 class LevelCardHexColorModal(discord.ui.Modal):
     def __init__(self, view):
-        super().__init__(title='🎨 Hex Color')
+        super().__init__(title='Hex Color')
         self.view = view
 
         # Get current color value
@@ -3924,7 +3924,7 @@ class LevelCardHexColorModal(discord.ui.Modal):
 # Ajouter les modales HexColorModal et RGBColorModal génériques
 class HexColorModal(discord.ui.Modal):
     def __init__(self, view):
-        super().__init__(title='🎨 Hex Color')
+        super().__init__(title='Hex Color')
         self.view = view
 
         self.hex_input = discord.ui.TextInput(
@@ -3986,7 +3986,7 @@ class HexColorModal(discord.ui.Modal):
 
 class RGBColorModal(discord.ui.Modal):
     def __init__(self, view):
-        super().__init__(title='🎨 RGB Color')
+        super().__init__(title='RGB Color')
         self.view = view
 
         self.red_input = discord.ui.TextInput(
@@ -4064,7 +4064,7 @@ class RGBColorModal(discord.ui.Modal):
 
 class ImageURLModal(discord.ui.Modal):
     def __init__(self, view):
-        super().__init__(title='🖼️ Image URL')
+        super().__init__(title='Image URL')
         self.view = view
 
         self.url_input = discord.ui.TextInput(
@@ -4260,7 +4260,7 @@ class LevelCardRGBColorModal(discord.ui.Modal):
 
 class LevelCardImageURLModal(discord.ui.Modal):
     def __init__(self, view):
-        super().__init__(title='🖼️ Image URL')
+        super().__init__(title='Image URL')
         self.view = view
 
         self.url_input = discord.ui.TextInput(
@@ -4393,7 +4393,7 @@ class CustomizationCategoryView(discord.ui.View):
 
         return embed
 
-    @discord.ui.button(label="Set Level", style=discord.ButtonStyle.primary, emoji="📊")
+    @discord.ui.button(label="Set Level", style=discord.ButtonStyle.primary, emoji="<a:XPLOGO:1409634015043915827>")
     async def set_level(self, interaction: discord.Interaction, button: discord.ui.Button):
         modal = CustomizationLevelModal(self)
         await interaction.response.send_modal(modal)
@@ -4515,12 +4515,12 @@ class CustomMessageXPView(discord.ui.View):
 
         return embed
 
-    @discord.ui.button(label="XP Amount", style=discord.ButtonStyle.primary, emoji="⚡")
+    @discord.ui.button(label="XP Amount", style=discord.ButtonStyle.primary, emoji="<a:XPLOGO:1409634015043915827>")
     async def set_xp(self, interaction: discord.Interaction, button: discord.ui.Button):
         modal = CustomMessageXPModal()
         await interaction.response.send_modal(modal)
 
-    @discord.ui.button(label="Cooldown", style=discord.ButtonStyle.secondary, emoji="⏰")
+    @discord.ui.button(label="Cooldown", style=discord.ButtonStyle.secondary, emoji="<:CooldownLOGO:1409586926071054448>")
     async def set_cooldown(self, interaction: discord.Interaction, button: discord.ui.Button):
         modal = CustomMessageCooldownModal()
         await interaction.response.send_modal(modal)
@@ -4579,17 +4579,17 @@ class CustomCharacterXPView(discord.ui.View):
 
         return embed
 
-    @discord.ui.button(label="XP Amount", style=discord.ButtonStyle.primary, emoji="⚡")
+    @discord.ui.button(label="XP Amount", style=discord.ButtonStyle.primary, emoji="<a:XPLOGO:1409634015043915827>")
     async def set_xp(self, interaction: discord.Interaction, button: discord.ui.Button):
         modal = CustomCharacterXPModal()
         await interaction.response.send_modal(modal)
 
-    @discord.ui.button(label="Character Limit", style=discord.ButtonStyle.secondary, emoji="📝")
+    @discord.ui.button(label="Character Limit", style=discord.ButtonStyle.secondary, emoji="<:Limit:1409636533618610266>")
     async def set_limit(self, interaction: discord.Interaction, button: discord.ui.Button):
         modal = CustomCharacterLimitModal()
         await interaction.response.send_modal(modal)
 
-    @discord.ui.button(label="Cooldown", style=discord.ButtonStyle.secondary, emoji="⏰")
+    @discord.ui.button(label="Cooldown", style=discord.ButtonStyle.secondary, emoji="<:CooldownLOGO:1409586926071054448>")
     async def set_cooldown(self, interaction: discord.Interaction, button: discord.ui.Button):
         modal = CustomCharacterCooldownModal()
         await interaction.response.send_modal(modal)
@@ -4640,12 +4640,12 @@ class CooldownSettingsView(discord.ui.View):
             color=0xFFFFFF
         )
 
-        embed.add_field(name="💬 Message Cooldown", value=f"{msg_cooldown} seconds", inline=True)
+        embed.add_field(name="<:MessagesLOGO:1409586848577093837> Message Cooldown", value=f"{msg_cooldown} seconds", inline=True)
         embed.add_field(name="<:DescriptionLOGO:1407733417172533299> Character Cooldown", value=f"{char_cooldown} seconds", inline=True)
 
         return embed
 
-    @discord.ui.button(label="Message Cooldown", style=discord.ButtonStyle.primary, emoji="💬")
+    @discord.ui.button(label="Message Cooldown", style=discord.ButtonStyle.primary, emoji="<:MessagesLOGO:1409586848577093837>")
     async def message_cooldown(self, interaction: discord.Interaction, button: discord.ui.Button):
         modal = MessageCooldownModal()
         await interaction.response.send_modal(modal)
@@ -5108,7 +5108,7 @@ class UserLevelCardManagerView(LevelCardManagerView):
             close_button = discord.ui.Button(
                 label="Close",
                 style=discord.ButtonStyle.danger,
-                emoji="❌",
+                emoji="<:CloseLOGO:1407072519420248256>",
                 row=1
             )
             close_button.callback = self.close_dm
