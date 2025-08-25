@@ -344,20 +344,22 @@ class EmbedManagerView(discord.ui.View):
         self.clear_items()
 
         if self.waiting_for_image:
-            # Close button only when waiting for image
-            close_button = discord.ui.Button(
-                label="Close",
-                style=discord.ButtonStyle.danger,
-                emoji="<:CloseLOGO:1391531593524318271>",
+            # Back button only when waiting for image
+            back_button = discord.ui.Button(
+                label="Back",
+                style=discord.ButtonStyle.gray,
+                emoji="<:BackLOGO:1391511633431494666>",
                 row=0
             )
 
-            async def close_callback(interaction):
-                await interaction.response.defer()
-                await interaction.delete_original_response()
+            async def back_callback(interaction):
+                self.waiting_for_image = False
+                embed = self.get_image_settings_embed()
+                self.update_buttons()
+                await interaction.response.edit_message(embed=embed, view=self)
 
-            close_button.callback = close_callback
-            self.add_item(close_button)
+            back_button.callback = back_callback
+            self.add_item(back_button)
 
         elif self.image_mode:
             # Image settings buttons - First row
@@ -409,24 +411,29 @@ class EmbedManagerView(discord.ui.View):
 
             clear_button.callback = clear_callback
 
-            # Back button - Second row
-            close_button = discord.ui.Button(
-                label="Close",
-                style=discord.ButtonStyle.danger,
-                emoji="<:CloseLOGO:1391531593524318271>",
+            # Back button - Second row (only show if not in DM)
+            back_button = discord.ui.Button(
+                label="Back",
+                style=discord.ButtonStyle.gray,
+                emoji="<:BackLOGO:1391511633431494666>",
                 row=1
             )
 
-            async def close_callback(interaction):
-                await interaction.response.defer()
-                await interaction.delete_original_response()
+            async def back_callback(interaction):
+                self.image_mode = False
+                embed = self.get_create_embed()
+                self.update_buttons()
+                await interaction.response.edit_message(embed=embed, view=self)
 
-            close_button.callback = close_callback
+            back_button.callback = back_callback
 
             self.add_item(image_url_button)
             self.add_item(upload_image_button)
             self.add_item(clear_button)
-            self.add_item(back_button)
+            
+            # Only add back button if not in DM (guild is None means it's a DM)
+            if self.guild is not None:
+                self.add_item(back_button)
 
         elif self.delete_mode:
             if self.embeds_data["created"]:
@@ -434,19 +441,21 @@ class EmbedManagerView(discord.ui.View):
                 select = EmbedDeleteSelect(self.embeds_data["created"])
                 self.add_item(select)
 
-            # Close button
-            close_button = discord.ui.Button(
-                label="Close",
-                style=discord.ButtonStyle.danger,
-                emoji="<:CloseLOGO:1391531593524318271>"
+            # Back button
+            back_button = discord.ui.Button(
+                label="Back",
+                style=discord.ButtonStyle.gray,
+                emoji="<:BackLOGO:1391511633431494666>"
             )
 
-            async def close_callback(interaction):
-                await interaction.response.defer()
-                await interaction.delete_original_response()
+            async def back_callback(interaction):
+                self.delete_mode = False
+                embed = self.get_main_embed()
+                self.update_buttons()
+                await interaction.response.edit_message(embed=embed, view=self)
 
-            close_button.callback = close_callback
-            self.add_item(close_button)
+            back_button.callback = back_callback
+            self.add_item(back_button)
 
         elif self.publish_mode:
             if self.embeds_data["created"]:
@@ -582,19 +591,23 @@ class EmbedManagerView(discord.ui.View):
                     publish_button.callback = publish_final_callback
                     self.add_item(publish_button)
 
-            # Close button
-            close_button = discord.ui.Button(
-                label="Close",
-                style=discord.ButtonStyle.danger,
-                emoji="<:CloseLOGO:1391531593524318271>"
+            # Back button
+            back_button = discord.ui.Button(
+                label="Back",
+                style=discord.ButtonStyle.gray,
+                emoji="<:BackLOGO:1391511633431494666>"
             )
 
-            async def close_callback(interaction):
-                await interaction.response.defer()
-                await interaction.delete_original_response()
+            async def back_callback(interaction):
+                self.publish_mode = False
+                self.selected_embed_index = None
+                self.selected_channel = None
+                embed = self.get_main_embed()
+                self.update_buttons()
+                await interaction.response.edit_message(embed=embed, view=self)
 
-            close_button.callback = close_callback
-            self.add_item(close_button)
+            back_button.callback = back_callback
+            self.add_item(back_button)
 
         elif hasattr(self, 'edit_select_mode') and self.edit_select_mode:
             if self.embeds_data["created"]:
@@ -602,19 +615,21 @@ class EmbedManagerView(discord.ui.View):
                 select = EmbedEditSelect(self.embeds_data["created"])
                 self.add_item(select)
 
-            # Close button
-            close_button = discord.ui.Button(
-                label="Close",
-                style=discord.ButtonStyle.danger,
-                emoji="<:CloseLOGO:1391531593524318271>"
+            # Back button
+            back_button = discord.ui.Button(
+                label="Back",
+                style=discord.ButtonStyle.gray,
+                emoji="<:BackLOGO:1391511633431494666>"
             )
 
-            async def close_callback(interaction):
-                await interaction.response.defer()
-                await interaction.delete_original_response()
+            async def back_callback(interaction):
+                self.edit_select_mode = False
+                embed = self.get_main_embed()
+                self.update_buttons()
+                await interaction.response.edit_message(embed=embed, view=self)
 
-            close_button.callback = close_callback
-            self.add_item(close_button)
+            back_button.callback = back_callback
+            self.add_item(back_button)
 
         elif not self.creating_mode:
             # Collect all buttons to organize them properly
@@ -854,20 +869,24 @@ class EmbedManagerView(discord.ui.View):
             preview_button.callback = preview_callback
             buttons.append(preview_button)
 
-            close_button = discord.ui.Button(
-                label="Close",
-                style=discord.ButtonStyle.danger,
-                emoji="<:CloseLOGO:1391531593524318271>"
+            back_button = discord.ui.Button(
+                label="Back",
+                style=discord.ButtonStyle.gray,
+                emoji="<:BackLOGO:1391511633431494666>"
             )
 
-            async def close_callback(interaction):
-                # Save the current embed before closing
+            async def back_callback(interaction):
+                # Save the current embed before going back
                 self.save_current_embed()
-                await interaction.response.defer()
-                await interaction.delete_original_response()
+                self.creating_mode = False
+                self.edit_mode = False
+                self.editing_index = None
+                embed = self.get_main_embed()
+                self.update_buttons()
+                await interaction.response.edit_message(embed=embed, view=self)
 
-            close_button.callback = close_callback
-            buttons.append(close_button)
+            back_button.callback = back_callback
+            buttons.append(back_button)
 
             # Organize buttons in rows of 3
             for i, button in enumerate(buttons):
