@@ -5345,7 +5345,7 @@ class UserLevelCardManagerView(LevelCardManagerView):
                 label="Close",
                 style=discord.ButtonStyle.danger,
                 emoji="❌",
-                row=0
+                row=1
             )
             close_button.callback = self.close_dm
             self.add_item(close_button)
