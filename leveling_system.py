@@ -3237,7 +3237,7 @@ class LevelCardManagerView(discord.ui.View):
                     label="Close",
                     style=discord.ButtonStyle.gray,
                     emoji="❌",
-                    row=1
+                    row=2
                 )
                 close_button.callback = self.close_dm
                 self.add_item(close_button)
@@ -3693,7 +3693,11 @@ class LevelCardManagerView(discord.ui.View):
 
     async def close_dm(self, interaction: discord.Interaction):
         """Close the DM message"""
-        await interaction.response.edit_message(embed=discord.Embed(title="✅ Settings Closed", description="Level card settings have been closed.", color=0x00ff00), view=None)
+        try:
+            await interaction.message.delete()
+        except:
+            # If we can't delete the message, just respond with an ephemeral message
+            await interaction.response.send_message("Settings closed.", ephemeral=True)
 
     async def back_to_level_system(self, interaction: discord.Interaction):
         """Go back to the main level system menu"""
