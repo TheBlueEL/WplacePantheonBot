@@ -1144,10 +1144,24 @@ class LevelingSystem(commands.Cog):
             # Apply the mask from the profile outline (use alpha channel as mask)
             alpha_mask = mask_image.split()[-1]  # Get alpha channel from outline
 
-            # Create final masked image
+            # Create final masked image with ONLY the overlapping parts visible
             masked_image = Image.new("RGBA", custom_cropped.size, (0, 0, 0, 0))
-            masked_image.paste(custom_cropped, (0, 0))
-            masked_image.putalpha(alpha_mask)
+            
+            # Use numpy for pixel-level masking to ensure only overlapping parts are visible
+            import numpy as np
+            custom_array = np.array(custom_cropped)
+            mask_array = np.array(alpha_mask)
+            result_array = np.zeros_like(custom_array)
+            
+            # Only copy pixels where the mask is not transparent (>0)
+            mask_pixels = mask_array > 0
+            result_array[mask_pixels] = custom_array[mask_pixels]
+            
+            # Set alpha channel to match the mask exactly
+            result_array[:, :, 3] = mask_array
+            
+            # Convert back to PIL Image
+            masked_image = Image.fromarray(result_array, 'RGBA')
 
             # Save processed image
             os.makedirs('images', exist_ok=True)
