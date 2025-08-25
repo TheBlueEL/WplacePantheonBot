@@ -203,24 +203,28 @@ class LevelingSystem(commands.Cog):
                 if overlay_data:
                     overlay_img = Image.open(io.BytesIO(overlay_data)).convert("RGBA")
                     
-                    # Proportional scaling to fit text width while maintaining aspect ratio
-                    img_ratio = overlay_img.height / overlay_img.width
-                    new_width = text_width
-                    new_height = int(text_width * img_ratio)
+                    # Calculate aspect ratios
+                    original_ratio = overlay_img.width / overlay_img.height
+                    target_ratio = text_width / text_height
                     
-                    # If height is too big, scale by height instead
-                    if new_height > text_height:
+                    # Redimensionner pour que l'image couvre complètement la zone de texte
+                    if original_ratio > target_ratio:
+                        # Image plus large, ajuster sur la hauteur et rogner sur les côtés
                         new_height = text_height
-                        new_width = int(text_height / img_ratio)
+                        new_width = int(new_height * original_ratio)
+                    else:
+                        # Image plus haute, ajuster sur la largeur et rogner en haut/bas
+                        new_width = text_width
+                        new_height = int(new_width / original_ratio)
                     
-                    # Resize overlay proportionally
+                    # Redimensionner l'image
                     overlay_resized = overlay_img.resize((new_width, new_height), Image.Resampling.LANCZOS)
                     
-                    # Center crop to exact text dimensions
+                    # Rogner depuis le centre pour obtenir les dimensions exactes du texte
                     if new_width > text_width or new_height > text_height:
-                        # Calculate crop box to center the image
-                        left = max(0, (new_width - text_width) // 2)
-                        top = max(0, (new_height - text_height) // 2)
+                        # Calculer les coordonnées de rognage centrées
+                        left = (new_width - text_width) // 2
+                        top = (new_height - text_height) // 2
                         right = left + text_width
                         bottom = top + text_height
                         
@@ -228,7 +232,7 @@ class LevelingSystem(commands.Cog):
                     else:
                         overlay_cropped = overlay_resized
                     
-                    # Final resize to exact text dimensions if needed
+                    # S'assurer que les dimensions sont exactes
                     if overlay_cropped.size != (text_width, text_height):
                         overlay_cropped = overlay_cropped.resize((text_width, text_height), Image.Resampling.LANCZOS)
                     
