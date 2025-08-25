@@ -484,6 +484,157 @@ class NotificationLevelCardView(discord.ui.View):
             print(f"Error downloading image {url}: {e}")
             return None
 
+    async def download_image_to_github(self, image_url):
+        """Download image and upload to GitHub"""
+        try:
+            # Create images directory if it doesn't exist
+            os.makedirs('images', exist_ok=True)
+
+            # Generate unique filename
+            filename = f"{uuid.uuid4()}.png"
+            file_path = os.path.join('images', filename)
+
+            # Download the image
+            async with aiohttp.ClientSession() as session:
+                async with session.get(image_url) as response:
+                    if response.status == 200:
+                        image_data = await response.read()
+                        with open(file_path, 'wb') as f:
+                            f.write(image_data)
+
+                        # Determine correct extension
+                        img_format = Image.open(io.BytesIO(image_data)).format
+                        if img_format == 'GIF':
+                            filename = f"{uuid.uuid4()}.gif"
+                            file_path = os.path.join('images', filename)
+                            with open(file_path, 'wb') as f:
+                                f.write(image_data)
+                        elif img_format in ['JPEG', 'PNG', 'WEBP', 'BMP', 'SVG']:
+                             filename = f"{uuid.uuid4()}.{img_format.lower()}"
+                             file_path = os.path.join('images', filename)
+                             with open(file_path, 'wb') as f:
+                                f.write(image_data)
+
+                        # Synchronize with GitHub
+                        try:
+                            from github_sync import GitHubSync
+                            github_sync = GitHubSync()
+                            sync_success = await github_sync.sync_image_to_pictures_repo(file_path)
+
+                            if sync_success:
+                                # Delete local file after successful sync
+                                try:
+                                    os.remove(file_path)
+                                except:
+                                    pass
+
+                                # Return GitHub raw URL
+                                filename = os.path.basename(file_path)
+                                github_url = f"https://raw.githubusercontent.com/TheBlueEL/pictures/main/{filename}"
+                                return github_url
+                        except ImportError:
+                            print("GitHub sync not available")
+
+            return None
+        except Exception as e:
+            print(f"Error downloading image: {e}")
+            return None
+
+    def resize_image_proportionally_centered(self, image, target_width, target_height):
+        """Resize image maintaining proportions and cropping from center"""
+        try:
+            # Calculate scaling factor to make image fit target dimensions
+            scale_factor = max(target_width / image.width, target_height / image.height)
+
+            # Calculate new dimensions after scaling
+            new_width = int(image.width * scale_factor)
+            new_height = int(image.height * scale_factor)
+
+            # Resize image to new dimensions
+            resized_image = image.resize((new_width, new_height), Image.Resampling.LANCZOS)
+
+            # Calculate crop coordinates to center the image
+            left = (new_width - target_width) // 2
+            top = (new_height - target_height) // 2
+            right = left + target_width
+            bottom = top + target_height
+
+            # Crop to exact target size, centered
+            cropped_image = resized_image.crop((left, top, right, bottom))
+
+            return cropped_image
+
+        except Exception as e:
+            print(f"Error resizing image proportionally: {e}")
+            return image.resize((target_width, target_height), Image.Resampling.LANCZOS)
+
+    async def create_text_with_image_overlay(self, text, font, color, image_url=None, text_width=None, text_height=None):
+        """Create text with optional image overlay for notification cards"""
+        try:
+            # Create text surface
+            if text_width is None or text_height is None:
+                text_bbox = font.getbbox(text)
+                text_width = text_bbox[2] - text_bbox[0]
+                text_height = text_bbox[3] - text_bbox[1]
+
+            # Add padding
+            padding = 30
+            canvas_width = text_width + (padding * 2)
+            canvas_height = text_height + (padding * 2)
+
+            if image_url and image_url != "None":
+                # Download overlay image
+                overlay_data = await self.download_image(image_url)
+                if overlay_data:
+                    overlay_img = Image.open(io.BytesIO(overlay_data)).convert("RGBA")
+
+                    # Create text mask first
+                    text_mask = Image.new('L', (canvas_width, canvas_height), 0)
+                    mask_draw = ImageDraw.Draw(text_mask)
+                    text_x = padding
+                    text_y = padding
+                    mask_draw.text((text_x, text_y), text, font=font, fill=255)
+
+                    # Resize and crop overlay image to fit text zone proportionally
+                    overlay_resized = self.resize_image_proportionally_centered(
+                        overlay_img, canvas_width, canvas_height
+                    )
+
+                    # Create final result
+                    result = Image.new('RGBA', (canvas_width, canvas_height), (0, 0, 0, 0))
+
+                    # Apply texture only to text pixels
+                    import numpy as np
+                    mask_array = np.array(text_mask)
+                    overlay_array = np.array(overlay_resized)
+                    result_array = np.array(result)
+
+                    # Copy pixels where mask is not 0 (text area)
+                    text_pixels = mask_array > 0
+                    result_array[text_pixels] = overlay_array[text_pixels]
+                    result_array[:, :, 3] = mask_array
+
+                    result = Image.fromarray(result_array, 'RGBA')
+                    return result
+
+            # Fallback to regular colored text
+            temp_img = Image.new('RGBA', (canvas_width, canvas_height), (0, 0, 0, 0))
+            temp_draw = ImageDraw.Draw(temp_img)
+            temp_draw.text((padding, padding), text, font=font, fill=tuple(color))
+            return temp_img
+
+        except Exception as e:
+            print(f"Error creating text with image overlay: {e}")
+            # Fallback to basic text
+            text_bbox = font.getbbox(text)
+            text_width = text_bbox[2] - text_bbox[0]
+            text_height = text_bbox[3] - text_bbox[1]
+            padding = 30
+            temp_img = Image.new('RGBA', (text_width + padding * 2, text_height + padding * 2), (0, 0, 0, 0))
+            temp_draw = ImageDraw.Draw(temp_img)
+            temp_draw.text((padding, padding), text, font=font, fill=tuple(color))
+            return temp_img
+
     def create_circle_mask(self, size):
         """Create circular mask for profile picture"""
         mask = Image.new('L', size, 0)
@@ -503,6 +654,215 @@ class NotificationLevelCardView(discord.ui.View):
         
         # Draw main text
         draw.text((x, y), text, font=font, fill=color)
+
+    async def process_text_image(self, image_url, text_area_width, text_area_height):
+        """Process text image - resize/crop from center for text overlay"""
+        try:
+            # Download custom image
+            async with aiohttp.ClientSession() as session:
+                async with session.get(image_url) as response:
+                    if response.status == 200:
+                        image_data = await response.read()
+                    else:
+                        return None
+
+            # Open and process image
+            custom_image = Image.open(io.BytesIO(image_data)).convert("RGBA")
+
+            # Use centered proportional resizing for text area
+            processed_image = self.resize_image_proportionally_centered(
+                custom_image, text_area_width, text_area_height
+            )
+
+            # Save processed image
+            os.makedirs('images', exist_ok=True)
+            filename = f"{uuid.uuid4()}_text_processed.png"
+            file_path = os.path.join('images', filename)
+            processed_image.save(file_path, 'PNG')
+
+            # Upload to GitHub
+            try:
+                from github_sync import GitHubSync
+                github_sync = GitHubSync()
+                sync_success = await github_sync.sync_image_to_pictures_repo(file_path)
+
+                if sync_success:
+                    # Delete local file after successful sync
+                    try:
+                        os.remove(file_path)
+                    except:
+                        pass
+
+                    # Return GitHub raw URL
+                    filename = os.path.basename(file_path)
+                    github_url = f"https://raw.githubusercontent.com/TheBlueEL/pictures/main/{filename}"
+                    return github_url
+            except ImportError:
+                print("GitHub sync not available")
+
+            return None
+        except Exception as e:
+            print(f"Error processing text image: {e}")
+            return None
+
+    async def handle_image_upload(self, message, view):
+        """Handle image uploads for notification card customization"""
+        try:
+            if not message.attachments:
+                return False
+
+            attachment = message.attachments[0]
+            allowed_extensions = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.svg']
+            
+            if not any(attachment.filename.lower().endswith(ext) for ext in allowed_extensions):
+                # Invalid file type
+                try:
+                    await message.delete()
+                except:
+                    pass
+                
+                error_embed = discord.Embed(
+                    title="<:ErrorLOGO:1407071682031648850> Invalid File Type",
+                    description="Please upload only image files with these extensions:\n`.png`, `.jpg`, `.jpeg`, `.gif`, `.webp`, `.bmp`, `.svg`",
+                    color=discord.Color.red()
+                )
+                await message.channel.send(embed=error_embed, delete_after=5)
+                return False
+
+            # Download and upload image
+            local_file = await self.download_image_to_github(attachment.url)
+            if not local_file:
+                return False
+
+            try:
+                await message.delete()
+            except:
+                pass
+
+            # Apply image based on current mode
+            config = view.get_config()
+            
+            if view.current_image_type == "background":
+                # For background, use proportional resizing to fill entire 1080x1080 area
+                processed_url = await self.process_background_image(local_file, 1080, 1080)
+                if processed_url:
+                    config["background_image"] = processed_url
+                    config.pop("background_color", None)
+                else:
+                    config["background_image"] = local_file
+                    config.pop("background_color", None)
+            elif view.current_image_type == "profile_outline":
+                # For profile outline, process to match outline shape
+                config["outline_image"] = local_file
+            elif view.current_image_type in ["level_text", "username_text", "messages_text", "information_text"]:
+                # For text overlays, process to fit text area
+                text_key = f"{view.current_image_type.replace('_text', '')}_text_image"
+                
+                # Get text dimensions for processing
+                text_area_width = 400  # Default text area width
+                text_area_height = 100  # Default text area height
+                
+                # Process image to fit text area
+                processed_url = await self.process_text_image(local_file, text_area_width, text_area_height)
+                if processed_url:
+                    config[text_key] = processed_url
+                else:
+                    config[text_key] = local_file
+
+            view.save_config(config)
+            view.waiting_for_image = False
+
+            # Generate new preview
+            await view.generate_preview_image(message.author)
+
+            # Update view mode
+            view.mode = view.current_image_type
+
+            # Get appropriate embed
+            if view.current_image_type == "background":
+                embed = view.get_background_embed()
+                embed.title = "<:ImageLOGO:1407072328134951043> Background Image"
+                embed.description = "Set a custom background image"
+            elif view.current_image_type == "profile_outline":
+                embed = view.get_profile_outline_embed()
+                embed.title = "<:ImageLOGO:1407072328134951043> Profile Outline Image"
+                embed.description = "Set a custom profile outline image"
+            elif view.current_image_type in ["level_text", "username_text", "messages_text", "information_text"]:
+                element_type = view.current_image_type.replace("_text", "")
+                embed = view.get_text_element_embed(element_type)
+                embed.title = f"<:ImageLOGO:1407072328134951043> {element_type.title()} Text Image"
+                embed.description = f"Set a custom {element_type} text image overlay"
+            else:
+                embed = view.get_main_embed()
+
+            view.update_buttons()
+
+            # Find and update the original message
+            try:
+                channel = message.channel
+                async for msg in channel.history(limit=50):
+                    if msg.author == self.bot.user and msg.embeds:
+                        if "Upload Image" in msg.embeds[0].title:
+                            await msg.edit(embed=embed, view=view)
+                            break
+            except Exception as e:
+                print(f"Error updating message: {e}")
+
+            return True
+
+        except Exception as e:
+            print(f"Error handling image upload: {e}")
+            return False
+
+    async def process_background_image(self, image_url, target_width, target_height):
+        """Process background image - resize/crop from center for background filling"""
+        try:
+            # Download custom image
+            async with aiohttp.ClientSession() as session:
+                async with session.get(image_url) as response:
+                    if response.status == 200:
+                        image_data = await response.read()
+                    else:
+                        return None
+
+            # Open and process image
+            custom_image = Image.open(io.BytesIO(image_data)).convert("RGBA")
+
+            # Use centered proportional resizing for background
+            processed_image = self.resize_image_proportionally_centered(
+                custom_image, target_width, target_height
+            )
+
+            # Save processed image
+            os.makedirs('images', exist_ok=True)
+            filename = f"{uuid.uuid4()}_bg_processed.png"
+            file_path = os.path.join('images', filename)
+            processed_image.save(file_path, 'PNG')
+
+            # Upload to GitHub
+            try:
+                from github_sync import GitHubSync
+                github_sync = GitHubSync()
+                sync_success = await github_sync.sync_image_to_pictures_repo(file_path)
+
+                if sync_success:
+                    # Delete local file after successful sync
+                    try:
+                        os.remove(file_path)
+                    except:
+                        pass
+
+                    # Return GitHub raw URL
+                    filename = os.path.basename(file_path)
+                    github_url = f"https://raw.githubusercontent.com/TheBlueEL/pictures/main/{filename}"
+                    return github_url
+            except ImportError:
+                print("GitHub sync not available")
+
+            return None
+        except Exception as e:
+            print(f"Error processing background image: {e}")
+            return None
 
     async def create_notification_level_card(self, user, level):
         """Create notification level card (1080x1080)"""
@@ -584,49 +944,85 @@ class NotificationLevelCardView(discord.ui.View):
             outline_color = tuple(config.get("text_outline_color", [0, 0, 0]))
             outline_width = config.get("text_outline_width", 2)
             
-            # Draw username
+            # Draw username with optional image overlay
             username_pos = config.get("username_position", {"x": 540, "y": 200})
             username_color = tuple(config.get("username_color", [255, 255, 255]))
             username_text = user.name
+            username_image_url = config.get("username_text_image")
             
-            if text_outline_enabled:
-                self.draw_text_with_outline(draw, username_text, (username_pos["x"], username_pos["y"]), 
-                                          font_username, username_color, outline_color, outline_width)
+            if username_image_url and username_image_url != "None":
+                username_surface = await self.create_text_with_image_overlay(
+                    username_text, font_username, username_color, username_image_url
+                )
+                background.paste(username_surface, 
+                               (username_pos["x"] - 30, username_pos["y"] - 30), 
+                               username_surface)
             else:
-                draw.text((username_pos["x"], username_pos["y"]), username_text, font=font_username, fill=username_color)
+                if text_outline_enabled:
+                    self.draw_text_with_outline(draw, username_text, (username_pos["x"], username_pos["y"]), 
+                                              font_username, username_color, outline_color, outline_width)
+                else:
+                    draw.text((username_pos["x"], username_pos["y"]), username_text, font=font_username, fill=username_color)
             
-            # Draw level
+            # Draw level with optional image overlay
             level_pos = config.get("level_position", {"x": 540, "y": 300})
             level_color = tuple(config.get("level_text_color", [255, 255, 255]))
             level_text = f"LEVEL {level}"
+            level_image_url = config.get("level_text_image")
             
-            if text_outline_enabled:
-                self.draw_text_with_outline(draw, level_text, (level_pos["x"], level_pos["y"]), 
-                                          font_level, level_color, outline_color, outline_width)
+            if level_image_url and level_image_url != "None":
+                level_surface = await self.create_text_with_image_overlay(
+                    level_text, font_level, level_color, level_image_url
+                )
+                background.paste(level_surface, 
+                               (level_pos["x"] - 30, level_pos["y"] - 30), 
+                               level_surface)
             else:
-                draw.text((level_pos["x"], level_pos["y"]), level_text, font=font_level, fill=level_color)
+                if text_outline_enabled:
+                    self.draw_text_with_outline(draw, level_text, (level_pos["x"], level_pos["y"]), 
+                                              font_level, level_color, outline_color, outline_width)
+                else:
+                    draw.text((level_pos["x"], level_pos["y"]), level_text, font=font_level, fill=level_color)
             
-            # Draw message
+            # Draw message with optional image overlay
             message_pos = config.get("message_position", {"x": 540, "y": 450})
             message_color = tuple(config.get("message_text_color", [255, 255, 255]))
             message_text = "You just reached a new level !"
+            message_image_url = config.get("message_text_image")
             
-            if text_outline_enabled:
-                self.draw_text_with_outline(draw, message_text, (message_pos["x"], message_pos["y"]), 
-                                          font_message, message_color, outline_color, outline_width)
+            if message_image_url and message_image_url != "None":
+                message_surface = await self.create_text_with_image_overlay(
+                    message_text, font_message, message_color, message_image_url
+                )
+                background.paste(message_surface, 
+                               (message_pos["x"] - 30, message_pos["y"] - 30), 
+                               message_surface)
             else:
-                draw.text((message_pos["x"], message_pos["y"]), message_text, font=font_message, fill=message_color)
+                if text_outline_enabled:
+                    self.draw_text_with_outline(draw, message_text, (message_pos["x"], message_pos["y"]), 
+                                              font_message, message_color, outline_color, outline_width)
+                else:
+                    draw.text((message_pos["x"], message_pos["y"]), message_text, font=font_message, fill=message_color)
             
-            # Draw info
+            # Draw info with optional image overlay
             info_pos = config.get("info_position", {"x": 540, "y": 550})
             info_color = tuple(config.get("info_text_color", [200, 200, 200]))
             info_text = "Type /level for more information"
+            info_image_url = config.get("information_text_image")
             
-            if text_outline_enabled:
-                self.draw_text_with_outline(draw, info_text, (info_pos["x"], info_pos["y"]), 
-                                          font_info, info_color, outline_color, outline_width)
+            if info_image_url and info_image_url != "None":
+                info_surface = await self.create_text_with_image_overlay(
+                    info_text, font_info, info_color, info_image_url
+                )
+                background.paste(info_surface, 
+                               (info_pos["x"] - 30, info_pos["y"] - 30), 
+                               info_surface)
             else:
-                draw.text((info_pos["x"], info_pos["y"]), info_text, font=font_info, fill=info_color)
+                if text_outline_enabled:
+                    self.draw_text_with_outline(draw, info_text, (info_pos["x"], info_pos["y"]), 
+                                              font_info, info_color, outline_color, outline_width)
+                else:
+                    draw.text((info_pos["x"], info_pos["y"]), info_text, font=font_info, fill=info_color)
             
             output = io.BytesIO()
             background.save(output, format='PNG')
@@ -910,6 +1306,26 @@ class NotificationLevelCardView(discord.ui.View):
             )
             upload_button.callback = self.upload_image
             
+            # Show clear button if image exists
+            config = self.get_config()
+            has_image = False
+            if self.mode == "background_image":
+                has_image = config.get("background_image") and config["background_image"] != "None"
+            elif self.mode == "profile_outline_image":
+                has_image = config.get("outline_image") and config["outline_image"] != "None"
+            elif self.mode.endswith("_text_image"):
+                text_key = f"{self.mode.replace('_text_image', '')}_text_image"
+                has_image = config.get(text_key) and config[text_key] != "None"
+            
+            if has_image:
+                clear_button = discord.ui.Button(
+                    label="Clear Image",
+                    style=discord.ButtonStyle.danger,
+                    emoji="<:DeleteLOGO:1407071421363916841>"
+                )
+                clear_button.callback = self.clear_image
+                self.add_item(clear_button)
+            
             back_button = discord.ui.Button(
                 label="Back",
                 style=discord.ButtonStyle.gray,
@@ -1045,6 +1461,40 @@ class NotificationLevelCardView(discord.ui.View):
         )
         self.update_buttons()
         await interaction.response.edit_message(embed=embed, view=self)
+
+    async def clear_image(self, interaction: discord.Interaction):
+        await interaction.response.defer()
+
+        config = self.get_config()
+        
+        if self.mode == "background_image":
+            config.pop("background_image", None)
+            # Restore default background color
+            if "background_color" not in config:
+                config["background_color"] = [245, 55, 48]
+        elif self.mode == "profile_outline_image":
+            config.pop("outline_image", None)
+        elif self.mode.endswith("_text_image"):
+            text_key = f"{self.mode.replace('_text_image', '')}_text_image"
+            config.pop(text_key, None)
+
+        self.save_config(config)
+        await self.generate_preview_image(interaction.user)
+
+        # Go back to appropriate embed
+        self.mode = self.mode.replace("_image", "")
+        if self.mode == "background":
+            embed = self.get_background_embed()
+        elif self.mode == "profile_outline":
+            embed = self.get_profile_outline_embed()
+        elif self.mode in ["level_text", "username_text", "messages_text", "information_text"]:
+            element_type = self.mode.replace("_text", "")
+            embed = self.get_text_element_embed(element_type)
+        else:
+            embed = self.get_main_embed()
+
+        self.update_buttons()
+        await interaction.edit_original_response(embed=embed, view=self)
 
     # Navigation callbacks
     async def back_to_main(self, interaction: discord.Interaction):
