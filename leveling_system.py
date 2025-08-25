@@ -2292,12 +2292,22 @@ class CharacterXPView(discord.ui.View):
         modal = CharacterCooldownModal()
         await interaction.response.send_modal(modal)
 
-    @discord.ui.button(label="Toggle", style=discord.ButtonStyle.success, emoji="🔄")
-    async def toggle(self, interaction: discord.Interaction, button: discord.ui.Button):
-        data = load_leveling_data()
-        current_state = data["leveling_settings"]["xp_settings"]["characters"]["enabled"]
-        data["leveling_settings"]["xp_settings"]["characters"]["enabled"] = not current_state
-        save_leveling_data(data)
+        # Bouton 2 - Characters XP Toggle  
+        @discord.ui.button(label="OFF", style=discord.ButtonStyle.danger, emoji="<:OffLOGO:1407072621836894380>")
+        async def toggle_characters_xp(self, interaction: discord.Interaction, button: discord.ui.Button):
+            data = load_leveling_data()
+            current_state = data["leveling_settings"]["xp_settings"]["characters"]["enabled"]
+            data["leveling_settings"]["xp_settings"]["characters"]["enabled"] = not current_state
+            save_leveling_data(data)
+            # Update button appearance
+            if data["leveling_settings"]["xp_settings"]["characters"]["enabled"]:
+                button.label = "ON"
+                button.style = discord.ButtonStyle.success
+                button.emoji = "<:OnLOGO:1407072463883472978>"
+            else:
+                button.label = "OFF"
+                button.style = discord.ButtonStyle.danger
+                button.emoji = "<:OffLOGO:1407072621836894380>"
 
         embed = self.get_embed()
         await interaction.response.edit_message(embed=embed, view=self)
@@ -4447,15 +4457,29 @@ class CustomMessageXPView(discord.ui.View):
         modal = CustomMessageCooldownModal()
         await interaction.response.send_modal(modal)
 
-    @discord.ui.button(label="Toggle", style=discord.ButtonStyle.success, emoji="🔄")
-    async def toggle(self, interaction: discord.Interaction, button: discord.ui.Button):
-        data = load_leveling_data()
-        current_state = data["leveling_settings"]["xp_settings"]["messages"]["enabled"]
-        data["leveling_settings"]["xp_settings"]["messages"]["enabled"] = not current_state
-        save_leveling_data(data)
+        # Bouton 3 - Customization Permission Toggle
+        @discord.ui.button(label="OFF", style=discord.ButtonStyle.danger, emoji="<:OffLOGO:1407072621836894380>")
+        async def toggle_customization_permission(self, interaction: discord.Interaction, button: discord.ui.Button):
+            data = load_leveling_data()
+            permissions = data["leveling_settings"].get("customization_permissions", {})
 
-        embed = self.get_embed()
-        await interaction.response.edit_message(embed=embed, view=self)
+            if self.category not in permissions:
+                permissions[self.category] = {"enabled": True}
+            current_state = permissions[self.category].get("enabled", True)
+            permissions[self.category]["enabled"] = not current_state
+            data["leveling_settings"]["customization_permissions"] = permissions
+            save_leveling_data(data)
+            # Update button appearance
+            if permissions[self.category]["enabled"]:
+                button.label = "ON"
+                button.style = discord.ButtonStyle.success
+                button.emoji = "<:OnLOGO:1407072463883472978>"
+            else:
+                button.label = "OFF"
+                button.style = discord.ButtonStyle.danger
+                button.emoji = "<:OffLOGO:1407072621836894380>"
+            embed = self.get_embed()
+            await interaction.response.edit_message(embed=embed, view=self)
 
     @discord.ui.button(label="Back", style=discord.ButtonStyle.gray, emoji="<:BackLOGO:1407071474233114766>")
     async def back(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -4502,15 +4526,28 @@ class CustomCharacterXPView(discord.ui.View):
         modal = CustomCharacterCooldownModal()
         await interaction.response.send_modal(modal)
 
-    @discord.ui.button(label="Toggle", style=discord.ButtonStyle.success, emoji="🔄")
-    async def toggle(self, interaction: discord.Interaction, button: discord.ui.Button):
-        data = load_leveling_data()
-        current_state = data["leveling_settings"]["xp_settings"]["characters"]["enabled"]
-        data["leveling_settings"]["xp_settings"]["characters"]["enabled"] = not current_state
-        save_leveling_data(data)
-
-        embed = self.get_embed()
-        await interaction.response.edit_message(embed=embed, view=self)
+        # Bouton 4 - Profile Outline Toggle
+        @discord.ui.button(label="OFF", style=discord.ButtonStyle.danger, emoji="<:OffLOGO:1407072621836894380>")
+        async def toggle_profile_outline(self, interaction: discord.Interaction, button: discord.ui.Button):
+            await interaction.response.defer()
+            if "profile_outline" not in self.config:
+                self.config["profile_outline"] = {}
+            current_state = self.config["profile_outline"].get("enabled", True)
+            self.config["profile_outline"]["enabled"] = not current_state
+            self.save_config()
+            # Update button appearance
+            if self.config["profile_outline"]["enabled"]:
+                button.label = "ON"
+                button.style = discord.ButtonStyle.success
+                button.emoji = "<:OnLOGO:1407072463883472978>"
+            else:
+                button.label = "OFF"
+                button.style = discord.ButtonStyle.danger
+                button.emoji = "<:OffLOGO:1407072621836894380>"
+            await self.generate_preview_image(interaction.user)
+            embed = self.get_profile_outline_embed()
+            self.update_buttons()
+            await interaction.edit_original_response(embed=embed, view=self)
 
     @discord.ui.button(label="Back", style=discord.ButtonStyle.gray, emoji="<:BackLOGO:1407071474233114766>")
     async def back(self, interaction: discord.Interaction, button: discord.ui.Button):
