@@ -66,8 +66,32 @@ def load_leveling_data():
                     }
                 }
             },
-            "user_data": {}
+            "user_data": {},
+            "user_level_cards": {}
         }
+
+def load_user_level_card_config(user_id):
+    """Load user-specific level card configuration"""
+    data = load_leveling_data()
+    user_id_str = str(user_id)
+    
+    # If user has custom config, return it
+    if user_id_str in data.get("user_level_cards", {}):
+        return data["user_level_cards"][user_id_str]
+    
+    # Otherwise return default config
+    return data["leveling_settings"]["level_card"].copy()
+
+def save_user_level_card_config(user_id, config):
+    """Save user-specific level card configuration"""
+    data = load_leveling_data()
+    user_id_str = str(user_id)
+    
+    if "user_level_cards" not in data:
+        data["user_level_cards"] = {}
+    
+    data["user_level_cards"][user_id_str] = config
+    save_leveling_data(data)
 
 def save_leveling_data(data):
     with open('leveling_data.json', 'w', encoding='utf-8') as f:
@@ -430,7 +454,7 @@ class LevelingSystem(commands.Cog):
         try:
             data = load_leveling_data()
             user_data = data["user_data"].get(str(user.id), {"xp": 0, "level": 1})
-            config = data["leveling_settings"]["level_card"]
+            config = load_user_level_card_config(user.id)
 
             # Calculate user ranking
             user_ranking = self.calculate_user_ranking(user.id)
@@ -2468,7 +2492,7 @@ class LevelCardManagerView(discord.ui.View):
         super().__init__(timeout=300)
         self.bot = bot
         self.user_id = user_id
-        self.config = load_leveling_data()["leveling_settings"]["level_card"]
+        self.config = load_user_level_card_config(user_id)
         self.mode = "main"
         self.waiting_for_image = False
         self.current_image_type = None
@@ -2790,9 +2814,7 @@ class LevelCardManagerView(discord.ui.View):
 
     def save_config(self):
         """Save the current configuration to JSON file"""
-        data = load_leveling_data()
-        data["leveling_settings"]["level_card"] = self.config
-        save_leveling_data(data)
+        save_user_level_card_config(self.user_id, self.config)
 
     def has_permission_for_feature(self, feature_type, action_type):
         """Check if user has permission for a specific feature and action type"""
@@ -3309,8 +3331,8 @@ class LevelCardManagerView(discord.ui.View):
             if hasattr(self, 'is_dm') and self.is_dm:
                 close_button = discord.ui.Button(
                     label="Close",
-                    style=discord.ButtonStyle.gray,
-                    emoji="❌",
+                    style=discord.ButtonStyle.danger,
+                    emoji="<:CloseLOGO:1391531593524318271>",
                     row=1
                 )
                 close_button.callback = self.close_dm
