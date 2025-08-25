@@ -3012,6 +3012,9 @@ class LevelCardHexColorModal(discord.ui.Modal):
         elif self.view.mode == "xp_progress_color" and self.view.config.get("xp_bar_color"):
             rgb = self.view.config["xp_bar_color"]
             current_color = f"#{rgb[0]:02x}{rgb[1]:02x}{rgb[2]:02x}"
+        elif self.view.mode == "xp_bar_color" and self.view.config.get("xp_bar_color"):
+            rgb = self.view.config["xp_bar_color"]
+            current_color = f"#{rgb[0]:02x}{rgb[1]:02x}{rgb[2]:02x}"
         elif self.view.mode == "background_color" and self.view.config.get("background_color"):
             rgb = self.view.config["background_color"]
             current_color = f"#{rgb[0]:02x}{rgb[1]:02x}{rgb[2]:02x}"
@@ -3055,6 +3058,8 @@ class LevelCardHexColorModal(discord.ui.Modal):
                 self.view.config["xp_text_color"] = list(rgb)
             elif self.view.mode == "xp_progress_color":
                 self.view.config["xp_bar_color"] = list(rgb)
+            elif self.view.mode == "xp_bar_color":
+                self.view.config["xp_bar_color"] = list(rgb)
             elif self.view.mode == "background_color":
                 self.view.config["background_color"] = list(rgb)
                 self.view.config.pop("background_image", None)
@@ -3084,6 +3089,10 @@ class LevelCardHexColorModal(discord.ui.Modal):
                 embed = self.view.get_xp_progress_embed()
                 embed.title = "<:ColorLOGO:1408828590241615883> XP Progress Color"
                 embed.description = "Choose how to set your XP progress bar color"
+            elif self.view.mode == "xp_bar_color":
+                embed = self.view.get_xp_bar_embed()
+                embed.title = "<:ColorLOGO:1408828590241615883> XP Bar Color"
+                embed.description = "Choose how to set your XP bar color"
             elif self.view.mode == "background_color":
                 embed = self.view.get_background_embed()
                 embed.title = "<:ColorLOGO:1408828590241615883> Background Color"
@@ -3096,6 +3105,14 @@ class LevelCardHexColorModal(discord.ui.Modal):
                 embed = self.view.get_profile_outline_embed()
                 embed.title = "<:ColorLOGO:1408828590241615883> Profile Outline Color"
                 embed.description = "Choose how to set your profile outline color"
+            elif self.view.mode == "level_text_color":
+                embed = self.view.get_level_text_embed()
+                embed.title = "<:ColorLOGO:1408828590241615883> Level Text Color"
+                embed.description = "Choose how to set your level text color"
+            elif self.view.mode == "ranking_text_color":
+                embed = self.view.get_ranking_text_embed()
+                embed.title = "<:ColorLOGO:1408828590241615883> Ranking Text Color"
+                embed.description = "Choose how to set your ranking text color"
 
             self.view.update_buttons()
             await interaction.edit_original_response(embed=embed, view=self.view)
@@ -3106,6 +3123,217 @@ class LevelCardHexColorModal(discord.ui.Modal):
                 color=discord.Color.red()
             )
             await interaction.followup.send(embed=error_embed, ephemeral=True)
+
+# Ajouter les modales HexColorModal et RGBColorModal génériques
+class HexColorModal(discord.ui.Modal):
+    def __init__(self, view):
+        super().__init__(title='🎨 Hex Color')
+        self.view = view
+
+        self.hex_input = discord.ui.TextInput(
+            label='Hex Color Code',
+            placeholder='#FFFFFF or FFFFFF',
+            required=True,
+            max_length=7
+        )
+        self.add_item(self.hex_input)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        await interaction.response.defer()
+
+        hex_value = self.hex_input.value.strip()
+        if hex_value.startswith('#'):
+            hex_value = hex_value[1:]
+
+        try:
+            rgb = tuple(int(hex_value[i:i+2], 16) for i in (0, 2, 4))
+            
+            # Apply color based on current mode
+            if self.view.mode == "xp_bar_color":
+                self.view.config["xp_bar_color"] = list(rgb)
+            elif self.view.mode == "level_text_color":
+                self.view.config["level_color"] = list(rgb)
+            elif self.view.mode == "ranking_text_color":
+                if "ranking_position" not in self.view.config:
+                    self.view.config["ranking_position"] = {}
+                self.view.config["ranking_position"]["color"] = list(rgb)
+
+            self.view.save_config()
+            await self.view.generate_preview_image(interaction.user)
+
+            # Update view
+            self.view.update_buttons()
+            
+            # Get appropriate embed
+            if self.view.mode == "xp_bar_color":
+                embed = self.view.get_xp_bar_embed()
+                embed.title = "<:ColorLOGO:1408828590241615883> XP Bar Color"
+                embed.description = "Choose how to set your XP bar color"
+            elif self.view.mode == "level_text_color":
+                embed = self.view.get_level_text_embed()
+                embed.title = "<:ColorLOGO:1408828590241615883> Level Text Color"
+                embed.description = "Choose how to set your level text color"
+            elif self.view.mode == "ranking_text_color":
+                embed = self.view.get_ranking_text_embed()
+                embed.title = "<:ColorLOGO:1408828590241615883> Ranking Text Color"
+                embed.description = "Choose how to set your ranking text color"
+
+            await interaction.edit_original_response(embed=embed, view=self.view)
+        except ValueError:
+            error_embed = discord.Embed(
+                title="<:ErrorLOGO:1407071682031648850> Invalid Hex Color",
+                description="Please enter a valid hex color code (e.g., #FF0000 or FF0000)",
+                color=discord.Color.red()
+            )
+            await interaction.followup.send(embed=error_embed, ephemeral=True)
+
+class RGBColorModal(discord.ui.Modal):
+    def __init__(self, view):
+        super().__init__(title='🎨 RGB Color')
+        self.view = view
+
+        self.red_input = discord.ui.TextInput(
+            label='Red (0-255)',
+            placeholder='255',
+            required=True,
+            max_length=3
+        )
+        self.green_input = discord.ui.TextInput(
+            label='Green (0-255)',
+            placeholder='255',
+            required=True,
+            max_length=3
+        )
+        self.blue_input = discord.ui.TextInput(
+            label='Blue (0-255)',
+            placeholder='255',
+            required=True,
+            max_length=3
+        )
+
+        self.add_item(self.red_input)
+        self.add_item(self.green_input)
+        self.add_item(self.blue_input)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        await interaction.response.defer()
+
+        try:
+            r = int(self.red_input.value)
+            g = int(self.green_input.value)
+            b = int(self.blue_input.value)
+
+            if not all(0 <= val <= 255 for val in [r, g, b]):
+                raise ValueError("Values must be between 0 and 255")
+
+            # Apply color based on current mode
+            if self.view.mode == "xp_bar_color":
+                self.view.config["xp_bar_color"] = [r, g, b]
+            elif self.view.mode == "level_text_color":
+                self.view.config["level_color"] = [r, g, b]
+            elif self.view.mode == "ranking_text_color":
+                if "ranking_position" not in self.view.config:
+                    self.view.config["ranking_position"] = {}
+                self.view.config["ranking_position"]["color"] = [r, g, b]
+
+            self.view.save_config()
+            await self.view.generate_preview_image(interaction.user)
+
+            # Update view
+            self.view.update_buttons()
+            
+            # Get appropriate embed
+            if self.view.mode == "xp_bar_color":
+                embed = self.view.get_xp_bar_embed()
+                embed.title = "<:ColorLOGO:1408828590241615883> XP Bar Color"
+                embed.description = "Choose how to set your XP bar color"
+            elif self.view.mode == "level_text_color":
+                embed = self.view.get_level_text_embed()
+                embed.title = "<:ColorLOGO:1408828590241615883> Level Text Color"
+                embed.description = "Choose how to set your level text color"
+            elif self.view.mode == "ranking_text_color":
+                embed = self.view.get_ranking_text_embed()
+                embed.title = "<:ColorLOGO:1408828590241615883> Ranking Text Color"
+                embed.description = "Choose how to set your ranking text color"
+
+            await interaction.edit_original_response(embed=embed, view=self.view)
+        except ValueError:
+            error_embed = discord.Embed(
+                title="<:ErrorLOGO:1407071682031648850> Invalid RGB Values",
+                description="Please enter valid RGB values (0-255 for each color)",
+                color=discord.Color.red()
+            )
+            await interaction.followup.send(embed=error_embed, ephemeral=True)
+
+class ImageURLModal(discord.ui.Modal):
+    def __init__(self, view):
+        super().__init__(title='🖼️ Image URL')
+        self.view = view
+
+        self.url_input = discord.ui.TextInput(
+            label='Image URL',
+            placeholder='https://example.com/image.png',
+            required=True,
+            max_length=500
+        )
+        self.add_item(self.url_input)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        await interaction.response.defer()
+
+        url = self.url_input.value.strip()
+        if not url.startswith(('http://', 'https://')):
+            error_embed = discord.Embed(
+                title="<:ErrorLOGO:1407071682031648850> Invalid URL",
+                description="Please enter a valid HTTP or HTTPS URL",
+                color=discord.Color.red()
+            )
+            await interaction.followup.send(embed=error_embed, ephemeral=True)
+            return
+
+        # Apply image based on current mode
+        if self.view.mode == "username_image":
+            self.view.config["username_image"] = url
+        elif self.view.mode == "xp_info_image":
+            self.view.config["xp_info_image"] = url
+        elif self.view.mode == "xp_progress_image":
+            self.view.config["xp_progress_image"] = url
+        elif self.view.mode == "level_text_image":
+            self.view.config["level_text_image"] = url
+        elif self.view.mode == "ranking_text_image":
+            if "ranking_position" not in self.view.config:
+                self.view.config["ranking_position"] = {}
+            self.view.config["ranking_position"]["background_image"] = url
+
+        self.view.save_config()
+        await self.view.generate_preview_image(interaction.user)
+
+        # Update view
+        self.view.update_buttons()
+        
+        # Get appropriate embed
+        if self.view.mode == "username_image":
+            embed = self.view.get_username_embed()
+            embed.title = "<:ImageLOGO:1407072328134951043> Username Image"
+            embed.description = "Set a custom username image overlay"
+        elif self.view.mode == "xp_info_image":
+            embed = self.view.get_xp_info_embed()
+            embed.title = "<:ImageLOGO:1407072328134951043> XP Info Image"
+            embed.description = "Set a custom XP text image overlay"
+        elif self.view.mode == "xp_progress_image":
+            embed = self.view.get_xp_progress_embed()
+            embed.title = "<:ImageLOGO:1407072328134951043> XP Progress Image"
+            embed.description = "Set a custom XP progress image overlay"
+        elif self.view.mode == "level_text_image":
+            embed = self.view.get_level_text_embed()
+            embed.title = "<:ImageLOGO:1407072328134951043> Level Text Image"
+            embed.description = "Set a custom level text image overlay"
+        elif self.view.mode == "ranking_text_image":
+            embed = self.view.get_ranking_text_embed()
+            embed.title = "<:ImageLOGO:1407072328134951043> Ranking Text Image"
+            embed.description = "Set a custom ranking text image overlay"
+
+        await interaction.edit_original_response(embed=embed, view=self.view)
 
 class LevelCardRGBColorModal(discord.ui.Modal):
     def __init__(self, view):
@@ -3269,6 +3497,18 @@ class LevelCardImageURLModal(discord.ui.Modal):
                 self.view.config["profile_outline"] = {}
             self.view.config["profile_outline"]["custom_image"] = url
             self.view.config["profile_outline"].pop("color_override", None)
+        elif self.view.mode == "username_image":
+            self.view.config["username_image"] = url
+        elif self.view.mode == "xp_info_image":
+            self.view.config["xp_info_image"] = url
+        elif self.view.mode == "xp_progress_image":
+            self.view.config["xp_progress_image"] = url
+        elif self.view.mode == "level_text_image":
+            self.view.config["level_text_image"] = url
+        elif self.view.mode == "ranking_text_image":
+            if "ranking_position" not in self.view.config:
+                self.view.config["ranking_position"] = {}
+            self.view.config["ranking_position"]["background_image"] = url
 
         self.view.save_config()
         await self.view.generate_preview_image(interaction.user)
@@ -3286,6 +3526,26 @@ class LevelCardImageURLModal(discord.ui.Modal):
             embed = self.view.get_profile_outline_embed()
             embed.title = "<:ImageLOGO:1407072328134951043> Profile Outline Image"
             embed.description = "Set a custom profile outline image"
+        elif self.view.mode == "username_image":
+            embed = self.view.get_username_embed()
+            embed.title = "<:ImageLOGO:1407072328134951043> Username Image"
+            embed.description = "Set a custom username image overlay"
+        elif self.view.mode == "xp_info_image":
+            embed = self.view.get_xp_info_embed()
+            embed.title = "<:ImageLOGO:1407072328134951043> XP Info Image"
+            embed.description = "Set a custom XP text image overlay"
+        elif self.view.mode == "xp_progress_image":
+            embed = self.view.get_xp_progress_embed()
+            embed.title = "<:ImageLOGO:1407072328134951043> XP Progress Image"
+            embed.description = "Set a custom XP progress image overlay"
+        elif self.view.mode == "level_text_image":
+            embed = self.view.get_level_text_embed()
+            embed.title = "<:ImageLOGO:1407072328134951043> Level Text Image"
+            embed.description = "Set a custom level text image overlay"
+        elif self.view.mode == "ranking_text_image":
+            embed = self.view.get_ranking_text_embed()
+            embed.title = "<:ImageLOGO:1407072328134951043> Ranking Text Image"
+            embed.description = "Set a custom ranking text image overlay"
 
         self.view.update_buttons()
         await interaction.edit_original_response(embed=embed, view=self.view)
