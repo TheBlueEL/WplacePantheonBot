@@ -2370,7 +2370,7 @@ class LevelCardManagerView(discord.ui.View):
             self.add_item(xp_progress_button)
             self.add_item(back_button)
 
-        elif self.mode in ["xp_info_color", "xp_progress_color", "background_color", "username_color", "profile_outline_color"]:
+        elif self.mode in ["xp_info_color", "xp_progress_color", "xp_bar_color", "background_color", "username_color", "profile_outline_color", "level_text_color", "ranking_text_color"]:
             # Color selection buttons
             hex_button = discord.ui.Button(
                 label="Hex Code",
@@ -2405,7 +2405,7 @@ class LevelCardManagerView(discord.ui.View):
             self.add_item(reset_button)
             self.add_item(back_button)
 
-        elif self.mode in ["xp_bar_image", "background_image", "profile_outline_image"]:
+        elif self.mode in ["xp_bar_image", "background_image", "profile_outline_image", "username_image", "xp_info_image", "xp_progress_image", "level_text_image", "ranking_text_image"]:
             # Image selection buttons
             url_button = discord.ui.Button(
                 label="Set URL",
@@ -2470,9 +2470,16 @@ class LevelCardManagerView(discord.ui.View):
 
         elif self.mode == "xp_bar":
             # XP Bar specific buttons
+            color_button = discord.ui.Button(
+                label="Color",
+                style=discord.ButtonStyle.primary,
+                emoji="<:ColorLOGO:1408828590241615883>"
+            )
+            color_button.callback = self.color_settings
+
             image_button = discord.ui.Button(
                 label="Image",
-                style=discord.ButtonStyle.primary,
+                style=discord.ButtonStyle.secondary,
                 emoji="<:ImageLOGO:1407072328134951043>"
             )
             image_button.callback = self.image_settings
@@ -2484,6 +2491,7 @@ class LevelCardManagerView(discord.ui.View):
             )
             back_button.callback = self.back_to_parent
 
+            self.add_item(color_button)
             self.add_item(image_button)
             self.add_item(back_button)
 
@@ -2899,38 +2907,67 @@ class LevelCardManagerView(discord.ui.View):
         await interaction.response.edit_message(embed=embed, view=self)
 
     async def back_to_parent(self, interaction: discord.Interaction):
+        original_mode = self.mode
+        
+        # Handle color/image mode suffixes
         if self.mode.endswith("_color") or self.mode.endswith("_image"):
             self.mode = self.mode.replace("_color", "").replace("_image", "")
 
+        # Navigate back to appropriate parent
         if self.mode == "xp_info":
-            embed = self.get_xp_info_embed()
-        elif self.mode == "xp_bar":
-            embed = self.get_xp_bar_embed()
-        elif self.mode == "xp_progress":
-            embed = self.get_xp_progress_embed()
-        elif self.mode == "background":
-            embed = self.get_background_embed()
-        elif self.mode == "username":
-            embed = self.get_username_embed()
-        elif self.mode == "profile_outline":
-            embed = self.get_profile_outline_embed()
-        elif self.mode == "level_text":
-            embed = self.get_level_text_embed()
-        elif self.mode == "ranking_text":
-            embed = self.get_ranking_text_embed()
-        elif self.mode == "content":
-            embed = self.get_content_embed()
-        else:
-            # For modes that should go back to a parent category
-            if self.mode in ["level_text", "ranking_text"]:
-                self.mode = "content"
-                embed = self.get_content_embed()
-            elif self.mode in ["xp_info", "xp_bar", "xp_progress"]:
+            if original_mode.endswith("_color") or original_mode.endswith("_image"):
+                embed = self.get_xp_info_embed()
+            else:
                 self.mode = "leveling_bar"
                 embed = self.get_leveling_bar_embed()
+        elif self.mode == "xp_bar":
+            if original_mode.endswith("_color") or original_mode.endswith("_image"):
+                embed = self.get_xp_bar_embed()
+            else:
+                self.mode = "leveling_bar"
+                embed = self.get_leveling_bar_embed()
+        elif self.mode == "xp_progress":
+            if original_mode.endswith("_color") or original_mode.endswith("_image"):
+                embed = self.get_xp_progress_embed()
+            else:
+                self.mode = "leveling_bar"
+                embed = self.get_leveling_bar_embed()
+        elif self.mode == "background":
+            if original_mode.endswith("_color") or original_mode.endswith("_image"):
+                embed = self.get_background_embed()
             else:
                 self.mode = "main"
                 embed = self.get_main_embed()
+        elif self.mode == "username":
+            if original_mode.endswith("_color") or original_mode.endswith("_image"):
+                embed = self.get_username_embed()
+            else:
+                self.mode = "main"
+                embed = self.get_main_embed()
+        elif self.mode == "profile_outline":
+            if original_mode.endswith("_color") or original_mode.endswith("_image"):
+                embed = self.get_profile_outline_embed()
+            else:
+                self.mode = "main"
+                embed = self.get_main_embed()
+        elif self.mode == "level_text":
+            if original_mode.endswith("_color") or original_mode.endswith("_image"):
+                embed = self.get_level_text_embed()
+            else:
+                self.mode = "content"
+                embed = self.get_content_embed()
+        elif self.mode == "ranking_text":
+            if original_mode.endswith("_color") or original_mode.endswith("_image"):
+                embed = self.get_ranking_text_embed()
+            else:
+                self.mode = "content"
+                embed = self.get_content_embed()
+        elif self.mode == "content":
+            self.mode = "main"
+            embed = self.get_main_embed()
+        else:
+            self.mode = "main"
+            embed = self.get_main_embed()
 
         self.update_buttons()
         await interaction.response.edit_message(embed=embed, view=self)
