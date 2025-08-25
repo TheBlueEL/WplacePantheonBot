@@ -3286,7 +3286,7 @@ class LevelCardManagerView(discord.ui.View):
             self.add_item(back_button)
 
         else:  # main mode
-            # Main buttons
+            # Main buttons - 3 per row
             leveling_bar_button = discord.ui.Button(
                 label="Leveling Bar",
                 style=discord.ButtonStyle.secondary,
@@ -3315,7 +3315,7 @@ class LevelCardManagerView(discord.ui.View):
                 label="Profile Outline",
                 style=discord.ButtonStyle.secondary,
                 emoji="<:ProfileLOGO:1408830057819930806>",
-                row=0
+                row=1
             )
             profile_outline_button.callback = self.profile_outline_settings
 
@@ -3327,7 +3327,7 @@ class LevelCardManagerView(discord.ui.View):
             )
             content_button.callback = self.content_settings
 
-            # Add Close button for DMs, Back button for guild
+            # Add Close button for DMs only (no Back button)
             if hasattr(self, 'is_dm') and self.is_dm:
                 close_button = discord.ui.Button(
                     label="Close",
@@ -3337,16 +3337,6 @@ class LevelCardManagerView(discord.ui.View):
                 )
                 close_button.callback = self.close_dm
                 self.add_item(close_button)
-            elif hasattr(self, 'guild') and self.guild is not None:
-                # Only add back button if we're in a guild (not DM)
-                back_button = discord.ui.Button(
-                    label="Back",
-                    style=discord.ButtonStyle.gray,
-                    emoji="<:BackLOGO:1407071474233114766>",
-                    row=1
-                )
-                back_button.callback = self.back_to_level_system
-                self.add_item(back_button)
 
             self.add_item(leveling_bar_button)
             self.add_item(background_button)
