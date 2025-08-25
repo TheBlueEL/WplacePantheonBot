@@ -5350,4 +5350,3 @@ class UserLevelCardManagerView(LevelCardManagerView):
 
 async def setup(bot):
     await bot.add_cog(LevelingSystem(bot))
-    print("LevelingSystem cog loaded successfully!")
