@@ -531,20 +531,78 @@ class LevelingSystem(commands.Cog):
                     # Calculate radius for half-circle (half of height)
                     radius = levelbar.height // 2
                     
-                    # Create a rounded background bar
-                    rounded_bg = Image.new("RGBA", (levelbar.width, levelbar.height), (0, 0, 0, 0))
-                    rounded_bg_draw = ImageDraw.Draw(rounded_bg)
-                    
-                    # Draw rounded rectangle background in a neutral gray color
-                    bg_color = (80, 80, 80, 255)  # Dark gray background
-                    rounded_bg_draw.rounded_rectangle(
-                        [(0, 0), (levelbar.width - 1, levelbar.height - 1)],
-                        radius=radius,
-                        fill=bg_color
-                    )
-                    
-                    # Paste the rounded background
-                    background.paste(rounded_bg, (levelbar_x, levelbar_y), rounded_bg)
+                    # Check if there's a custom XP bar image texture
+                    xp_bar_image_url = config.get("level_bar_image")
+                    if xp_bar_image_url and xp_bar_image_url != "https://raw.githubusercontent.com/TheBlueEL/pictures/refs/heads/main/LevelBar.png":
+                        # Apply custom texture to the background bar
+                        try:
+                            xp_bar_texture_data = await self.download_image(xp_bar_image_url)
+                            if xp_bar_texture_data:
+                                xp_bar_texture = Image.open(io.BytesIO(xp_bar_texture_data)).convert("RGBA")
+                                
+                                # Resize texture to fit the bar dimensions using centered proportional resizing
+                                texture_resized = self.resize_image_proportionally_centered(
+                                    xp_bar_texture, levelbar.width, levelbar.height
+                                )
+                                
+                                # Create mask for rounded rectangle
+                                mask = Image.new('L', (levelbar.width, levelbar.height), 0)
+                                mask_draw = ImageDraw.Draw(mask)
+                                mask_draw.rounded_rectangle(
+                                    [(0, 0), (levelbar.width - 1, levelbar.height - 1)],
+                                    radius=radius,
+                                    fill=255
+                                )
+                                
+                                # Apply texture only to the rounded rectangle shape
+                                import numpy as np
+                                texture_array = np.array(texture_resized)
+                                mask_array = np.array(mask)
+                                result_array = np.zeros_like(texture_array)
+                                
+                                # Only copy pixels where the mask is not 0
+                                mask_pixels = mask_array > 0
+                                result_array[mask_pixels] = texture_array[mask_pixels]
+                                result_array[:, :, 3] = mask_array  # Set alpha channel to match mask
+                                
+                                rounded_bg = Image.fromarray(result_array, 'RGBA')
+                                
+                                # Paste the textured background
+                                background.paste(rounded_bg, (levelbar_x, levelbar_y), rounded_bg)
+                            else:
+                                # Fallback to default color bar
+                                bg_color_default = (80, 80, 80, 255)  # Dark gray background
+                                rounded_bg = Image.new("RGBA", (levelbar.width, levelbar.height), (0, 0, 0, 0))
+                                rounded_bg_draw = ImageDraw.Draw(rounded_bg)
+                                rounded_bg_draw.rounded_rectangle(
+                                    [(0, 0), (levelbar.width - 1, levelbar.height - 1)],
+                                    radius=radius,
+                                    fill=bg_color_default
+                                )
+                                background.paste(rounded_bg, (levelbar_x, levelbar_y), rounded_bg)
+                        except Exception as e:
+                            print(f"Error applying XP bar texture: {e}")
+                            # Fallback to default color bar
+                            bg_color_default = (80, 80, 80, 255)  # Dark gray background
+                            rounded_bg = Image.new("RGBA", (levelbar.width, levelbar.height), (0, 0, 0, 0))
+                            rounded_bg_draw = ImageDraw.Draw(rounded_bg)
+                            rounded_bg_draw.rounded_rectangle(
+                                [(0, 0), (levelbar.width - 1, levelbar.height - 1)],
+                                radius=radius,
+                                fill=bg_color_default
+                            )
+                            background.paste(rounded_bg, (levelbar_x, levelbar_y), rounded_bg)
+                    else:
+                        # Use default color bar
+                        bg_color_default = (80, 80, 80, 255)  # Dark gray background
+                        rounded_bg = Image.new("RGBA", (levelbar.width, levelbar.height), (0, 0, 0, 0))
+                        rounded_bg_draw = ImageDraw.Draw(rounded_bg)
+                        rounded_bg_draw.rounded_rectangle(
+                            [(0, 0), (levelbar.width - 1, levelbar.height - 1)],
+                            radius=radius,
+                            fill=bg_color_default
+                        )
+                        background.paste(rounded_bg, (levelbar_x, levelbar_y), rounded_bg)
 
                 # Create XP progress bar overlay with rounded corners
                 xp_needed, current_xp_in_level = get_xp_for_next_level(user_data["xp"])
@@ -553,37 +611,123 @@ class LevelingSystem(commands.Cog):
                 else:
                     progress = 1.0
 
-                # Create XP progress bar using the specified color
+                # Create XP progress bar using the specified color or texture
                 if progress > 0:
-                    xp_bar_color_rgb = config.get("xp_bar_color", [245, 55, 48])
-                    xp_bar_color = tuple(xp_bar_color_rgb) + (255,)
                     progress_width = int(levelbar.width * progress)
 
                     if progress_width > 0:
-                        # Create rounded progress bar
-                        progress_bar = Image.new("RGBA", (progress_width, levelbar.height), (0, 0, 0, 0))
-                        progress_draw = ImageDraw.Draw(progress_bar)
-                        
-                        # Calculate radius for half-circle (half of height)
-                        radius = levelbar.height // 2
-                        
-                        # Draw rounded rectangle with proper half-circles
-                        if progress_width >= levelbar.height:
-                            # Full rounded rectangle when progress is wide enough
-                            progress_draw.rounded_rectangle(
-                                [(0, 0), (progress_width - 1, levelbar.height - 1)],
-                                radius=radius,
-                                fill=xp_bar_color
-                            )
+                        # Check if there's a custom XP progress image texture
+                        xp_progress_image_url = config.get("xp_progress_image")
+                        if xp_progress_image_url and xp_progress_image_url != "None":
+                            # Apply custom texture to the progress bar
+                            try:
+                                xp_progress_texture_data = await self.download_image(xp_progress_image_url)
+                                if xp_progress_texture_data:
+                                    xp_progress_texture = Image.open(io.BytesIO(xp_progress_texture_data)).convert("RGBA")
+                                    
+                                    # Resize texture to fit the FULL bar dimensions first
+                                    texture_full = self.resize_image_proportionally_centered(
+                                        xp_progress_texture, levelbar.width, levelbar.height
+                                    )
+                                    
+                                    # Create progress mask with rounded corners
+                                    progress_mask = Image.new('L', (levelbar.width, levelbar.height), 0)
+                                    progress_mask_draw = ImageDraw.Draw(progress_mask)
+                                    
+                                    # Calculate radius for half-circle (half of height)
+                                    radius = levelbar.height // 2
+                                    
+                                    # Draw progress mask based on progress width
+                                    if progress_width >= levelbar.height:
+                                        # Full rounded rectangle when progress is wide enough
+                                        progress_mask_draw.rounded_rectangle(
+                                            [(0, 0), (progress_width - 1, levelbar.height - 1)],
+                                            radius=radius,
+                                            fill=255
+                                        )
+                                    else:
+                                        # Just a circle/partial circle for small progress
+                                        progress_mask_draw.ellipse(
+                                            [(0, 0), (min(progress_width * 2, levelbar.height) - 1, levelbar.height - 1)],
+                                            fill=255
+                                        )
+                                    
+                                    # Apply texture only to the progress area
+                                    import numpy as np
+                                    texture_array = np.array(texture_full)
+                                    mask_array = np.array(progress_mask)
+                                    result_array = np.zeros_like(texture_array)
+                                    
+                                    # Only copy pixels where the mask is not 0
+                                    mask_pixels = mask_array > 0
+                                    result_array[mask_pixels] = texture_array[mask_pixels]
+                                    result_array[:, :, 3] = mask_array  # Set alpha channel to match mask
+                                    
+                                    progress_bar = Image.fromarray(result_array, 'RGBA')
+                                    
+                                    # Paste the textured progress bar over the background
+                                    background.paste(progress_bar, (levelbar_x, levelbar_y), progress_bar)
+                                else:
+                                    # Fallback to colored progress bar
+                                    xp_bar_color_rgb = config.get("xp_bar_color", [245, 55, 48])
+                                    xp_bar_color = tuple(xp_bar_color_rgb) + (255,)
+                                    progress_bar = Image.new("RGBA", (progress_width, levelbar.height), (0, 0, 0, 0))
+                                    progress_draw = ImageDraw.Draw(progress_bar)
+                                    
+                                    radius = levelbar.height // 2
+                                    if progress_width >= levelbar.height:
+                                        progress_draw.rounded_rectangle(
+                                            [(0, 0), (progress_width - 1, levelbar.height - 1)],
+                                            radius=radius,
+                                            fill=xp_bar_color
+                                        )
+                                    else:
+                                        progress_draw.ellipse(
+                                            [(0, 0), (min(progress_width * 2, levelbar.height) - 1, levelbar.height - 1)],
+                                            fill=xp_bar_color
+                                        )
+                                    background.paste(progress_bar, (levelbar_x, levelbar_y), progress_bar)
+                            except Exception as e:
+                                print(f"Error applying XP progress texture: {e}")
+                                # Fallback to colored progress bar
+                                xp_bar_color_rgb = config.get("xp_bar_color", [245, 55, 48])
+                                xp_bar_color = tuple(xp_bar_color_rgb) + (255,)
+                                progress_bar = Image.new("RGBA", (progress_width, levelbar.height), (0, 0, 0, 0))
+                                progress_draw = ImageDraw.Draw(progress_bar)
+                                
+                                radius = levelbar.height // 2
+                                if progress_width >= levelbar.height:
+                                    progress_draw.rounded_rectangle(
+                                        [(0, 0), (progress_width - 1, levelbar.height - 1)],
+                                        radius=radius,
+                                        fill=xp_bar_color
+                                    )
+                                else:
+                                    progress_draw.ellipse(
+                                        [(0, 0), (min(progress_width * 2, levelbar.height) - 1, levelbar.height - 1)],
+                                        fill=xp_bar_color
+                                    )
+                                background.paste(progress_bar, (levelbar_x, levelbar_y), progress_bar)
                         else:
-                            # Just a circle/partial circle for small progress
-                            progress_draw.ellipse(
-                                [(0, 0), (min(progress_width * 2, levelbar.height) - 1, levelbar.height - 1)],
-                                fill=xp_bar_color
-                            )
-
-                        # Paste the progress bar over the background
-                        background.paste(progress_bar, (levelbar_x, levelbar_y), progress_bar)
+                            # Use default colored progress bar
+                            xp_bar_color_rgb = config.get("xp_bar_color", [245, 55, 48])
+                            xp_bar_color = tuple(xp_bar_color_rgb) + (255,)
+                            progress_bar = Image.new("RGBA", (progress_width, levelbar.height), (0, 0, 0, 0))
+                            progress_draw = ImageDraw.Draw(progress_bar)
+                            
+                            radius = levelbar.height // 2
+                            if progress_width >= levelbar.height:
+                                progress_draw.rounded_rectangle(
+                                    [(0, 0), (progress_width - 1, levelbar.height - 1)],
+                                    radius=radius,
+                                    fill=xp_bar_color
+                                )
+                            else:
+                                progress_draw.ellipse(
+                                    [(0, 0), (min(progress_width * 2, levelbar.height) - 1, levelbar.height - 1)],
+                                    fill=xp_bar_color
+                                )
+                            background.paste(progress_bar, (levelbar_x, levelbar_y), progress_bar)
 
 
             # Download user avatar
