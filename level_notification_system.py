@@ -601,7 +601,7 @@ class NotificationLevelCardView(discord.ui.View):
             print(f"Error resizing image proportionally: {e}")
             return image.resize((target_width, target_height), Image.Resampling.LANCZOS)
 
-    async def create_text_with_image_overlay(self, text, font, color, image_url=None, text_width=None, text_height=None):
+    def create_text_with_image_overlay(self, text, font, color, image_url=None, text_width=None, text_height=None):
         """Create text with optional image overlay for notification cards"""
         try:
             # Create text surface
@@ -840,7 +840,6 @@ class NotificationLevelCardView(discord.ui.View):
                 await message.channel.send(embed=error_embed, delete_after=10)
                 print(f"📤 [UPLOAD IMAGE] Message d'erreur détaillé envoyé")
                 return False
-
 
             elif view.current_image_type == "profile_outline":
                 print(f"👤 [UPLOAD IMAGE] Traitement d'une image de contour de profil")
