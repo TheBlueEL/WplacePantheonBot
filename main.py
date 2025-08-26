@@ -103,8 +103,21 @@ async def on_message(message):
     if message.author == client.user:
         return
 
+    # Check for notification image uploads
+    if hasattr(client, '_notification_image_listeners') and message.attachments:
+        listener = client._notification_image_listeners.get(message.author.id) or client._notification_image_listeners.get(message.author)
+        if listener and hasattr(listener, 'waiting_for_image') and listener.waiting_for_image:
+            from level_notification_system import NotificationLevelCardView
+            if isinstance(listener, NotificationLevelCardView):
+                success = await listener.handle_image_upload(message, listener)
+                if success:
+                    return
+
     # Optionnel: afficher les messages reçus dans la console
     print(f'Message de {message.author}: {message.content}')
+
+    # Process commands
+    await client.process_commands(message)
 
 # Démarrer le bot
 if __name__ == "__main__":
