@@ -735,8 +735,21 @@ class NotificationLevelCardView(discord.ui.View):
             attachment = message.attachments[0]
             allowed_extensions = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.svg']
             print(f"📤 [UPLOAD IMAGE] Fichier détecté: {attachment.filename}")
-            print(f"📤 [UPLOAD IMAGE] Taille du fichier: {attachment.size} bytes")
+            print(f"📤 [UPLOAD IMAGE] Taille du fichier: {attachment.size} bytes ({attachment.size / 1024 / 1024:.2f} MB)")
             print(f"📤 [UPLOAD IMAGE] URL de l'attachement: {attachment.url}")
+            print(f"📤 [UPLOAD IMAGE] Content Type: {getattr(attachment, 'content_type', 'unknown')}")
+
+            # Check file size (Discord max is 25MB for regular users, 100MB for Nitro)
+            max_size = 100 * 1024 * 1024  # 100MB in bytes
+            if attachment.size > max_size:
+                print(f"❌ [UPLOAD IMAGE] Fichier trop volumineux: {attachment.size} bytes (max: {max_size})")
+                error_embed = discord.Embed(
+                    title="<:ErrorLOGO:1407071682031648850> File Too Large",
+                    description=f"File size is {attachment.size / 1024 / 1024:.2f}MB. Maximum allowed is {max_size / 1024 / 1024}MB.",
+                    color=discord.Color.red()
+                )
+                await message.channel.send(embed=error_embed, delete_after=5)
+                return False
 
             if not any(attachment.filename.lower().endswith(ext) for ext in allowed_extensions):
                 # Invalid file type
@@ -769,46 +782,110 @@ class NotificationLevelCardView(discord.ui.View):
             config = view.get_config()
             print(f"📤 [UPLOAD IMAGE] Configuration chargée, type d'image: {view.current_image_type}")
 
+            # Check if we can actually access the attachment URL
+            print(f"🌐 [UPLOAD IMAGE] Vérification de l'accès à l'URL...")
+            try:
+                async with aiohttp.ClientSession() as session:
+                    async with session.head(attachment.url) as response:
+                        print(f"📤 [UPLOAD IMAGE] Status HTTP HEAD: {response.status}")
+                        print(f"📤 [UPLOAD IMAGE] Headers: {dict(response.headers)}")
+                        if response.status != 200:
+                            raise Exception(f"URL inaccessible - Status: {response.status}")
+            except Exception as url_error:
+                print(f"❌ [UPLOAD IMAGE] Erreur d'accès URL: {url_error}")
+                error_embed = discord.Embed(
+                    title="<:ErrorLOGO:1407071682031648850> URL Access Error",
+                    description="Could not access the uploaded file. Please try again.",
+                    color=discord.Color.red()
+                )
+                await message.channel.send(embed=error_embed, delete_after=5)
+                return False
+
             if view.current_image_type == "background":
                 print(f"🖼️ [UPLOAD IMAGE] Traitement d'une image de fond")
                 # For background, download and process image with proportional resizing to fill 1080x1080
                 try:
                     print(f"⬇️ [UPLOAD IMAGE] Téléchargement de l'image depuis: {attachment.url}")
-                    # Download the image
-                    async with aiohttp.ClientSession() as session:
-                        async with session.get(attachment.url) as response:
-                            if response.status == 200:
-                                image_data = await response.read()
-                                print(f"✅ [UPLOAD IMAGE] Image téléchargée avec succès ({len(image_data)} bytes)")
-                            else:
-                                raise Exception(f"Failed to download image - Status: {response.status}")
+                    
+                    # Download the image with timeout and retry logic
+                    max_retries = 3
+                    image_data = None
+                    
+                    for retry in range(max_retries):
+                        try:
+                            print(f"🔄 [UPLOAD IMAGE] Tentative de téléchargement {retry + 1}/{max_retries}")
+                            
+                            timeout = aiohttp.ClientTimeout(total=30)  # 30 second timeout
+                            async with aiohttp.ClientSession(timeout=timeout) as session:
+                                async with session.get(attachment.url) as response:
+                                    print(f"📤 [UPLOAD IMAGE] Status de réponse: {response.status}")
+                                    print(f"📤 [UPLOAD IMAGE] Content-Length: {response.headers.get('content-length', 'unknown')}")
+                                    
+                                    if response.status == 200:
+                                        image_data = await response.read()
+                                        print(f"✅ [UPLOAD IMAGE] Image téléchargée avec succès ({len(image_data)} bytes)")
+                                        break
+                                    else:
+                                        raise Exception(f"HTTP Error {response.status}")
+                        except Exception as download_error:
+                            print(f"❌ [UPLOAD IMAGE] Erreur téléchargement tentative {retry + 1}: {download_error}")
+                            if retry == max_retries - 1:
+                                raise download_error
+                            await asyncio.sleep(1)  # Wait before retry
+
+                    if not image_data:
+                        raise Exception("Failed to download image after all retries")
+
+                    # Validate image data
+                    if len(image_data) < 100:  # Minimum reasonable image size
+                        raise Exception(f"Image data too small: {len(image_data)} bytes")
 
                     # Open and process image
-                    from PIL import Image
-                    import io
-                    custom_image = Image.open(io.BytesIO(image_data)).convert("RGBA")
-                    print(f"🔄 [UPLOAD IMAGE] Image ouverte: {custom_image.size[0]}x{custom_image.size[1]} pixels")
+                    print(f"🔄 [UPLOAD IMAGE] Ouverture de l'image...")
+                    try:
+                        custom_image = Image.open(io.BytesIO(image_data)).convert("RGBA")
+                        print(f"✅ [UPLOAD IMAGE] Image ouverte: {custom_image.size[0]}x{custom_image.size[1]} pixels, mode: {custom_image.mode}")
+                    except Exception as pil_error:
+                        print(f"❌ [UPLOAD IMAGE] Erreur PIL lors de l'ouverture: {pil_error}")
+                        raise Exception(f"Invalid image format: {pil_error}")
 
                     # Use centered proportional resizing for background (1080x1080)
                     print(f"🔄 [UPLOAD IMAGE] Redimensionnement proportionnel vers 1080x1080")
-                    processed_image = view.resize_image_proportionally_centered(
-                        custom_image, 1080, 1080
-                    )
-                    print(f"✅ [UPLOAD IMAGE] Image redimensionnée avec succès")
+                    try:
+                        processed_image = view.resize_image_proportionally_centered(
+                            custom_image, 1080, 1080
+                        )
+                        print(f"✅ [UPLOAD IMAGE] Image redimensionnée avec succès: {processed_image.size}")
+                    except Exception as resize_error:
+                        print(f"❌ [UPLOAD IMAGE] Erreur lors du redimensionnement: {resize_error}")
+                        raise Exception(f"Failed to resize image: {resize_error}")
 
                     # Save processed image
+                    print(f"💾 [UPLOAD IMAGE] Sauvegarde de l'image...")
                     os.makedirs('images', exist_ok=True)
                     filename = f"{uuid.uuid4()}_bg_processed.png"
                     file_path = os.path.join('images', filename)
-                    processed_image.save(file_path, 'PNG')
-                    print(f"💾 [UPLOAD IMAGE] Image sauvegardée localement: {file_path}")
+                    
+                    try:
+                        processed_image.save(file_path, 'PNG', optimize=True)
+                        file_size = os.path.getsize(file_path)
+                        print(f"✅ [UPLOAD IMAGE] Image sauvegardée localement: {file_path} ({file_size} bytes)")
+                    except Exception as save_error:
+                        print(f"❌ [UPLOAD IMAGE] Erreur lors de la sauvegarde: {save_error}")
+                        raise Exception(f"Failed to save processed image: {save_error}")
 
                     # Upload to GitHub
                     try:
                         print(f"☁️ [UPLOAD IMAGE] Upload vers GitHub...")
                         from github_sync import GitHubSync
                         github_sync = GitHubSync()
+                        
+                        # Validate GitHubSync availability
+                        if not hasattr(github_sync, 'sync_image_to_pictures_repo'):
+                            raise Exception("GitHub sync method not available")
+                            
                         sync_success = await github_sync.sync_image_to_pictures_repo(file_path)
+                        print(f"📤 [UPLOAD IMAGE] Résultat sync GitHub: {sync_success}")
 
                         if sync_success:
                             print(f"✅ [UPLOAD IMAGE] Upload GitHub réussi")
@@ -820,26 +897,33 @@ class NotificationLevelCardView(discord.ui.View):
                                 print(f"⚠️ [UPLOAD IMAGE] Erreur suppression fichier local: {delete_error}")
 
                             # Return GitHub raw URL
-                            filename = os.path.basename(file_path)
-                            github_url = f"https://raw.githubusercontent.com/TheBlueEL/pictures/main/{filename}"
+                            filename_only = os.path.basename(file_path)
+                            github_url = f"https://raw.githubusercontent.com/TheBlueEL/pictures/main/{filename_only}"
                             config["background_image"] = github_url
                             config.pop("background_color", None)
                             print(f"✅ [UPLOAD IMAGE] Configuration mise à jour avec URL GitHub: {github_url}")
                         else:
-                            raise Exception("GitHub sync failed")
-                    except ImportError:
-                        print("❌ [UPLOAD IMAGE] GitHub sync not available")
-                        raise Exception("GitHub sync not available")
+                            raise Exception("GitHub sync returned False")
+                            
+                    except ImportError as import_error:
+                        print(f"❌ [UPLOAD IMAGE] GitHub sync import error: {import_error}")
+                        raise Exception("GitHub sync module not available")
+                    except Exception as github_error:
+                        print(f"❌ [UPLOAD IMAGE] Erreur GitHub sync: {github_error}")
+                        raise Exception(f"GitHub sync failed: {github_error}")
 
                 except Exception as e:
                     print(f"❌ [UPLOAD IMAGE] Erreur lors du traitement de l'image de fond: {e}")
+                    import traceback
+                    print(f"❌ [UPLOAD IMAGE] Traceback détaillé: {traceback.format_exc()}")
+                    
                     error_embed = discord.Embed(
                         title="<:ErrorLOGO:1407071682031648850> Processing Error",
-                        description="Failed to process the background image. Please try again.",
+                        description=f"Failed to process the background image:\n```{str(e)[:100]}...```\nPlease try again with a different image.",
                         color=discord.Color.red()
                     )
-                    await message.channel.send(embed=error_embed, delete_after=5)
-                    print(f"📤 [UPLOAD IMAGE] Message d'erreur envoyé pour erreur de traitement")
+                    await message.channel.send(embed=error_embed, delete_after=10)
+                    print(f"📤 [UPLOAD IMAGE] Message d'erreur détaillé envoyé")
                     return False
 
             elif view.current_image_type == "profile_outline":
