@@ -525,60 +525,49 @@ class NotificationLevelCardView(discord.ui.View):
             print(f"Error downloading image {url}: {e}")
             return None
 
-    async def download_image_to_github(self, image_url):
-        """Download image and upload to GitHub"""
+    async def upload_image_to_discord_channel(self, image_url):
+        """Upload image to specific Discord channel and return Discord URL"""
         try:
-            # Create images directory if it doesn't exist
-            os.makedirs('images', exist_ok=True)
+            TARGET_CHANNEL_ID = 1409970452570312819  # Canal Discord pour stocker les images
 
-            # Generate unique filename
-            filename = f"{uuid.uuid4()}.png"
-            file_path = os.path.join('images', filename)
+            # Get the target channel
+            channel = self.bot.get_channel(TARGET_CHANNEL_ID)
+            if not channel:
+                print(f"❌ [NOTIFICATION] Canal {TARGET_CHANNEL_ID} introuvable")
+                return None
 
             # Download the image
             async with aiohttp.ClientSession() as session:
                 async with session.get(image_url) as response:
                     if response.status == 200:
                         image_data = await response.read()
-                        with open(file_path, 'wb') as f:
-                            f.write(image_data)
 
-                        # Determine correct extension
-                        img_format = Image.open(io.BytesIO(image_data)).format
-                        if img_format == 'GIF':
-                            filename = f"{uuid.uuid4()}.gif"
-                            file_path = os.path.join('images', filename)
-                            with open(file_path, 'wb') as f:
-                                f.write(image_data)
-                        elif img_format in ['JPEG', 'PNG', 'WEBP', 'BMP', 'SVG']:
-                             filename = f"{uuid.uuid4()}.{img_format.lower()}"
-                             file_path = os.path.join('images', filename)
-                             with open(file_path, 'wb') as f:
-                                f.write(image_data)
+                        # Determine file extension
+                        content_type = response.headers.get('content-type', '')
+                        if 'gif' in content_type:
+                            filename = f"notification_image_{uuid.uuid4()}.gif"
+                        elif 'png' in content_type:
+                            filename = f"notification_image_{uuid.uuid4()}.png"
+                        elif 'jpeg' in content_type or 'jpg' in content_type:
+                            filename = f"notification_image_{uuid.uuid4()}.jpg"
+                        else:
+                            filename = f"notification_image_{uuid.uuid4()}.png"
 
-                        # Synchronize with GitHub
-                        try:
-                            from github_sync import GitHubSync
-                            github_sync = GitHubSync()
-                            sync_success = await github_sync.sync_image_to_pictures_repo(file_path)
+                        # Create Discord file
+                        discord_file = discord.File(io.BytesIO(image_data), filename=filename)
 
-                            if sync_success:
-                                # Delete local file after successful sync
-                                try:
-                                    os.remove(file_path)
-                                except:
-                                    pass
+                        # Send to Discord channel
+                        message = await channel.send(file=discord_file)
 
-                                # Return GitHub raw URL
-                                filename = os.path.basename(file_path)
-                                github_url = f"https://raw.githubusercontent.com/TheBlueEL/pictures/main/{filename}"
-                                return github_url
-                        except ImportError:
-                            print("GitHub sync not available")
+                        # Get the Discord attachment URL
+                        if message.attachments:
+                            discord_url = message.attachments[0].url
+                            print(f"✅ [NOTIFICATION] Image uploadée vers Discord: {discord_url}")
+                            return discord_url
 
             return None
         except Exception as e:
-            print(f"Error downloading image: {e}")
+            print(f"❌ [NOTIFICATION] Erreur upload Discord: {e}")
             return None
 
     def resize_image_proportionally_centered(self, image, target_width, target_height):
@@ -696,55 +685,7 @@ class NotificationLevelCardView(discord.ui.View):
         # Draw main text
         draw.text((x, y), text, font=font, fill=color)
 
-    async def process_text_image(self, image_url, text_area_width, text_area_height):
-        """Process text image - resize/crop from center for text overlay"""
-        try:
-            # Download custom image
-            async with aiohttp.ClientSession() as session:
-                async with session.get(image_url) as response:
-                    if response.status == 200:
-                        image_data = await response.read()
-                    else:
-                        return image_url  # Return original URL if download fails
-
-            # Open and process image
-            custom_image = Image.open(io.BytesIO(image_data)).convert("RGBA")
-
-            # Use centered proportional resizing for text area
-            processed_image = self.resize_image_proportionally_centered(
-                custom_image, text_area_width, text_area_height
-            )
-
-            # Save processed image
-            os.makedirs('images', exist_ok=True)
-            filename = f"{uuid.uuid4()}_text_processed.png"
-            file_path = os.path.join('images', filename)
-            processed_image.save(file_path, 'PNG')
-
-            # Upload to GitHub
-            try:
-                from github_sync import GitHubSync
-                github_sync = GitHubSync()
-                sync_success = await github_sync.sync_image_to_pictures_repo(file_path)
-
-                if sync_success:
-                    # Delete local file after successful sync
-                    try:
-                        os.remove(file_path)
-                    except:
-                        pass
-
-                    # Return GitHub raw URL
-                    filename = os.path.basename(file_path)
-                    github_url = f"https://raw.githubusercontent.com/TheBlueEL/pictures/main/{filename}"
-                    return github_url
-            except ImportError:
-                print("GitHub sync not available")
-
-            return image_url  # Return original URL if GitHub sync fails
-        except Exception as e:
-            print(f"Error processing text image: {e}")
-            return image_url  # Return original URL on error
+    
 
     async def handle_image_upload(self, message, view):
         """Handle image uploads for notification card customization"""
@@ -906,43 +847,47 @@ class NotificationLevelCardView(discord.ui.View):
                         print(f"❌ [UPLOAD IMAGE] Erreur lors de la sauvegarde: {save_error}")
                         raise Exception(f"Failed to save processed image: {save_error}")
 
-                    # Upload to GitHub
+                    # Upload processed image to Discord
                     try:
-                        print(f"☁️ [UPLOAD IMAGE] Upload vers GitHub...")
-                        from github_sync import GitHubSync
-                        github_sync = GitHubSync()
+                        print(f"☁️ [UPLOAD IMAGE] Upload vers Discord...")
+                        
+                        # First, we need to convert the processed PIL image to bytes
+                        img_byte_arr = io.BytesIO()
+                        processed_image.save(img_byte_arr, format='PNG')
+                        img_byte_arr.seek(0)
 
-                        # Validate GitHubSync availability
-                        if not hasattr(github_sync, 'sync_image_to_pictures_repo'):
-                            raise Exception("GitHub sync method not available")
+                        # Get the target channel
+                        TARGET_CHANNEL_ID = 1409970452570312819
+                        channel = view.bot.get_channel(TARGET_CHANNEL_ID)
+                        if not channel:
+                            raise Exception(f"Canal {TARGET_CHANNEL_ID} introuvable")
 
-                        sync_success = await github_sync.sync_image_to_pictures_repo(file_path)
-                        print(f"📤 [UPLOAD IMAGE] Résultat sync GitHub: {sync_success}")
+                        # Create Discord file from processed image
+                        filename = f"notification_bg_{uuid.uuid4()}.png"
+                        discord_file = discord.File(img_byte_arr, filename=filename)
 
-                        if sync_success:
-                            print(f"✅ [UPLOAD IMAGE] Upload GitHub réussi")
-                            # Delete local file after successful sync
-                            try:
-                                os.remove(file_path)
-                                print(f"🗑️ [UPLOAD IMAGE] Fichier local supprimé")
-                            except Exception as delete_error:
-                                print(f"⚠️ [UPLOAD IMAGE] Erreur suppression fichier local: {delete_error}")
+                        # Send to Discord channel
+                        message = await channel.send(file=discord_file)
 
-                            # Return GitHub raw URL
-                            filename_only = os.path.basename(file_path)
-                            github_url = f"https://raw.githubusercontent.com/TheBlueEL/pictures/main/{filename_only}"
-                            config["background_image"] = github_url
+                        # Get the Discord attachment URL
+                        if message.attachments:
+                            discord_url = message.attachments[0].url
+                            config["background_image"] = discord_url
                             config.pop("background_color", None)
-                            print(f"✅ [UPLOAD IMAGE] Configuration mise à jour avec URL GitHub: {github_url}")
+                            print(f"✅ [UPLOAD IMAGE] Configuration mise à jour avec URL Discord: {discord_url}")
                         else:
-                            raise Exception("GitHub sync returned False")
+                            raise Exception("Aucun attachement trouvé dans le message Discord")
 
-                    except ImportError as import_error:
-                        print(f"❌ [UPLOAD IMAGE] GitHub sync import error: {import_error}")
-                        raise Exception("GitHub sync module not available")
-                    except Exception as github_error:
-                        print(f"❌ [UPLOAD IMAGE] Erreur GitHub sync: {github_error}")
-                        raise Exception(f"GitHub sync failed: {github_error}")
+                        # Delete local file
+                        try:
+                            os.remove(file_path)
+                            print(f"🗑️ [UPLOAD IMAGE] Fichier local supprimé")
+                        except Exception as delete_error:
+                            print(f"⚠️ [UPLOAD IMAGE] Erreur suppression fichier local: {delete_error}")
+
+                    except Exception as discord_error:
+                        print(f"❌ [UPLOAD IMAGE] Erreur Discord upload: {discord_error}")
+                        raise Exception(f"Discord upload failed: {discord_error}")
 
                 except Exception as e:
                     print(f"❌ [UPLOAD IMAGE] Erreur lors du traitement de l'image de fond: {e}")
@@ -960,9 +905,9 @@ class NotificationLevelCardView(discord.ui.View):
 
             elif view.current_image_type == "profile_outline":
                 print(f"👤 [UPLOAD IMAGE] Traitement d'une image de contour de profil")
-                # For profile outline, upload as-is
-                local_file = await view.download_image_to_github(attachment.url)
-                if not local_file:
+                # For profile outline, upload to Discord
+                discord_url = await view.upload_image_to_discord_channel(attachment.url)
+                if not discord_url:
                     print(f"❌ [UPLOAD IMAGE] Échec de l'upload de l'image de contour de profil")
                     error_embed = discord.Embed(
                         title="<:ErrorLOGO:1407071682031648850> Upload Error",
@@ -971,19 +916,19 @@ class NotificationLevelCardView(discord.ui.View):
                     )
                     await message.channel.send(embed=error_embed, delete_after=5)
                     return False
-                config["outline_image"] = local_file
-                print(f"✅ [UPLOAD IMAGE] Image de contour de profil configurée: {local_file}")
+                config["outline_image"] = discord_url
+                print(f"✅ [UPLOAD IMAGE] Image de contour de profil configurée: {discord_url}")
 
             elif view.current_image_type in ["level_text", "username_text", "messages_text", "information_text"]:
                 print(f"📝 [UPLOAD IMAGE] Traitement d'une image de texte: {view.current_image_type}")
-                # For text overlays, process to fit text area
+                # For text overlays, upload to Discord
                 text_key = f"{view.current_image_type.replace('_text', '')}_text_image"
                 print(f"📝 [UPLOAD IMAGE] Clé de configuration: {text_key}")
 
-                # Upload to GitHub first
-                print(f"☁️ [UPLOAD IMAGE] Upload de l'image de texte vers GitHub...")
-                local_file = await view.download_image_to_github(attachment.url)
-                if not local_file:
+                # Upload to Discord
+                print(f"☁️ [UPLOAD IMAGE] Upload de l'image de texte vers Discord...")
+                discord_url = await view.upload_image_to_discord_channel(attachment.url)
+                if not discord_url:
                     print(f"❌ [UPLOAD IMAGE] Échec de l'upload de l'image de texte")
                     error_embed = discord.Embed(
                         title="<:ErrorLOGO:1407071682031648850> Upload Error",
@@ -993,16 +938,8 @@ class NotificationLevelCardView(discord.ui.View):
                     await message.channel.send(embed=error_embed, delete_after=5)
                     return False
 
-                # Get text dimensions for processing
-                text_area_width = 400  # Default text area width
-                text_area_height = 100  # Default text area height
-                print(f"📝 [UPLOAD IMAGE] Dimensions de la zone de texte: {text_area_width}x{text_area_height}")
-
-                # Process image to fit text area
-                print(f"🔄 [UPLOAD IMAGE] Traitement de l'image pour la zone de texte...")
-                processed_url = await view.process_text_image(local_file, text_area_width, text_area_height)
-                config[text_key] = processed_url
-                print(f"✅ [UPLOAD IMAGE] Image de texte configurée: {processed_url}")
+                config[text_key] = discord_url
+                print(f"✅ [UPLOAD IMAGE] Image de texte configurée: {discord_url}")
 
             print(f"💾 [UPLOAD IMAGE] Sauvegarde de la configuration...")
             view.save_config(config)
@@ -1070,55 +1007,7 @@ class NotificationLevelCardView(discord.ui.View):
             print(f"❌ [UPLOAD IMAGE] Traceback complet: {traceback.format_exc()}")
             return False
 
-    async def process_background_image(self, image_url, target_width, target_height):
-        """Process background image - resize/crop from center for background filling"""
-        try:
-            # Download custom image
-            async with aiohttp.ClientSession() as session:
-                async with session.get(image_url) as response:
-                    if response.status == 200:
-                        image_data = await response.read()
-                    else:
-                        return None
-
-            # Open and process image
-            custom_image = Image.open(io.BytesIO(image_data)).convert("RGBA")
-
-            # Use centered proportional resizing for background
-            processed_image = self.resize_image_proportionally_centered(
-                custom_image, target_width, target_height
-            )
-
-            # Save processed image
-            os.makedirs('images', exist_ok=True)
-            filename = f"{uuid.uuid4()}_bg_processed.png"
-            file_path = os.path.join('images', filename)
-            processed_image.save(file_path, 'PNG')
-
-            # Upload to GitHub
-            try:
-                from github_sync import GitHubSync
-                github_sync = GitHubSync()
-                sync_success = await github_sync.sync_image_to_pictures_repo(file_path)
-
-                if sync_success:
-                    # Delete local file after successful sync
-                    try:
-                        os.remove(file_path)
-                    except:
-                        pass
-
-                    # Return GitHub raw URL
-                    filename = os.path.basename(file_path)
-                    github_url = f"https://raw.githubusercontent.com/TheBlueEL/pictures/main/{filename}"
-                    return github_url
-            except ImportError:
-                print("GitHub sync not available")
-
-            return None
-        except Exception as e:
-            print(f"Error processing background image: {e}")
-            return None
+    
 
     async def create_notification_level_card(self, user, level):
         """Create notification level card (1080x1080)"""
@@ -1305,23 +1194,30 @@ class NotificationLevelCardView(discord.ui.View):
                 with open(file_path, 'wb') as f:
                     f.write(preview_image.getvalue())
 
-                # Upload to GitHub
+                # Upload to Discord
                 try:
-                    from github_sync import GitHubSync
-                    github_sync = GitHubSync()
-                    sync_success = await github_sync.sync_image_to_pictures_repo(file_path)
-
-                    if sync_success:
-                        try:
-                            os.remove(file_path)
-                        except:
-                            pass
-
-                        filename = os.path.basename(file_path)
-                        self.preview_image_url = f"https://raw.githubusercontent.com/TheBlueEL/pictures/main/{filename}?t={timestamp}"
-                        return True
-                except ImportError:
-                    print("GitHub sync not available")
+                    TARGET_CHANNEL_ID = 1409970452570312819
+                    channel = self.bot.get_channel(TARGET_CHANNEL_ID)
+                    if channel:
+                        # Create Discord file
+                        discord_file = discord.File(file_path, filename=filename)
+                        
+                        # Send to Discord channel
+                        message = await channel.send(file=discord_file)
+                        
+                        # Get the Discord attachment URL
+                        if message.attachments:
+                            self.preview_image_url = f"{message.attachments[0].url}?t={timestamp}"
+                            
+                            # Delete local file
+                            try:
+                                os.remove(file_path)
+                            except:
+                                pass
+                                
+                            return True
+                except Exception as e:
+                    print(f"Discord upload error: {e}")
 
         except Exception as e:
             print(f"Error generating preview: {e}")
