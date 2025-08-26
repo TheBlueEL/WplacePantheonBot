@@ -717,6 +717,10 @@ class NotificationLevelCardView(discord.ui.View):
     async def handle_image_upload(self, message, view):
         """Handle image uploads for notification card customization"""
         try:
+            # Check if this is the right user
+            if message.author.id != view.user_id and message.author != view.user_id:
+                return False
+                
             if not message.attachments:
                 return False
 
@@ -741,6 +745,12 @@ class NotificationLevelCardView(discord.ui.View):
             # Download and upload image to GitHub
             local_file = await view.download_image_to_github(attachment.url)
             if not local_file:
+                error_embed = discord.Embed(
+                    title="<:ErrorLOGO:1407071682031648850> Upload Error",
+                    description="Failed to upload image. Please try again.",
+                    color=discord.Color.red()
+                )
+                await message.channel.send(embed=error_embed, delete_after=5)
                 return False
 
             try:
@@ -783,17 +793,17 @@ class NotificationLevelCardView(discord.ui.View):
             # Get appropriate embed
             if view.current_image_type == "background":
                 embed = view.get_background_embed()
-                embed.title = "<:ImageLOGO:1407072328134951043> Background Image"
-                embed.description = "Set a custom background image"
+                embed.title = "<:SucessLOGO:1407071637840592977> Background Image Set"
+                embed.description = "Your custom background image has been applied successfully!"
             elif view.current_image_type == "profile_outline":
                 embed = view.get_profile_outline_embed()
-                embed.title = "<:ImageLOGO:1407072328134951043> Profile Outline Image"
-                embed.description = "Set a custom profile outline image"
+                embed.title = "<:SucessLOGO:1407071637840592977> Profile Outline Image Set"
+                embed.description = "Your custom profile outline image has been applied successfully!"
             elif view.current_image_type in ["level_text", "username_text", "messages_text", "information_text"]:
                 element_type = view.current_image_type.replace("_text", "")
                 embed = view.get_text_element_embed(element_type)
-                embed.title = f"<:ImageLOGO:1407072328134951043> {element_type.title()} Text Image"
-                embed.description = f"Set a custom {element_type} text image overlay"
+                embed.title = f"<:SucessLOGO:1407071637840592977> {element_type.title()} Text Image Set"
+                embed.description = f"Your custom {element_type} text image overlay has been applied successfully!"
             else:
                 embed = view.get_main_embed()
 
