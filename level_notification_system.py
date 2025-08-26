@@ -601,7 +601,7 @@ class NotificationLevelCardView(discord.ui.View):
             print(f"Error resizing image proportionally: {e}")
             return image.resize((target_width, target_height), Image.Resampling.LANCZOS)
 
-    def create_text_with_image_overlay(self, text, font, color, image_url=None, text_width=None, text_height=None):
+    async def create_text_with_image_overlay(self, text, font, color, image_url=None, text_width=None, text_height=None):
         """Create text with optional image overlay for notification cards"""
         try:
             # Create text surface
