@@ -105,7 +105,8 @@ async def on_message(message):
 
     # Check for notification image uploads
     if hasattr(client, '_notification_image_listeners') and message.attachments:
-        listener = client._notification_image_listeners.get(message.author.id) or client._notification_image_listeners.get(message.author)
+        user_key = message.author.id if message.author.id in client._notification_image_listeners else message.author
+        listener = client._notification_image_listeners.get(user_key)
         if listener and hasattr(listener, 'waiting_for_image') and listener.waiting_for_image:
             from level_notification_system import NotificationLevelCardView
             if isinstance(listener, NotificationLevelCardView):
