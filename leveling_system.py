@@ -74,11 +74,11 @@ def load_user_level_card_config(user_id):
     """Load user-specific level card configuration"""
     data = load_leveling_data()
     user_id_str = str(user_id)
-    
+
     # If user has custom config, return it
     if user_id_str in data.get("user_level_cards", {}):
         return data["user_level_cards"][user_id_str]
-    
+
     # Otherwise return default config
     return data["leveling_settings"]["level_card"].copy()
 
@@ -86,10 +86,10 @@ def save_user_level_card_config(user_id, config):
     """Save user-specific level card configuration"""
     data = load_leveling_data()
     user_id_str = str(user_id)
-    
+
     if "user_level_cards" not in data:
         data["user_level_cards"] = {}
-    
+
     data["user_level_cards"][user_id_str] = config
     save_leveling_data(data)
 
@@ -904,7 +904,6 @@ class LevelingSystem(commands.Cog):
             try:
                 font_xp = ImageFont.truetype("PlayPretend.otf", config["xp_text_position"]["font_size"])
             except IOError:
-                # Fallback vers les polices système
                 try:
                     font_xp = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", config["xp_text_position"]["font_size"])
                 except IOError:
@@ -1038,7 +1037,6 @@ class LevelingSystem(commands.Cog):
             print(f"Error creating level card: {e}")
             return None
 
-    @commands.Cog.listener()
     async def on_message(self, message):
         """Handle XP gain from messages and image uploads for level card manager"""
         if message.author.bot:
@@ -1046,7 +1044,7 @@ class LevelingSystem(commands.Cog):
 
         # Check for level card manager image uploads
         user_id = message.author.id
-        
+
         # Check for notification card image uploads
         if hasattr(self.bot, '_notification_image_listeners') and message.attachments:
             listener = self.bot._notification_image_listeners.get(user_id)
@@ -1056,7 +1054,7 @@ class LevelingSystem(commands.Cog):
                     success = await listener.handle_image_upload(message, listener)
                     if success:
                         return
-        
+
         # Check if user has an active level card manager
         for view in self.bot._connection._view_store._synced_message_views.values():
             if (hasattr(view, 'user_id') and view.user_id == user_id and
@@ -1223,8 +1221,8 @@ class LevelingSystem(commands.Cog):
         if xp_gained > 0:
             old_level = get_level_from_xp(user_data["xp"])
             max_level = data["leveling_settings"].get("max_level", 100)
-            
-            # Check if user has reached max level
+
+            # Check if user is at max level
             if old_level >= max_level:
                 # User is at max level, no more XP gained
                 user_data["level"] = max_level
@@ -1233,12 +1231,12 @@ class LevelingSystem(commands.Cog):
             else:
                 user_data["xp"] += xp_gained
                 new_level = get_level_from_xp(user_data["xp"])
-                
+
                 # Cap level at max_level
                 if new_level > max_level:
                     new_level = max_level
                     user_data["xp"] = calculate_xp_for_level(max_level)
-                
+
                 user_data["level"] = new_level
 
                 save_leveling_data(data)
@@ -1246,7 +1244,7 @@ class LevelingSystem(commands.Cog):
                 # Check for role rewards
                 if new_level > old_level:
                     await self.check_level_rewards(message.author, new_level)
-                    
+
                     # Check for level notifications
                     await self.check_level_notifications(message.author, new_level)
 
@@ -1350,7 +1348,7 @@ class LevelingSystem(commands.Cog):
             mask_array = np.array(alpha_mask)
             result_array = np.zeros_like(custom_array)
 
-            # Only copy pixels where the mask is not transparent (>0)
+            # Only copy pixels where the mask is not 0
             mask_pixels = mask_array > 0
             result_array[mask_pixels] = custom_array[mask_pixels]
 
@@ -1411,21 +1409,21 @@ class LevelingSystem(commands.Cog):
         try:
             data = load_leveling_data()
             notification_settings = data.get("notification_settings", {}).get("level_notifications", {})
-            
+
             if not notification_settings.get("enabled", True):
                 return
-            
+
             cycle = notification_settings.get("cycle", 1)
-            
+
             # Check if this level should trigger a notification
             if level % cycle == 0:
                 # Import here to avoid circular import
                 from level_notification_system import NotificationLevelCardView
-                
+
                 # Create notification card
                 card_view = NotificationLevelCardView(self.bot, user.id)
                 level_card = await card_view.create_notification_level_card(user, level)
-                
+
                 if level_card:
                     try:
                         # Send to user's DM
@@ -1513,7 +1511,7 @@ class LevelingSystem(commands.Cog):
                 xp_bar_color_rgb = config.get("xp_bar_color", [245, 55, 48])
                 xp_bar_color = tuple(xp_bar_color_rgb) + (255,)
                 progress_bar = Image.new("RGBA", (levelbar.width, levelbar.height), xp_bar_color)
-                background.paste(progress_bar, (levelbar_x, levelbar_y), levelbar)
+                background.paste(progress_bar, (levelbar_x, levelbar_y), progress_bar)
 
             # Download bot avatar
             avatar_url = bot_user.display_avatar.url
@@ -1733,11 +1731,11 @@ class LevelSystemMainView(discord.ui.View):
         self.bot = bot
         self.user = user
         self.demo_card_url = None
-        
+
         # Initialize toggle button state based on current system status
         data = load_leveling_data()
         system_enabled = data["leveling_settings"]["enabled"]
-        
+
         # Find and update the toggle button
         for item in self.children:
             if hasattr(item, 'callback') and hasattr(item.callback, 'callback') and item.callback.callback.__name__ == 'toggle_system':
@@ -2274,11 +2272,11 @@ class MessageXPView(discord.ui.View):
     def __init__(self, user):
         super().__init__(timeout=300)
         self.user = user
-        
+
         # Initialize toggle button state
         data = load_leveling_data()
         messages_enabled = data["leveling_settings"]["xp_settings"]["messages"]["enabled"]
-        
+
         # Update the toggle button based on current state
         for item in self.children:
             if hasattr(item, 'callback') and item.callback.__name__ == 'toggle_messages_xp':
@@ -2287,7 +2285,7 @@ class MessageXPView(discord.ui.View):
                     item.style = discord.ButtonStyle.success
                     item.emoji = "<:OnLOGO:1407072463883472978>"
                 else:
-                    item.label = "OFF" 
+                    item.label = "OFF"
                     item.style = discord.ButtonStyle.danger
                     item.emoji = "<:OffLOGO:1407072621836894380>"
                 break
@@ -2397,11 +2395,11 @@ class CharacterXPView(discord.ui.View):
     def __init__(self, user):
         super().__init__(timeout=300)
         self.user = user
-        
+
         # Initialize toggle button state
         data = load_leveling_data()
         characters_enabled = data["leveling_settings"]["xp_settings"]["characters"]["enabled"]
-        
+
         # Update the toggle button based on current state
         for item in self.children:
             if hasattr(item, 'callback') and item.callback.__name__ == 'toggle_characters_xp':
@@ -2540,16 +2538,16 @@ class LevelSettingsView(discord.ui.View):
     def get_embed(self):
         data = load_leveling_data()
         max_level = data["leveling_settings"].get("max_level", 100)
-        
+
         embed = discord.Embed(
             title="<:SettingLOGO:1407071854593839239> Level Settings",
             description="Configure level system limitations and rules:",
             color=0xFFFFFF
         )
-        
+
         embed.add_field(name="Maximum Level", value=str(max_level), inline=True)
         embed.add_field(name="XP Cap", value="Users stop gaining XP at max level", inline=True)
-        
+
         return embed
 
     @discord.ui.button(label="Level Max", style=discord.ButtonStyle.primary, emoji="<a:XPLOGO:1409634015043915827>")
@@ -2581,7 +2579,7 @@ class MaxLevelModal(discord.ui.Modal):
                 data = load_leveling_data()
                 data["leveling_settings"]["max_level"] = max_level_value
                 save_leveling_data(data)
-                
+
                 await interaction.response.send_message(f"<:SucessLOGO:1407071637840592977> Maximum level set to {max_level_value}!", ephemeral=True)
             else:
                 await interaction.response.send_message("<:ErrorLOGO:1407071682031648850> Maximum level must be between 1 and 999!", ephemeral=True)
@@ -2624,7 +2622,7 @@ class LevelCardSettingsButtonView(discord.ui.View):
         user_level = user_data["level"]
 
         # Create level card manager for DMs
-        view = LevelCardManagerView(interaction.client, interaction.user.id)
+        view = UserLevelCardManagerView(interaction.client, interaction.user.id)
         view.guild = interaction.guild
         view.user_level = user_level  # Store user level for permission checks
         view.is_dm = True  # Mark as DM
@@ -2968,8 +2966,39 @@ class LevelCardManagerView(discord.ui.View):
         return embed
 
     def save_config(self):
-        """Save the current configuration to JSON file"""
+        """Save the current configuration to user_level_cards"""
         save_user_level_card_config(self.user_id, self.config)
+
+        # Sauvegarder aussi dans embed_command.json pour compatibilité
+        try:
+            with open('embed_command.json', 'r') as f:
+                embed_data = json.load(f)
+        except (FileNotFoundError, json.JSONDecodeError):
+            embed_data = {"created": [], "published": []}
+
+        # Mettre à jour avec les données du level card
+        level_card_entry = {
+            "id": f"level_card_{self.user_id}",
+            "type": "level_card",
+            "user_id": self.user_id,
+            "config": self.config,
+            "timestamp": time.time()
+        }
+
+        # Chercher si une entrée existe déjà pour cet utilisateur
+        existing_index = None
+        for i, entry in enumerate(embed_data["created"]):
+            if isinstance(entry, dict) and entry.get("type") == "level_card" and entry.get("user_id") == self.user_id:
+                existing_index = i
+                break
+
+        if existing_index is not None:
+            embed_data["created"][existing_index] = level_card_entry
+        else:
+            embed_data["created"].append(level_card_entry)
+
+        with open('embed_command.json', 'w') as f:
+            json.dump(embed_data, f, indent=2)
 
     def has_permission_for_feature(self, feature_type, action_type):
         """Check if user has permission for a specific feature and action type"""
@@ -3118,19 +3147,19 @@ class LevelCardManagerView(discord.ui.View):
     def get_current_button_states(self):
         """Get current button states for dynamic toggles"""
         data = load_leveling_data()
-        
+
         # System toggle state
         system_enabled = data["leveling_settings"]["enabled"]
-        
+
         # Messages XP toggle state
         messages_enabled = data["leveling_settings"]["xp_settings"]["messages"]["enabled"]
-        
+
         # Characters XP toggle state
         characters_enabled = data["leveling_settings"]["xp_settings"]["characters"]["enabled"]
-        
+
         # Profile outline toggle state
         profile_outline_enabled = self.config.get("profile_outline", {}).get("enabled", True)
-        
+
         return {
             "system": system_enabled,
             "messages": messages_enabled,
@@ -3139,6 +3168,7 @@ class LevelCardManagerView(discord.ui.View):
         }
 
     def update_buttons(self):
+        """Override to add close button for DM version and permission checks"""
         self.clear_items()
 
         if self.waiting_for_image:
@@ -3628,6 +3658,10 @@ class LevelCardManagerView(discord.ui.View):
             embed = self.get_profile_outline_embed()
             embed.title = "<:ImageLOGO:1407072328134951043> Profile Outline Image"
             embed.description = "Set a custom profile outline image"
+        elif self.mode == "username_image":
+            embed = self.get_username_embed()
+            embed.title = "<:ImageLOGO:1407072328134951043> Username Image"
+            embed.description = "Set a custom username image overlay"
         elif self.mode == "xp_info_image":
             embed = self.get_xp_info_embed()
             embed.title = "<:ImageLOGO:1407072328134951043> XP Info Image"
@@ -3636,10 +3670,6 @@ class LevelCardManagerView(discord.ui.View):
             embed = self.get_xp_progress_embed()
             embed.title = "<:ImageLOGO:1407072328134951043> XP Progress Image"
             embed.description = "Set a custom XP progress image overlay"
-        elif self.mode == "username_image":
-            embed = self.get_username_embed()
-            embed.title = "<:ImageLOGO:1407072328134951043> Username Image"
-            embed.description = "Set a custom username image overlay"
         elif self.mode == "level_text_image":
             embed = self.get_level_text_embed()
             embed.title = "<:ImageLOGO:1407072328134951043> Level Text Image"
@@ -3802,14 +3832,6 @@ class LevelCardManagerView(discord.ui.View):
             embed = self.get_profile_outline_embed()
             embed.title = "<:ColorLOGO:1408828590241615883> Profile Outline Color"
             embed.description = "Choose how to set your profile outline color"
-        elif self.mode == "level_text_color":
-            embed = self.get_level_text_embed()
-            embed.title = "<:ColorLOGO:1408828590241615883> Level Text Color"
-            embed.description = "Choose how to set your level text color"
-        elif self.mode == "ranking_text_color":
-            embed = self.get_ranking_text_embed()
-            embed.title = "<:ColorLOGO:1408828590241615883> Ranking Text Color"
-            embed.description = "Choose how to set your ranking text color"
 
         self.update_buttons()
         await interaction.edit_original_response(embed=embed, view=self)
@@ -4050,10 +4072,6 @@ class LevelCardHexColorModal(discord.ui.Modal):
                 embed = self.view.get_xp_progress_embed()
                 embed.title = "<:ColorLOGO:1408828590241615883> XP Progress Color"
                 embed.description = "Choose how to set your XP progress bar color"
-            elif self.view.mode == "xp_bar_color":
-                embed = self.view.get_xp_bar_embed()
-                embed.title = "<:ColorLOGO:1408828590241615883> XP Bar Color"
-                embed.description = "Choose how to set your XP bar color"
             elif self.view.mode == "background_color":
                 embed = self.view.get_background_embed()
                 embed.title = "<:ColorLOGO:1408828590241615883> Background Color"
@@ -4252,7 +4270,202 @@ class ImageURLModal(discord.ui.Modal):
             await interaction.followup.send(embed=error_embed, ephemeral=True)
             return
 
-        # Apply image based on current mode
+        if self.view.mode == "username_image":
+            self.view.config["username_image"] = url
+        elif self.view.mode == "xp_info_image":
+            self.view.config["xp_info_image"] = url
+        elif self.view.mode == "xp_progress_image":
+            self.view.config["xp_progress_image"] = url
+        elif self.view.mode == "level_text_image":
+            self.view.config["level_text_image"] = url
+        elif self.view.mode == "ranking_text_image":
+            if "ranking_position" not in self.view.config:
+                self.view.config["ranking_position"] = {}
+            self.view.config["ranking_position"]["background_image"] = url
+
+        self.view.save_config()
+        await self.view.generate_preview_image(interaction.user)
+
+        # Update view
+        self.view.update_buttons()
+
+        # Get appropriate embed
+        if self.view.mode == "username_image":
+            embed = self.view.get_username_embed()
+            embed.title = "<:ImageLOGO:1407072328134951043> Username Image"
+            embed.description = "Set a custom username image overlay"
+        elif self.view.mode == "xp_info_image":
+            embed = self.view.get_xp_info_embed()
+            embed.title = "<:ImageLOGO:1407072328134951043> XP Info Image"
+            embed.description = "Set a custom XP text image overlay"
+        elif self.view.mode == "xp_progress_image":
+            embed = self.view.get_xp_progress_embed()
+            embed.title = "<:ImageLOGO:1407072328134951043> XP Progress Image"
+            embed.description = "Set a custom XP progress image overlay"
+        elif self.view.mode == "level_text_image":
+            embed = self.view.get_level_text_embed()
+            embed.title = "<:ImageLOGO:1407072328134951043> Level Text Image"
+            embed.description = "Set a custom level text image overlay"
+        elif self.view.mode == "ranking_text_image":
+            embed = self.view.get_ranking_text_embed()
+            embed.title = "<:ImageLOGO:1407072328134951043> Ranking Text Image"
+            embed.description = "Set a custom ranking text image overlay"
+
+        await interaction.edit_original_response(embed=embed, view=self.view)
+
+class LevelCardRGBColorModal(discord.ui.Modal):
+    def __init__(self, view):
+        super().__init__(title='RGB Color')
+        self.view = view
+
+        # Get current color values
+        current_r, current_g, current_b = "255", "255", "255"
+        if self.view.mode == "xp_info_color" and self.view.config.get("xp_text_color"):
+            rgb = self.view.config["xp_text_color"]
+            current_r, current_g, current_b = str(rgb[0]), str(rgb[1]), str(rgb[2])
+        elif self.view.mode == "xp_progress_color" and self.view.config.get("xp_bar_color"):
+            rgb = self.view.config["xp_bar_color"]
+            current_r, current_g, current_b = str(rgb[0]), str(rgb[1]), str(rgb[2])
+        elif self.view.mode == "background_color" and self.view.config.get("background_color"):
+            rgb = self.view.config["background_color"]
+            current_r, current_g, current_b = str(rgb[0]), str(rgb[1]), str(rgb[2])
+        elif self.view.mode == "username_color" and self.view.config.get("username_color"):
+            rgb = self.view.config["username_color"]
+            current_r, current_g, current_b = str(rgb[0]), str(rgb[1]), str(rgb[2])
+        elif self.view.mode == "profile_outline_color":
+            profile_config = self.view.config.get("profile_outline", {})
+            if profile_config.get("color_override"):
+                rgb = profile_config["color_override"]
+                current_r, current_g, current_b = str(rgb[0]), str(rgb[1]), str(rgb[2])
+        elif self.view.mode == "level_text_color" and self.view.config.get("level_color"):
+            rgb = self.view.config["level_color"]
+            current_r, current_g, current_b = str(rgb[0]), str(rgb[1]), str(rgb[2])
+        elif self.view.mode == "ranking_text_color":
+            ranking_config = self.view.config.get("ranking_position", {})
+            if ranking_config.get("color"):
+                rgb = ranking_config["color"]
+                current_r, current_g, current_        b = str(rgb[2])
+
+        self.red_input = discord.ui.TextInput(
+            label='Red (0-255)',
+            placeholder='255',
+            required=True,
+            max_length=3,
+            default=current_r
+        )
+        self.green_input = discord.ui.TextInput(
+            label='Green (0-255)',
+            placeholder='255',
+            required=True,
+            max_length=3,
+            default=current_g
+        )
+        self.blue_input = discord.ui.TextInput(
+            label='Blue (0-255)',
+            placeholder='255',
+            required=True,
+            max_length=3,
+            default=current_b
+        )
+
+        self.add_item(self.red_input)
+        self.add_item(self.green_input)
+        self.add_item(self.blue_input)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        await interaction.response.defer()
+
+        try:
+            r = int(self.red_input.value)
+            g = int(self.green_input.value)
+            b = int(self.blue_input.value)
+
+            if not all(0 <= val <= 255 for val in [r, g, b]):
+                raise ValueError("Values must be between 0 and 255")
+
+            # Apply color based on current mode
+            if self.view.mode == "xp_info_color":
+                self.view.config["xp_text_color"] = [r, g, b]
+            elif self.view.mode == "xp_progress_color":
+                self.view.config["xp_bar_color"] = [r, g, b]
+            elif self.view.mode == "background_color":
+                self.view.config["background_color"] = [r, g, b]
+                self.view.config.pop("background_image", None)
+            elif self.view.mode == "username_color":
+                self.view.config["username_color"] = [r, g, b]
+            elif self.view.mode == "profile_outline_color":
+                if "profile_outline" not in self.view.config:
+                    self.view.config["profile_outline"] = {}
+                self.view.config["profile_outline"]["color_override"] = [r, g, b]
+                self.view.config["profile_outline"].pop("custom_image", None)
+            elif self.view.mode == "level_text_color":
+                self.view.config["level_color"] = [r, g, b]
+            elif self.view.mode == "ranking_text_color":
+                if "ranking_position" not in self.view.config:
+                    self.view.config["ranking_position"] = {}
+                self.view.config["ranking_position"]["color"] = [r, g, b]
+
+            self.view.save_config()
+            await self.view.generate_preview_image(interaction.user)
+
+            # Return to appropriate embed
+            if self.view.mode == "xp_info_color":
+                embed = self.view.get_xp_info_embed()
+                embed.title = "<:ColorLOGO:1408828590241615883> XP Info Color"
+                embed.description = "Choose how to set your XP text color"
+            elif self.view.mode == "xp_progress_color":
+                embed = self.view.get_xp_progress_embed()
+                embed.title = "<:ColorLOGO:1408828590241615883> XP Progress Color"
+                embed.description = "Choose how to set your XP progress bar color"
+            elif self.view.mode == "background_color":
+                embed = self.view.get_background_embed()
+                embed.title = "<:ColorLOGO:1408828590241615883> Background Color"
+                embed.description = "Choose how to set your background color"
+            elif self.view.mode == "username_color":
+                embed = self.view.get_username_embed()
+                embed.title = "<:ColorLOGO:1408828590241615883> Username Color"
+                embed.description = "Choose how to set your username color"
+            elif self.view.mode == "profile_outline_color":
+                embed = self.view.get_profile_outline_embed()
+                embed.title = "<:ColorLOGO:1408828590241615883> Profile Outline Color"
+                embed.description = "Choose how to set your profile outline color"
+
+            self.view.update_buttons()
+            await interaction.edit_original_response(embed=embed, view=self.view)
+        except ValueError:
+            error_embed = discord.Embed(
+                title="<:ErrorLOGO:1407071682031648850> Invalid RGB Values",
+                description="Please enter valid RGB values (0-255 for each color)",
+                color=discord.Color.red()
+            )
+            await interaction.followup.send(embed=error_embed, ephemeral=True)
+
+class ImageURLModal(discord.ui.Modal):
+    def __init__(self, view):
+        super().__init__(title='Image URL')
+        self.view = view
+
+        self.url_input = discord.ui.TextInput(
+            label='Image URL',
+            placeholder='https://example.com/image.png',
+            required=True,
+            max_length=500
+        )
+        self.add_item(self.url_input)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        await interaction.response.defer()
+
+        url = self.url_input.value.strip()
+        if not url.startswith(('http://', 'https://')):
+            error_embed = discord.Embed(
+                title="<:ErrorLOGO:1407071682031648850> Invalid URL",
+                description="Please enter a valid HTTP or HTTPS URL",
+                color=discord.Color.red()
+            )
+            await interaction.followup.send(embed=error_embed, ephemeral=True)
+            return
+
         if self.view.mode == "username_image":
             self.view.config["username_image"] = url
         elif self.view.mode == "xp_info_image":
@@ -4366,6 +4579,7 @@ class LevelCardRGBColorModal(discord.ui.Modal):
             if not all(0 <= val <= 255 for val in [r, g, b]):
                 raise ValueError("Values must be between 0 and 255")
 
+            # Apply color based on current mode
             if self.view.mode == "xp_info_color":
                 self.view.config["xp_text_color"] = [r, g, b]
             elif self.view.mode == "xp_progress_color":
@@ -4421,95 +4635,6 @@ class LevelCardRGBColorModal(discord.ui.Modal):
                 color=discord.Color.red()
             )
             await interaction.followup.send(embed=error_embed, ephemeral=True)
-
-class LevelCardImageURLModal(discord.ui.Modal):
-    def __init__(self, view):
-        super().__init__(title='Image URL')
-        self.view = view
-
-        self.url_input = discord.ui.TextInput(
-            label='Image URL',
-            placeholder='https://example.com/image.png',
-            required=True,
-            max_length=500
-        )
-        self.add_item(self.url_input)
-
-    async def on_submit(self, interaction: discord.Interaction):
-        await interaction.response.defer()
-
-        url = self.url_input.value.strip()
-        if not url.startswith(('http://', 'https://')):
-            error_embed = discord.Embed(
-                title="<:ErrorLOGO:1407071682031648850> Invalid URL",
-                description="Please enter a valid HTTP or HTTPS URL",
-                color=discord.Color.red()
-            )
-            await interaction.followup.send(embed=error_embed, ephemeral=True)
-            return
-
-        if self.view.mode == "xp_bar_image":
-            self.view.config["level_bar_image"] = url
-        elif self.view.mode == "background_image":
-            self.view.config["background_image"] = url
-            self.view.config.pop("background_color", None)
-        elif self.view.mode == "profile_outline_image":
-            if "profile_outline" not in self.view.config:
-                self.view.config["profile_outline"] = {}
-            self.view.config["profile_outline"]["custom_image"] = url
-            self.view.config["profile_outline"].pop("color_override", None)
-        elif self.view.mode == "username_image":
-            self.view.config["username_image"] = url
-        elif self.view.mode == "xp_info_image":
-            self.view.config["xp_info_image"] = url
-        elif self.view.mode == "xp_progress_image":
-            self.view.config["xp_progress_image"] = url
-        elif self.view.mode == "level_text_image":
-            self.view.config["level_text_image"] = url
-        elif self.view.mode == "ranking_text_image":
-            if "ranking_position" not in self.view.config:
-                self.view.config["ranking_position"] = {}
-            self.view.config["ranking_position"]["background_image"] = url
-
-        self.view.save_config()
-        await self.view.generate_preview_image(interaction.user)
-
-        # Return to appropriate embed
-        if self.view.mode == "xp_bar_image":
-            embed = self.view.get_xp_bar_embed()
-            embed.title = "<:ImageLOGO:1407072328134951043> XP Bar Image"
-            embed.description = "Set a custom XP bar image"
-        elif self.view.mode == "background_image":
-            embed = self.view.get_background_embed()
-            embed.title = "<:ImageLOGO:1407072328134951043> Background Image"
-            embed.description = "Set a custom background image"
-        elif self.view.mode == "profile_outline_image":
-            embed = self.view.get_profile_outline_embed()
-            embed.title = "<:ImageLOGO:1407072328134951043> Profile Outline Image"
-            embed.description = "Set a custom profile outline image"
-        elif self.view.mode == "username_image":
-            embed = self.view.get_username_embed()
-            embed.title = "<:ImageLOGO:1407072328134951043> Username Image"
-            embed.description = "Set a custom username image overlay"
-        elif self.view.mode == "xp_info_image":
-            embed = self.view.get_xp_info_embed()
-            embed.title = "<:ImageLOGO:1407072328134951043> XP Info Image"
-            embed.description = "Set a custom XP text image overlay"
-        elif self.view.mode == "xp_progress_image":
-            embed = self.view.get_xp_progress_embed()
-            embed.title = "<:ImageLOGO:1407072328134951043> XP Progress Image"
-            embed.description = "Set a custom XP progress image overlay"
-        elif self.view.mode == "level_text_image":
-            embed = self.view.get_level_text_embed()
-            embed.title = "<:ImageLOGO:1407072328134951043> Level Text Image"
-            embed.description = "Set a custom level text image overlay"
-        elif self.view.mode == "ranking_text_image":
-            embed = self.view.get_ranking_text_embed()
-            embed.title = "<:ImageLOGO:1407072328134951043> Ranking Text Image"
-            embed.description = "Set a custom ranking text image overlay"
-
-        self.view.update_buttons()
-        await interaction.edit_original_response(embed=embed, view=self.view)
 
 class CustomizationCategoryView(discord.ui.View):
     def __init__(self, bot, user, category):
@@ -4689,29 +4814,29 @@ class CustomMessageXPView(discord.ui.View):
         modal = CustomMessageCooldownModal()
         await interaction.response.send_modal(modal)
 
-        # Bouton 3 - Customization Permission Toggle
-        @discord.ui.button(label="OFF", style=discord.ButtonStyle.danger, emoji="<:OffLOGO:1407072621836894380>")
-        async def toggle_customization_permission(self, interaction: discord.Interaction, button: discord.ui.Button):
-            data = load_leveling_data()
-            permissions = data["leveling_settings"].get("customization_permissions", {})
+    # Bouton 3 - Customization Permission Toggle
+    @discord.ui.button(label="OFF", style=discord.ButtonStyle.danger, emoji="<:OffLOGO:1407072621836894380>")
+    async def toggle_customization_permission(self, interaction: discord.Interaction, button: discord.ui.Button):
+        data = load_leveling_data()
+        permissions = data["leveling_settings"].get("customization_permissions", {})
 
-            if self.category not in permissions:
-                permissions[self.category] = {"enabled": True}
-            current_state = permissions[self.category].get("enabled", True)
-            permissions[self.category]["enabled"] = not current_state
-            data["leveling_settings"]["customization_permissions"] = permissions
-            save_leveling_data(data)
-            # Update button appearance
-            if permissions[self.category]["enabled"]:
-                button.label = "ON"
-                button.style = discord.ButtonStyle.success
-                button.emoji = "<:OnLOGO:1407072463883472978>"
-            else:
-                button.label = "OFF"
-                button.style = discord.ButtonStyle.danger
-                button.emoji = "<:OffLOGO:1407072621836894380>"
-            embed = self.get_embed()
-            await interaction.response.edit_message(embed=embed, view=self)
+        if self.category not in permissions:
+            permissions[self.category] = {"enabled": True}
+        current_state = permissions[self.category].get("enabled", True)
+        permissions[self.category]["enabled"] = not current_state
+        data["leveling_settings"]["customization_permissions"] = permissions
+        save_leveling_data(data)
+        # Update button appearance
+        if permissions[self.category]["enabled"]:
+            button.label = "ON"
+            button.style = discord.ButtonStyle.success
+            button.emoji = "<:OnLOGO:1407072463883472978>"
+        else:
+            button.label = "OFF"
+            button.style = discord.ButtonStyle.danger
+            button.emoji = "<:OffLOGO:1407072621836894380>"
+        embed = self.get_embed()
+        await interaction.response.edit_message(embed=embed, view=self)
 
     @discord.ui.button(label="Back", style=discord.ButtonStyle.gray, emoji="<:BackLOGO:1407071474233114766>")
     async def back(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -5165,36 +5290,33 @@ class LevelCardSettingsButtonView(discord.ui.View):
             )
             return
 
-        await interaction.response.defer(ephemeral=True)
+        # Create DM channel
+        try:
+            dm_channel = await interaction.user.create_dm()
+        except:
+            await interaction.response.send_message("<:ErrorLOGO:1407071682031648850> Unable to send DM. Please check your privacy settings.", ephemeral=True)
+            return
+
+        # Get user's current level
+        data = load_leveling_data()
+        user_data = data["user_data"].get(str(interaction.user.id), {"xp": 0, "level": 1})
+        user_level = user_data["level"]
+
+        # Create level card manager for DMs
+        view = UserLevelCardManagerView(interaction.client, interaction.user.id)
+        view.guild = interaction.guild
+
+        # Generate preview image
+        await view.generate_preview_image(interaction.user)
+
+        embed = view.get_main_embed()
+        view.update_buttons()
 
         try:
-            # Create user-specific level card manager
-            view = UserLevelCardManagerView(interaction.client, interaction.user.id)
-            view.guild = interaction.guild
-
-            # Generate preview image
-            await view.generate_preview_image(interaction.user)
-
-            embed = view.get_main_embed()
-            view.update_buttons()
-
-            # Send DM to user
-            await interaction.user.send(embed=embed, view=view)
-            await interaction.followup.send(
-                "<:SucessLOGO:1407071637840592977> Level card settings sent to your DMs!",
-                ephemeral=True
-            )
-        except discord.Forbidden:
-            await interaction.followup.send(
-                "<:ErrorLOGO:1407071682031648850> I couldn't send you a DM. Please check your privacy settings and try again.",
-                ephemeral=True
-            )
-        except Exception as e:
-            print(f"Error sending DM: {e}")
-            await interaction.followup.send(
-                "<:ErrorLOGO:1407071682031648850> An error occurred while sending the settings to your DMs.",
-                ephemeral=True
-            )
+            await dm_channel.send(embed=embed, view=view)
+            await interaction.response.send_message("<:SucessLOGO:1407071637840592977> Level card settings sent to your DMs!", ephemeral=True)
+        except:
+            await interaction.response.send_message("<:ErrorLOGO:1407071682031648850> Unable to send DM. Please check your privacy settings.", ephemeral=True)
 
 class UserLevelCardManagerView(LevelCardManagerView):
     def __init__(self, bot, user_id):
@@ -5202,14 +5324,15 @@ class UserLevelCardManagerView(LevelCardManagerView):
 
     def update_buttons(self):
         """Override to add close button for DM version"""
+        # Call parent's update_buttons method first to get the default buttons
         super().update_buttons()
 
-        # Add close button for DM version
+        # Add close button for DM version if it's the main view
         if self.mode == "main":
             close_button = discord.ui.Button(
                 label="Close",
                 style=discord.ButtonStyle.danger,
-                emoji="<:CloseLOGO:1407072519420248256>",
+                emoji="<:CloseLOGO:1391531593524318271>",
                 row=1
             )
             close_button.callback = self.close_dm
@@ -5242,142 +5365,133 @@ class UserLevelCardManagerView(LevelCardManagerView):
         return user_level >= required_level
 
     def update_buttons(self):
-        """Use exact same interface as LevelCardManagerView but with permission checks"""
+        """Override to disable buttons based on user permissions"""
         # Call parent's update_buttons method to get the exact same interface
         super().update_buttons()
-        
+
         # Now disable buttons based on permissions for DM users
         for item in self.children:
-            if hasattr(item, 'disabled') and hasattr(item, 'label'):
-                # Check permissions for each button
+            if hasattr(item, 'disabled') and hasattr(item, 'label'): # Ensure it's a button with a label
+                # Determine the feature and permission type based on the button's label or callback
+                feature_type = None
+                permission_type = None
+
                 if item.label == "Leveling Bar":
-                    item.disabled = not (self.has_permission_for_feature("bar_progress", "color") or 
-                                       self.has_permission_for_feature("content", "color"))
+                    feature_type = "bar_progress"
+                    permission_type = "color"
                 elif item.label == "Background":
-                    item.disabled = not (self.has_permission_for_feature("background", "color") or 
-                                       self.has_permission_for_feature("background", "image"))
+                    feature_type = "background"
+                    permission_type = "color" # Assuming color and image permissions are tied for background
                 elif item.label == "Username":
-                    item.disabled = not self.has_permission_for_feature("username", "color")
+                    feature_type = "username"
+                    permission_type = "color"
                 elif item.label == "Profile Outline":
-                    item.disabled = not (self.has_permission_for_feature("profile_outline", "color") or 
-                                       self.has_permission_for_feature("profile_outline", "image"))
+                    feature_type = "profile_outline"
+                    permission_type = "color" # Color and Image permissions are handled separately below
                 elif item.label == "Content":
-                    item.disabled = not self.has_permission_for_feature("content", "color")
+                    feature_type = "content"
+                    permission_type = "color"
                 elif item.label == "XP Info":
-                    # XP Info est désactivé si l'utilisateur n'a pas accès au contenu OU à la barre de progression
-                    item.disabled = not (self.has_permission_for_feature("content", "color") and 
-                                        self.has_permission_for_feature("bar_progress", "color"))
+                    feature_type = "content" # XP Info falls under Content for permissions
+                    permission_type = "color"
                 elif item.label == "XP Bar":
-                    item.disabled = not self.has_permission_for_feature("bar_progress", "color")
+                    feature_type = "bar_progress"
+                    permission_type = "color"
                 elif item.label == "XP Progress":
-                    item.disabled = not self.has_permission_for_feature("bar_progress", "color")
+                    feature_type = "bar_progress"
+                    permission_type = "color"
                 elif item.label == "Level":
-                    # Level est dans Content mais affiché via Leveling Bar, donc vérifier les deux
-                    item.disabled = not (self.has_permission_for_feature("content", "color") and 
-                                        self.has_permission_for_feature("bar_progress", "color"))
+                    feature_type = "content" # Level text color is part of content permissions
+                    permission_type = "color"
                 elif item.label == "Classement":
-                    item.disabled = not self.has_permission_for_feature("content", "color")
+                    feature_type = "content" # Ranking text color is part of content permissions
+                    permission_type = "color"
                 elif item.label == "Color":
-                    # Get feature type from current mode
-                    feature_type = self.mode
-                    if self.mode == "background":
-                        item.disabled = not self.has_permission_for_feature("background", "color")
-                    elif self.mode == "username":
-                        item.disabled = not self.has_permission_for_feature("username", "color")
-                    elif self.mode == "profile_outline":
-                        item.disabled = not self.has_permission_for_feature("profile_outline", "color")
-                    elif self.mode in ["xp_info", "xp_progress", "level_text", "ranking_text"]:
-                        if self.mode in ["xp_info", "level_text", "ranking_text"]:
-                            item.disabled = not self.has_permission_for_feature("content", "color")
-                        else:
-                            item.disabled = not self.has_permission_for_feature("bar_progress", "color")
+                    # Determine feature type based on current mode
+                    if self.mode.startswith("background"):
+                        feature_type = "background"
+                    elif self.mode.startswith("username"):
+                        feature_type = "username"
+                    elif self.mode.startswith("profile_outline"):
+                        feature_type = "profile_outline"
+                    elif self.mode.startswith(("xp_info", "level_text", "ranking_text")):
+                        feature_type = "content"
+                    elif self.mode.startswith("xp_progress"):
+                        feature_type = "bar_progress"
+                    permission_type = "color"
                 elif item.label == "Image":
-                    # Get feature type from current mode
-                    if self.mode == "background":
-                        item.disabled = not self.has_permission_for_feature("background", "image")
-                    elif self.mode == "profile_outline":
-                        item.disabled = not self.has_permission_for_feature("profile_outline", "image")
-                    elif self.mode in ["level_text", "ranking_text"]:
-                        item.disabled = not self.has_permission_for_feature("content", "image")
-                elif item.label == "Set URL":
-                    # Check image permission for current mode
+                    # Determine feature type based on current mode
+                    if self.mode.startswith("background"):
+                        feature_type = "background"
+                    elif self.mode.startswith("profile_outline"):
+                        feature_type = "profile_outline"
+                    elif self.mode.startswith(("level_text", "ranking_text", "xp_info")):
+                        feature_type = "content"
+                    elif self.mode.startswith("xp_progress"):
+                        feature_type = "bar_progress"
+                    elif self.mode.startswith("username"):
+                        feature_type = "username"
+                    permission_type = "image"
+                elif item.label == "Set URL" or item.label == "Upload Image":
+                    # Determine feature type based on current mode
                     if "background" in self.mode:
-                        item.disabled = not self.has_permission_for_feature("background", "image")
+                        feature_type = "background"
                     elif "profile_outline" in self.mode:
-                        item.disabled = not self.has_permission_for_feature("profile_outline", "image")
-                    elif any(x in self.mode for x in ["level_text", "ranking_text", "username", "xp_info", "xp_progress"]):
-                        if "username" in self.mode:
-                            item.disabled = not self.has_permission_for_feature("username", "image")
-                        elif any(x in self.mode for x in ["level_text", "ranking_text", "xp_info"]):
-                            item.disabled = not self.has_permission_for_feature("content", "image")
-                        elif "xp_progress" in self.mode:
-                            item.disabled = not self.has_permission_for_feature("bar_progress", "image")
-                elif item.label == "Upload Image":
-                    # Same logic as Set URL
-                    if "background" in self.mode:
-                        item.disabled = not self.has_permission_for_feature("background", "image")
-                    elif "profile_outline" in self.mode:
-                        item.disabled = not self.has_permission_for_feature("profile_outline", "image")
-                    elif any(x in self.mode for x in ["level_text", "ranking_text", "username", "xp_info", "xp_progress"]):
-                        if "username" in self.mode:
-                            item.disabled = not self.has_permission_for_feature("username", "image")
-                        elif any(x in self.mode for x in ["level_text", "ranking_text", "xp_info"]):
-                            item.disabled = not self.has_permission_for_feature("content", "image")
-                        elif "xp_progress" in self.mode:
-                            item.disabled = not self.has_permission_for_feature("bar_progress", "image")
+                        feature_type = "profile_outline"
+                    elif any(x in self.mode for x in ["level_text", "ranking_text", "xp_info"]):
+                        feature_type = "content"
+                    elif "xp_progress" in self.mode:
+                        feature_type = "bar_progress"
+                    elif "username" in self.mode:
+                        feature_type = "username"
+                    permission_type = "image"
                 elif item.label == "Clear Image":
                     # Same logic as Set URL and Upload Image
                     if "background" in self.mode:
-                        item.disabled = not self.has_permission_for_feature("background", "image")
+                        feature_type = "background"
                     elif "profile_outline" in self.mode:
-                        item.disabled = not self.has_permission_for_feature("profile_outline", "image")
-                    elif any(x in self.mode for x in ["level_text", "ranking_text", "username", "xp_info", "xp_progress"]):
-                        if "username" in self.mode:
-                            item.disabled = not self.has_permission_for_feature("username", "image")
-                        elif any(x in self.mode for x in ["level_text", "ranking_text", "xp_info"]):
-                            item.disabled = not self.has_permission_for_feature("content", "image")
-                        elif "xp_progress" in self.mode:
-                            item.disabled = not self.has_permission_for_feature("bar_progress", "image")
-                elif item.label == "Hex Code":
-                    # Check color permission for current mode
-                    if "background" in self.mode:
-                        item.disabled = not self.has_permission_for_feature("background", "color")
-                    elif "username" in self.mode:
-                        item.disabled = not self.has_permission_for_feature("username", "color")
-                    elif "profile_outline" in self.mode:
-                        item.disabled = not self.has_permission_for_feature("profile_outline", "color")
-                    elif any(x in self.mode for x in ["xp_info", "level_text", "ranking_text"]):
-                        item.disabled = not self.has_permission_for_feature("content", "color")
+                        feature_type = "profile_outline"
+                    elif any(x in self.mode for x in ["level_text", "ranking_text", "xp_info"]):
+                        feature_type = "content"
                     elif "xp_progress" in self.mode:
-                        item.disabled = not self.has_permission_for_feature("bar_progress", "color")
-                elif item.label == "RGB Code":
-                    # Same logic as Hex Code
-                    if "background" in self.mode:
-                        item.disabled = not self.has_permission_for_feature("background", "color")
+                        feature_type = "bar_progress"
                     elif "username" in self.mode:
-                        item.disabled = not self.has_permission_for_feature("username", "color")
-                    elif "profile_outline" in self.mode:
-                        item.disabled = not self.has_permission_for_feature("profile_outline", "color")
-                    elif any(x in self.mode for x in ["xp_info", "level_text", "ranking_text"]):
-                        item.disabled = not self.has_permission_for_feature("content", "color")
-                    elif "xp_progress" in self.mode:
-                        item.disabled = not self.has_permission_for_feature("bar_progress", "color")
+                        feature_type = "username"
+                    permission_type = "image"
+                elif item.label == "Hex Code" or item.label == "RGB Code":
+                    # Determine feature type based on current mode
+                    if self.mode.startswith("background"):
+                        feature_type = "background"
+                    elif self.mode.startswith("username"):
+                        feature_type = "username"
+                    elif self.mode.startswith("profile_outline"):
+                        feature_type = "profile_outline"
+                    elif self.mode.startswith(("xp_info", "level_text", "ranking_text")):
+                        feature_type = "content"
+                    elif self.mode.startswith("xp_progress"):
+                        feature_type = "bar_progress"
+                    permission_type = "color"
                 elif item.label == "Reset":
                     # Same logic as Hex Code and RGB Code
-                    if "background" in self.mode:
-                        item.disabled = not self.has_permission_for_feature("background", "color")
-                    elif "username" in self.mode:
-                        item.disabled = not self.has_permission_for_feature("username", "color")
-                    elif "profile_outline" in self.mode:
-                        item.disabled = not self.has_permission_for_feature("profile_outline", "color")
-                    elif any(x in self.mode for x in ["xp_info", "level_text", "ranking_text"]):
-                        item.disabled = not self.has_permission_for_feature("content", "color")
-                    elif "xp_progress" in self.mode:
-                        item.disabled = not self.has_permission_for_feature("bar_progress", "color")
+                    if self.mode.startswith("background"):
+                        feature_type = "background"
+                    elif self.mode.startswith("username"):
+                        feature_type = "username"
+                    elif self.mode.startswith("profile_outline"):
+                        feature_type = "profile_outline"
+                    elif self.mode.startswith(("xp_info", "level_text", "ranking_text")):
+                        feature_type = "content"
+                    elif self.mode.startswith("xp_progress"):
+                        feature_type = "bar_progress"
+                    permission_type = "color"
                 elif item.label in ["ON", "OFF"] and hasattr(item, 'callback') and hasattr(item.callback, '__name__'):
                     # Toggle button for profile outline
                     if item.callback.__name__ == 'toggle_profile_outline':
-                        item.disabled = not self.has_permission_for_feature("profile_outline", "color")
+                        feature_type = "profile_outline"
+                        permission_type = "color" # Toggling enabled state is like a permission
+
+                if feature_type and permission_type:
+                    item.disabled = not self.check_permission(feature_type, permission_type)
 
 async def setup(bot):
     await bot.add_cog(LevelingSystem(bot))
