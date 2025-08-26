@@ -100,7 +100,9 @@ class NotificationSystemView(discord.ui.View):
         # Add message listener for image uploads
         if not hasattr(bot, '_notification_image_listeners'):
             bot._notification_image_listeners = {}
-        bot._notification_image_listeners[user] = self
+        # Register with user ID for consistency
+        user_id = user.id if hasattr(user, 'id') else user
+        bot._notification_image_listeners[user_id] = self
 
     def get_main_embed(self):
         embed = discord.Embed(
@@ -291,7 +293,8 @@ class NotificationLevelCardView(discord.ui.View):
     def __init__(self, bot, user_id):
         super().__init__(timeout=300)
         self.bot = bot
-        self.user_id = user_id
+        # Ensure user_id is always an integer
+        self.user_id = user_id.id if hasattr(user_id, 'id') else user_id
         self.mode = "main"
         self.waiting_for_image = False
         self.current_image_type = None
@@ -300,7 +303,7 @@ class NotificationLevelCardView(discord.ui.View):
         # Add message listener for image uploads
         if not hasattr(bot, '_notification_image_listeners'):
             bot._notification_image_listeners = {}
-        bot._notification_image_listeners[user_id] = self
+        bot._notification_image_listeners[self.user_id] = self
 
     def get_config(self):
         data = load_notification_data()
@@ -697,8 +700,9 @@ class NotificationLevelCardView(discord.ui.View):
             print(f"📤 [UPLOAD IMAGE] Type d'image actuel: {getattr(view, 'current_image_type', 'None')}")
 
             # Check if this is the right user
-            if message.author.id != view.user_id and message.author != view.user_id:
-                print(f"❌ [UPLOAD IMAGE] Utilisateur incorrect - Attendu: {view.user_id}, Reçu: {message.author.id}")
+            expected_user_id = view.user_id.id if hasattr(view.user_id, 'id') else view.user_id
+            if message.author.id != expected_user_id:
+                print(f"❌ [UPLOAD IMAGE] Utilisateur incorrect - Attendu: {expected_user_id}, Reçu: {message.author.id}")
                 return False
 
             if not message.attachments:
