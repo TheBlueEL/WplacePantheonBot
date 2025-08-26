@@ -5,6 +5,7 @@ import json
 import aiohttp
 import io
 from PIL import Image, ImageDraw, ImageFont, ImageOps
+import time
 import uuid
 import os
 
@@ -95,7 +96,7 @@ class NotificationSystemView(discord.ui.View):
         super().__init__(timeout=300)
         self.bot = bot
         self.user = user
-        
+
         # Add message listener for image uploads
         if not hasattr(bot, '_notification_image_listeners'):
             bot._notification_image_listeners = {}
@@ -295,7 +296,7 @@ class NotificationLevelCardView(discord.ui.View):
         self.waiting_for_image = False
         self.current_image_type = None
         self.preview_image_url = None
-        
+
         # Add message listener for image uploads
         if not hasattr(bot, '_notification_image_listeners'):
             bot._notification_image_listeners = {}
@@ -313,6 +314,37 @@ class NotificationLevelCardView(discord.ui.View):
             data["notification_settings"]["level_notifications"] = {}
         data["notification_settings"]["level_notifications"]["level_card"] = config
         save_notification_data(data)
+
+        # Sauvegarder aussi dans embed_command.json pour compatibilité
+        try:
+            with open('embed_command.json', 'r') as f:
+                embed_data = json.load(f)
+        except (FileNotFoundError, json.JSONDecodeError):
+            embed_data = {"created": [], "published": []}
+
+        # Mettre à jour avec les données du notification card
+        notification_card_entry = {
+            "id": f"notification_card_{self.user_id}",
+            "type": "notification_card",
+            "user_id": self.user_id,
+            "config": config,
+            "timestamp": time.time()
+        }
+
+        # Chercher si une entrée existe déjà pour cet utilisateur
+        existing_index = None
+        for i, entry in enumerate(embed_data["created"]):
+            if isinstance(entry, dict) and entry.get("type") == "notification_card" and entry.get("user_id") == self.user_id:
+                existing_index = i
+                break
+
+        if existing_index is not None:
+            embed_data["created"][existing_index] = notification_card_entry
+        else:
+            embed_data["created"].append(notification_card_entry)
+
+        with open('embed_command.json', 'w') as f:
+            json.dump(embed_data, f, indent=2)
 
     def get_main_embed(self):
         embed = discord.Embed(
@@ -722,12 +754,12 @@ class NotificationLevelCardView(discord.ui.View):
             print(f"📤 [UPLOAD IMAGE] Nombre d'attachements: {len(message.attachments)}")
             print(f"📤 [UPLOAD IMAGE] Mode d'attente d'image: {getattr(view, 'waiting_for_image', False)}")
             print(f"📤 [UPLOAD IMAGE] Type d'image actuel: {getattr(view, 'current_image_type', 'None')}")
-            
+
             # Check if this is the right user
             if message.author.id != view.user_id and message.author != view.user_id:
                 print(f"❌ [UPLOAD IMAGE] Utilisateur incorrect - Attendu: {view.user_id}, Reçu: {message.author.id}")
                 return False
-                
+
             if not message.attachments:
                 print(f"❌ [UPLOAD IMAGE] Aucun attachement trouvé dans le message")
                 return False
@@ -806,21 +838,21 @@ class NotificationLevelCardView(discord.ui.View):
                 # For background, download and process image with proportional resizing to fill 1080x1080
                 try:
                     print(f"⬇️ [UPLOAD IMAGE] Téléchargement de l'image depuis: {attachment.url}")
-                    
+
                     # Download the image with timeout and retry logic
                     max_retries = 3
                     image_data = None
-                    
+
                     for retry in range(max_retries):
                         try:
                             print(f"🔄 [UPLOAD IMAGE] Tentative de téléchargement {retry + 1}/{max_retries}")
-                            
+
                             timeout = aiohttp.ClientTimeout(total=30)  # 30 second timeout
                             async with aiohttp.ClientSession(timeout=timeout) as session:
                                 async with session.get(attachment.url) as response:
                                     print(f"📤 [UPLOAD IMAGE] Status de réponse: {response.status}")
                                     print(f"📤 [UPLOAD IMAGE] Content-Length: {response.headers.get('content-length', 'unknown')}")
-                                    
+
                                     if response.status == 200:
                                         image_data = await response.read()
                                         print(f"✅ [UPLOAD IMAGE] Image téléchargée avec succès ({len(image_data)} bytes)")
@@ -865,7 +897,7 @@ class NotificationLevelCardView(discord.ui.View):
                     os.makedirs('images', exist_ok=True)
                     filename = f"{uuid.uuid4()}_bg_processed.png"
                     file_path = os.path.join('images', filename)
-                    
+
                     try:
                         processed_image.save(file_path, 'PNG', optimize=True)
                         file_size = os.path.getsize(file_path)
@@ -879,11 +911,11 @@ class NotificationLevelCardView(discord.ui.View):
                         print(f"☁️ [UPLOAD IMAGE] Upload vers GitHub...")
                         from github_sync import GitHubSync
                         github_sync = GitHubSync()
-                        
+
                         # Validate GitHubSync availability
                         if not hasattr(github_sync, 'sync_image_to_pictures_repo'):
                             raise Exception("GitHub sync method not available")
-                            
+
                         sync_success = await github_sync.sync_image_to_pictures_repo(file_path)
                         print(f"📤 [UPLOAD IMAGE] Résultat sync GitHub: {sync_success}")
 
@@ -904,7 +936,7 @@ class NotificationLevelCardView(discord.ui.View):
                             print(f"✅ [UPLOAD IMAGE] Configuration mise à jour avec URL GitHub: {github_url}")
                         else:
                             raise Exception("GitHub sync returned False")
-                            
+
                     except ImportError as import_error:
                         print(f"❌ [UPLOAD IMAGE] GitHub sync import error: {import_error}")
                         raise Exception("GitHub sync module not available")
@@ -916,7 +948,7 @@ class NotificationLevelCardView(discord.ui.View):
                     print(f"❌ [UPLOAD IMAGE] Erreur lors du traitement de l'image de fond: {e}")
                     import traceback
                     print(f"❌ [UPLOAD IMAGE] Traceback détaillé: {traceback.format_exc()}")
-                    
+
                     error_embed = discord.Embed(
                         title="<:ErrorLOGO:1407071682031648850> Processing Error",
                         description=f"Failed to process the background image:\n```{str(e)[:100]}...```\nPlease try again with a different image.",
@@ -1022,10 +1054,10 @@ class NotificationLevelCardView(discord.ui.View):
                             print(f"✅ [UPLOAD IMAGE] Message original mis à jour avec succès")
                             updated = True
                             break
-                
+
                 if not updated:
                     print(f"⚠️ [UPLOAD IMAGE] Message original 'Upload Image' non trouvé dans les 50 derniers messages")
-                    
+
             except Exception as e:
                 print(f"❌ [UPLOAD IMAGE] Erreur lors de la mise à jour du message: {e}")
 
@@ -1678,20 +1710,20 @@ class NotificationLevelCardView(discord.ui.View):
     async def upload_image(self, interaction: discord.Interaction):
         print(f"📤 [UPLOAD IMAGE] Bouton 'Upload Image' cliqué par {interaction.user.name} (ID: {interaction.user.id})")
         print(f"📤 [UPLOAD IMAGE] Mode actuel: {self.mode}")
-        
+
         self.waiting_for_image = True
         self.current_image_type = self.mode.replace("_image", "")
-        
+
         print(f"📤 [UPLOAD IMAGE] Attente d'image activée, type: {self.current_image_type}")
         print(f"📤 [UPLOAD IMAGE] User ID surveillé: {self.user_id}")
-        
+
         embed = discord.Embed(
             title="<:UploadLOGO:1407072005567545478> Upload Image",
             description="Please send an image file in this channel.\n\n**Only you can upload the image for security reasons.**",
             color=0xFFFFFF
         )
         self.update_buttons()
-        
+
         print(f"📤 [UPLOAD IMAGE] Embed 'Upload Image' affiché, en attente d'un fichier...")
         await interaction.response.edit_message(embed=embed, view=self)
 
