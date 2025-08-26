@@ -757,26 +757,21 @@ class NotificationLevelCardView(discord.ui.View):
 
             # Process the image directly from attachment data
             try:
-                print(f"⬇️ [UPLOAD IMAGE] Copie des données de l'attachement directement")
+                print(f"⬇️ [UPLOAD IMAGE] Lecture directe des données de l'attachement")
 
-                # First upload the original attachment to Discord to get a permanent URL
-                TARGET_CHANNEL_ID = 1409970452570312819
-                channel = view.bot.get_channel(TARGET_CHANNEL_ID)
-                if not channel:
-                    raise Exception(f"Canal {TARGET_CHANNEL_ID} introuvable")
-
-                # Download the attachment data using aiohttp to avoid Discord.py URL expiration issues
-                async with aiohttp.ClientSession() as session:
-                    async with session.get(attachment.url) as response:
-                        if response.status == 200:
-                            image_data = await response.read()
-                            print(f"✅ [UPLOAD IMAGE] Image téléchargée avec succès ({len(image_data)} bytes)")
-                        else:
-                            raise Exception(f"Échec du téléchargement: status {response.status}")
+                # Read attachment data directly (no URL download)
+                image_data = await attachment.read()
+                print(f"✅ [UPLOAD IMAGE] Données lues directement: {len(image_data)} bytes")
 
                 # Validate image data
                 if len(image_data) < 100:  # Minimum reasonable image size
                     raise Exception(f"Image data too small: {len(image_data)} bytes")
+
+                # Get target Discord channel for storage
+                TARGET_CHANNEL_ID = 1409970452570312819
+                channel = view.bot.get_channel(TARGET_CHANNEL_ID)
+                if not channel:
+                    raise Exception(f"Canal {TARGET_CHANNEL_ID} introuvable")
 
                 # Open and process image
                 print(f"🔄 [UPLOAD IMAGE] Ouverture de l'image...")
@@ -800,7 +795,7 @@ class NotificationLevelCardView(discord.ui.View):
 
                 # Upload processed image to Discord directly
                 try:
-                    print(f"☁️ [UPLOAD IMAGE] Upload vers Discord...")
+                    print(f"☁️ [UPLOAD IMAGE] Upload vers Discord canal {TARGET_CHANNEL_ID}...")
 
                     # Convert the processed PIL image to bytes
                     img_byte_arr = io.BytesIO()
@@ -817,6 +812,10 @@ class NotificationLevelCardView(discord.ui.View):
                     # Get the Discord attachment URL
                     if upload_message.attachments:
                         discord_url = upload_message.attachments[0].url
+                        print(f"✅ [UPLOAD IMAGE] Image envoyée vers canal Discord: {discord_url}")
+                        
+                        # Update config for background
+                        config = view.get_config()
                         config["background_image"] = discord_url
                         config.pop("background_color", None)
                         print(f"✅ [UPLOAD IMAGE] Configuration mise à jour avec URL Discord: {discord_url}")
@@ -841,11 +840,8 @@ class NotificationLevelCardView(discord.ui.View):
                 print(f"📤 [UPLOAD IMAGE] Message d'erreur détaillé envoyé")
                 return False
 
-            # Process based on image type
-            config = view.get_config()
-
             if view.current_image_type == "background":
-                print(f"🖼️ [UPLOAD IMAGE] Traitement d'une image de fond - configuration mise à jour")
+                print(f"🖼️ [UPLOAD IMAGE] Traitement d'une image de fond terminé avec succès")
 
             elif view.current_image_type == "profile_outline":
                 print(f"👤 [UPLOAD IMAGE] Traitement d'une image de contour de profil")
