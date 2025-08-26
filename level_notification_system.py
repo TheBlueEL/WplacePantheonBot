@@ -759,59 +759,18 @@ class NotificationLevelCardView(discord.ui.View):
             config = view.get_config()
             print(f"📤 [UPLOAD IMAGE] Configuration chargée, type d'image: {view.current_image_type}")
 
-            # Check if we can actually access the attachment URL
-            print(f"🌐 [UPLOAD IMAGE] Vérification de l'accès à l'URL...")
-            try:
-                async with aiohttp.ClientSession() as session:
-                    async with session.head(attachment.url) as response:
-                        print(f"📤 [UPLOAD IMAGE] Status HTTP HEAD: {response.status}")
-                        print(f"📤 [UPLOAD IMAGE] Headers: {dict(response.headers)}")
-                        if response.status != 200:
-                            raise Exception(f"URL inaccessible - Status: {response.status}")
-            except Exception as url_error:
-                print(f"❌ [UPLOAD IMAGE] Erreur d'accès URL: {url_error}")
-                error_embed = discord.Embed(
-                    title="<:ErrorLOGO:1407071682031648850> URL Access Error",
-                    description="Could not access the uploaded file. Please try again.",
-                    color=discord.Color.red()
-                )
-                await message.channel.send(embed=error_embed, delete_after=5)
-                return False
+            # Skip URL verification since Discord URLs expire quickly
+            print(f"🌐 [UPLOAD IMAGE] Passage direct à l'upload Discord (pas de vérification URL)")
 
             if view.current_image_type == "background":
                 print(f"🖼️ [UPLOAD IMAGE] Traitement d'une image de fond")
                 # For background, download and process image with proportional resizing to fill 1080x1080
                 try:
-                    print(f"⬇️ [UPLOAD IMAGE] Téléchargement de l'image depuis: {attachment.url}")
+                    print(f"⬇️ [UPLOAD IMAGE] Téléchargement de l'image depuis attachment directement")
 
-                    # Download the image with timeout and retry logic
-                    max_retries = 3
-                    image_data = None
-
-                    for retry in range(max_retries):
-                        try:
-                            print(f"🔄 [UPLOAD IMAGE] Tentative de téléchargement {retry + 1}/{max_retries}")
-
-                            timeout = aiohttp.ClientTimeout(total=30)  # 30 second timeout
-                            async with aiohttp.ClientSession(timeout=timeout) as session:
-                                async with session.get(attachment.url) as response:
-                                    print(f"📤 [UPLOAD IMAGE] Status de réponse: {response.status}")
-                                    print(f"📤 [UPLOAD IMAGE] Content-Length: {response.headers.get('content-length', 'unknown')}")
-
-                                    if response.status == 200:
-                                        image_data = await response.read()
-                                        print(f"✅ [UPLOAD IMAGE] Image téléchargée avec succès ({len(image_data)} bytes)")
-                                        break
-                                    else:
-                                        raise Exception(f"HTTP Error {response.status}")
-                        except Exception as download_error:
-                            print(f"❌ [UPLOAD IMAGE] Erreur téléchargement tentative {retry + 1}: {download_error}")
-                            if retry == max_retries - 1:
-                                raise download_error
-                            await asyncio.sleep(1)  # Wait before retry
-
-                    if not image_data:
-                        raise Exception("Failed to download image after all retries")
+                    # Read attachment data directly 
+                    image_data = await attachment.read()
+                    print(f"✅ [UPLOAD IMAGE] Image téléchargée avec succès ({len(image_data)} bytes)")
 
                     # Validate image data
                     if len(image_data) < 100:  # Minimum reasonable image size
@@ -837,25 +796,11 @@ class NotificationLevelCardView(discord.ui.View):
                         print(f"❌ [UPLOAD IMAGE] Erreur lors du redimensionnement: {resize_error}")
                         raise Exception(f"Failed to resize image: {resize_error}")
 
-                    # Save processed image
-                    print(f"💾 [UPLOAD IMAGE] Sauvegarde de l'image...")
-                    os.makedirs('images', exist_ok=True)
-                    filename = f"{uuid.uuid4()}_bg_processed.png"
-                    file_path = os.path.join('images', filename)
-
-                    try:
-                        processed_image.save(file_path, 'PNG', optimize=True)
-                        file_size = os.path.getsize(file_path)
-                        print(f"✅ [UPLOAD IMAGE] Image sauvegardée localement: {file_path} ({file_size} bytes)")
-                    except Exception as save_error:
-                        print(f"❌ [UPLOAD IMAGE] Erreur lors de la sauvegarde: {save_error}")
-                        raise Exception(f"Failed to save processed image: {save_error}")
-
-                    # Upload processed image to Discord
+                    # Upload processed image to Discord directly
                     try:
                         print(f"☁️ [UPLOAD IMAGE] Upload vers Discord...")
                         
-                        # First, we need to convert the processed PIL image to bytes
+                        # Convert the processed PIL image to bytes
                         img_byte_arr = io.BytesIO()
                         processed_image.save(img_byte_arr, format='PNG')
                         img_byte_arr.seek(0)
@@ -871,23 +816,16 @@ class NotificationLevelCardView(discord.ui.View):
                         discord_file = discord.File(img_byte_arr, filename=filename)
 
                         # Send to Discord channel
-                        message = await channel.send(file=discord_file)
+                        upload_message = await channel.send(file=discord_file)
 
                         # Get the Discord attachment URL
-                        if message.attachments:
-                            discord_url = message.attachments[0].url
+                        if upload_message.attachments:
+                            discord_url = upload_message.attachments[0].url
                             config["background_image"] = discord_url
                             config.pop("background_color", None)
                             print(f"✅ [UPLOAD IMAGE] Configuration mise à jour avec URL Discord: {discord_url}")
                         else:
                             raise Exception("Aucun attachement trouvé dans le message Discord")
-
-                        # Delete local file
-                        try:
-                            os.remove(file_path)
-                            print(f"🗑️ [UPLOAD IMAGE] Fichier local supprimé")
-                        except Exception as delete_error:
-                            print(f"⚠️ [UPLOAD IMAGE] Erreur suppression fichier local: {delete_error}")
 
                     except Exception as discord_error:
                         print(f"❌ [UPLOAD IMAGE] Erreur Discord upload: {discord_error}")
@@ -909,10 +847,27 @@ class NotificationLevelCardView(discord.ui.View):
 
             elif view.current_image_type == "profile_outline":
                 print(f"👤 [UPLOAD IMAGE] Traitement d'une image de contour de profil")
-                # For profile outline, upload to Discord
-                discord_url = await view.upload_image_to_discord_channel(attachment.url)
-                if not discord_url:
-                    print(f"❌ [UPLOAD IMAGE] Échec de l'upload de l'image de contour de profil")
+                # For profile outline, upload directly to Discord
+                try:
+                    image_data = await attachment.read()
+                    TARGET_CHANNEL_ID = 1409970452570312819
+                    channel = view.bot.get_channel(TARGET_CHANNEL_ID)
+                    if not channel:
+                        raise Exception(f"Canal {TARGET_CHANNEL_ID} introuvable")
+
+                    filename = f"notification_outline_{uuid.uuid4()}.{attachment.filename.split('.')[-1]}"
+                    discord_file = discord.File(io.BytesIO(image_data), filename=filename)
+                    upload_message = await channel.send(file=discord_file)
+
+                    if upload_message.attachments:
+                        discord_url = upload_message.attachments[0].url
+                        config["outline_image"] = discord_url
+                        print(f"✅ [UPLOAD IMAGE] Image de contour de profil configurée: {discord_url}")
+                    else:
+                        raise Exception("Aucun attachement trouvé dans le message Discord")
+                        
+                except Exception as e:
+                    print(f"❌ [UPLOAD IMAGE] Échec de l'upload de l'image de contour de profil: {e}")
                     error_embed = discord.Embed(
                         title="<:ErrorLOGO:1407071682031648850> Upload Error",
                         description="Failed to upload image. Please try again.",
@@ -920,20 +875,33 @@ class NotificationLevelCardView(discord.ui.View):
                     )
                     await message.channel.send(embed=error_embed, delete_after=5)
                     return False
-                config["outline_image"] = discord_url
-                print(f"✅ [UPLOAD IMAGE] Image de contour de profil configurée: {discord_url}")
 
             elif view.current_image_type in ["level_text", "username_text", "messages_text", "information_text"]:
                 print(f"📝 [UPLOAD IMAGE] Traitement d'une image de texte: {view.current_image_type}")
-                # For text overlays, upload to Discord
                 text_key = f"{view.current_image_type.replace('_text', '')}_text_image"
                 print(f"📝 [UPLOAD IMAGE] Clé de configuration: {text_key}")
 
-                # Upload to Discord
-                print(f"☁️ [UPLOAD IMAGE] Upload de l'image de texte vers Discord...")
-                discord_url = await view.upload_image_to_discord_channel(attachment.url)
-                if not discord_url:
-                    print(f"❌ [UPLOAD IMAGE] Échec de l'upload de l'image de texte")
+                # Upload directly to Discord
+                try:
+                    image_data = await attachment.read()
+                    TARGET_CHANNEL_ID = 1409970452570312819
+                    channel = view.bot.get_channel(TARGET_CHANNEL_ID)
+                    if not channel:
+                        raise Exception(f"Canal {TARGET_CHANNEL_ID} introuvable")
+
+                    filename = f"notification_text_{uuid.uuid4()}.{attachment.filename.split('.')[-1]}"
+                    discord_file = discord.File(io.BytesIO(image_data), filename=filename)
+                    upload_message = await channel.send(file=discord_file)
+
+                    if upload_message.attachments:
+                        discord_url = upload_message.attachments[0].url
+                        config[text_key] = discord_url
+                        print(f"✅ [UPLOAD IMAGE] Image de texte configurée: {discord_url}")
+                    else:
+                        raise Exception("Aucun attachement trouvé dans le message Discord")
+                        
+                except Exception as e:
+                    print(f"❌ [UPLOAD IMAGE] Échec de l'upload de l'image de texte: {e}")
                     error_embed = discord.Embed(
                         title="<:ErrorLOGO:1407071682031648850> Upload Error",
                         description="Failed to upload image. Please try again.",
@@ -941,9 +909,6 @@ class NotificationLevelCardView(discord.ui.View):
                     )
                     await message.channel.send(embed=error_embed, delete_after=5)
                     return False
-
-                config[text_key] = discord_url
-                print(f"✅ [UPLOAD IMAGE] Image de texte configurée: {discord_url}")
 
             print(f"💾 [UPLOAD IMAGE] Sauvegarde de la configuration...")
             view.save_config(config)
