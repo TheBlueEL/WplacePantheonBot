@@ -4,6 +4,7 @@ from discord import app_commands
 import json
 import os
 import aiohttp
+import io
 import uuid
 import base64
 import requests
@@ -1636,13 +1637,16 @@ class EmbedCommand(commands.Cog):
 
     @app_commands.command(name="embed", description="Create and manage custom embeds")
     async def embed_command(self, interaction: discord.Interaction):
+        # Defer response immediately to prevent timeout
+        await interaction.response.defer(ephemeral=False)
+        
         if not interaction.user.guild_permissions.manage_messages:
             embed = discord.Embed(
                 title="<:ErrorLOGO:1407071682031648850> Permission Denied",
                 description="You need 'Manage Messages' permission to use this command.",
                 color=discord.Color.red()
             )
-            await interaction.response.send_message(embed=embed, ephemeral=True)
+            await interaction.followup.send(embed=embed, ephemeral=True)
             return
 
         view = EmbedManagerView(self.bot, interaction.user.id)
@@ -1653,7 +1657,7 @@ class EmbedCommand(commands.Cog):
         # Store the active manager
         self.active_managers[interaction.user.id] = view
 
-        await interaction.response.send_message(embed=embed, view=view, ephemeral=False)
+        await interaction.followup.send(embed=embed, view=view)
 
 async def setup(bot):
     await bot.add_cog(EmbedCommand(bot))
