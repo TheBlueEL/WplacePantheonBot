@@ -717,22 +717,35 @@ class NotificationLevelCardView(discord.ui.View):
     async def handle_image_upload(self, message, view):
         """Handle image uploads for notification card customization"""
         try:
+            print(f"📤 [UPLOAD IMAGE] Détection d'un message de {message.author.name} (ID: {message.author.id})")
+            print(f"📤 [UPLOAD IMAGE] User attendu: {view.user_id}")
+            print(f"📤 [UPLOAD IMAGE] Nombre d'attachements: {len(message.attachments)}")
+            print(f"📤 [UPLOAD IMAGE] Mode d'attente d'image: {getattr(view, 'waiting_for_image', False)}")
+            print(f"📤 [UPLOAD IMAGE] Type d'image actuel: {getattr(view, 'current_image_type', 'None')}")
+            
             # Check if this is the right user
             if message.author.id != view.user_id and message.author != view.user_id:
+                print(f"❌ [UPLOAD IMAGE] Utilisateur incorrect - Attendu: {view.user_id}, Reçu: {message.author.id}")
                 return False
                 
             if not message.attachments:
+                print(f"❌ [UPLOAD IMAGE] Aucun attachement trouvé dans le message")
                 return False
 
             attachment = message.attachments[0]
             allowed_extensions = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.svg']
+            print(f"📤 [UPLOAD IMAGE] Fichier détecté: {attachment.filename}")
+            print(f"📤 [UPLOAD IMAGE] Taille du fichier: {attachment.size} bytes")
+            print(f"📤 [UPLOAD IMAGE] URL de l'attachement: {attachment.url}")
 
             if not any(attachment.filename.lower().endswith(ext) for ext in allowed_extensions):
                 # Invalid file type
+                print(f"❌ [UPLOAD IMAGE] Type de fichier invalide: {attachment.filename}")
                 try:
                     await message.delete()
-                except:
-                    pass
+                    print(f"✅ [UPLOAD IMAGE] Message supprimé avec succès")
+                except Exception as e:
+                    print(f"❌ [UPLOAD IMAGE] Erreur lors de la suppression du message: {e}")
 
                 error_embed = discord.Embed(
                     title="<:ErrorLOGO:1407071682031648850> Invalid File Type",
@@ -740,82 +753,101 @@ class NotificationLevelCardView(discord.ui.View):
                     color=discord.Color.red()
                 )
                 await message.channel.send(embed=error_embed, delete_after=5)
+                print(f"📤 [UPLOAD IMAGE] Message d'erreur envoyé pour type de fichier invalide")
                 return False
+
+            print(f"✅ [UPLOAD IMAGE] Type de fichier valide: {attachment.filename}")
 
             # Delete the uploaded message first
             try:
                 await message.delete()
-            except:
-                pass
+                print(f"✅ [UPLOAD IMAGE] Message original supprimé avec succès")
+            except Exception as e:
+                print(f"❌ [UPLOAD IMAGE] Erreur lors de la suppression du message original: {e}")
 
             # Process the image directly from attachment URL
             config = view.get_config()
+            print(f"📤 [UPLOAD IMAGE] Configuration chargée, type d'image: {view.current_image_type}")
 
             if view.current_image_type == "background":
+                print(f"🖼️ [UPLOAD IMAGE] Traitement d'une image de fond")
                 # For background, download and process image with proportional resizing to fill 1080x1080
                 try:
+                    print(f"⬇️ [UPLOAD IMAGE] Téléchargement de l'image depuis: {attachment.url}")
                     # Download the image
                     async with aiohttp.ClientSession() as session:
                         async with session.get(attachment.url) as response:
                             if response.status == 200:
                                 image_data = await response.read()
+                                print(f"✅ [UPLOAD IMAGE] Image téléchargée avec succès ({len(image_data)} bytes)")
                             else:
-                                raise Exception("Failed to download image")
+                                raise Exception(f"Failed to download image - Status: {response.status}")
 
                     # Open and process image
                     from PIL import Image
                     import io
                     custom_image = Image.open(io.BytesIO(image_data)).convert("RGBA")
+                    print(f"🔄 [UPLOAD IMAGE] Image ouverte: {custom_image.size[0]}x{custom_image.size[1]} pixels")
 
                     # Use centered proportional resizing for background (1080x1080)
+                    print(f"🔄 [UPLOAD IMAGE] Redimensionnement proportionnel vers 1080x1080")
                     processed_image = view.resize_image_proportionally_centered(
                         custom_image, 1080, 1080
                     )
+                    print(f"✅ [UPLOAD IMAGE] Image redimensionnée avec succès")
 
                     # Save processed image
                     os.makedirs('images', exist_ok=True)
                     filename = f"{uuid.uuid4()}_bg_processed.png"
                     file_path = os.path.join('images', filename)
                     processed_image.save(file_path, 'PNG')
+                    print(f"💾 [UPLOAD IMAGE] Image sauvegardée localement: {file_path}")
 
                     # Upload to GitHub
                     try:
+                        print(f"☁️ [UPLOAD IMAGE] Upload vers GitHub...")
                         from github_sync import GitHubSync
                         github_sync = GitHubSync()
                         sync_success = await github_sync.sync_image_to_pictures_repo(file_path)
 
                         if sync_success:
+                            print(f"✅ [UPLOAD IMAGE] Upload GitHub réussi")
                             # Delete local file after successful sync
                             try:
                                 os.remove(file_path)
-                            except:
-                                pass
+                                print(f"🗑️ [UPLOAD IMAGE] Fichier local supprimé")
+                            except Exception as delete_error:
+                                print(f"⚠️ [UPLOAD IMAGE] Erreur suppression fichier local: {delete_error}")
 
                             # Return GitHub raw URL
                             filename = os.path.basename(file_path)
                             github_url = f"https://raw.githubusercontent.com/TheBlueEL/pictures/main/{filename}"
                             config["background_image"] = github_url
                             config.pop("background_color", None)
+                            print(f"✅ [UPLOAD IMAGE] Configuration mise à jour avec URL GitHub: {github_url}")
                         else:
                             raise Exception("GitHub sync failed")
                     except ImportError:
-                        print("GitHub sync not available")
+                        print("❌ [UPLOAD IMAGE] GitHub sync not available")
                         raise Exception("GitHub sync not available")
 
                 except Exception as e:
-                    print(f"Error processing background image: {e}")
+                    print(f"❌ [UPLOAD IMAGE] Erreur lors du traitement de l'image de fond: {e}")
                     error_embed = discord.Embed(
                         title="<:ErrorLOGO:1407071682031648850> Processing Error",
                         description="Failed to process the background image. Please try again.",
                         color=discord.Color.red()
                     )
                     await message.channel.send(embed=error_embed, delete_after=5)
+                    print(f"📤 [UPLOAD IMAGE] Message d'erreur envoyé pour erreur de traitement")
                     return False
 
             elif view.current_image_type == "profile_outline":
+                print(f"👤 [UPLOAD IMAGE] Traitement d'une image de contour de profil")
                 # For profile outline, upload as-is
                 local_file = await view.download_image_to_github(attachment.url)
                 if not local_file:
+                    print(f"❌ [UPLOAD IMAGE] Échec de l'upload de l'image de contour de profil")
                     error_embed = discord.Embed(
                         title="<:ErrorLOGO:1407071682031648850> Upload Error",
                         description="Failed to upload image. Please try again.",
@@ -824,14 +856,19 @@ class NotificationLevelCardView(discord.ui.View):
                     await message.channel.send(embed=error_embed, delete_after=5)
                     return False
                 config["outline_image"] = local_file
+                print(f"✅ [UPLOAD IMAGE] Image de contour de profil configurée: {local_file}")
 
             elif view.current_image_type in ["level_text", "username_text", "messages_text", "information_text"]:
+                print(f"📝 [UPLOAD IMAGE] Traitement d'une image de texte: {view.current_image_type}")
                 # For text overlays, process to fit text area
                 text_key = f"{view.current_image_type.replace('_text', '')}_text_image"
+                print(f"📝 [UPLOAD IMAGE] Clé de configuration: {text_key}")
 
                 # Upload to GitHub first
+                print(f"☁️ [UPLOAD IMAGE] Upload de l'image de texte vers GitHub...")
                 local_file = await view.download_image_to_github(attachment.url)
                 if not local_file:
+                    print(f"❌ [UPLOAD IMAGE] Échec de l'upload de l'image de texte")
                     error_embed = discord.Embed(
                         title="<:ErrorLOGO:1407071682031648850> Upload Error",
                         description="Failed to upload image. Please try again.",
@@ -843,54 +880,78 @@ class NotificationLevelCardView(discord.ui.View):
                 # Get text dimensions for processing
                 text_area_width = 400  # Default text area width
                 text_area_height = 100  # Default text area height
+                print(f"📝 [UPLOAD IMAGE] Dimensions de la zone de texte: {text_area_width}x{text_area_height}")
 
                 # Process image to fit text area
+                print(f"🔄 [UPLOAD IMAGE] Traitement de l'image pour la zone de texte...")
                 processed_url = await view.process_text_image(local_file, text_area_width, text_area_height)
                 config[text_key] = processed_url
+                print(f"✅ [UPLOAD IMAGE] Image de texte configurée: {processed_url}")
 
+            print(f"💾 [UPLOAD IMAGE] Sauvegarde de la configuration...")
             view.save_config(config)
             view.waiting_for_image = False
+            print(f"✅ [UPLOAD IMAGE] Configuration sauvegardée, attente d'image désactivée")
 
             # Generate new preview
+            print(f"🖼️ [UPLOAD IMAGE] Génération de la nouvelle prévisualisation...")
             await view.generate_preview_image(message.author)
+            print(f"✅ [UPLOAD IMAGE] Prévisualisation générée")
 
             # Update view mode
             view.mode = view.current_image_type
+            print(f"🔄 [UPLOAD IMAGE] Mode de vue mis à jour: {view.mode}")
 
             # Get appropriate embed
             if view.current_image_type == "background":
                 embed = view.get_background_embed()
                 embed.title = "<:SucessLOGO:1407071637840592977> Background Image Set"
                 embed.description = "Your custom background image has been applied successfully!"
+                print(f"📝 [UPLOAD IMAGE] Embed de succès créé pour image de fond")
             elif view.current_image_type == "profile_outline":
                 embed = view.get_profile_outline_embed()
                 embed.title = "<:SucessLOGO:1407071637840592977> Profile Outline Image Set"
                 embed.description = "Your custom profile outline image has been applied successfully!"
+                print(f"📝 [UPLOAD IMAGE] Embed de succès créé pour contour de profil")
             elif view.current_image_type in ["level_text", "username_text", "messages_text", "information_text"]:
                 element_type = view.current_image_type.replace("_text", "")
                 embed = view.get_text_element_embed(element_type)
                 embed.title = f"<:SucessLOGO:1407071637840592977> {element_type.title()} Text Image Set"
                 embed.description = f"Your custom {element_type} text image overlay has been applied successfully!"
+                print(f"📝 [UPLOAD IMAGE] Embed de succès créé pour texte {element_type}")
             else:
                 embed = view.get_main_embed()
+                print(f"📝 [UPLOAD IMAGE] Embed principal par défaut créé")
 
             view.update_buttons()
+            print(f"🔄 [UPLOAD IMAGE] Boutons mis à jour")
 
             # Find and update the original message
             try:
+                print(f"🔍 [UPLOAD IMAGE] Recherche du message original à mettre à jour...")
                 channel = message.channel
+                updated = False
                 async for msg in channel.history(limit=50):
                     if msg.author == view.bot.user and msg.embeds:
                         if "Upload Image" in msg.embeds[0].title:
                             await msg.edit(embed=embed, view=view)
+                            print(f"✅ [UPLOAD IMAGE] Message original mis à jour avec succès")
+                            updated = True
                             break
+                
+                if not updated:
+                    print(f"⚠️ [UPLOAD IMAGE] Message original 'Upload Image' non trouvé dans les 50 derniers messages")
+                    
             except Exception as e:
-                print(f"Error updating message: {e}")
+                print(f"❌ [UPLOAD IMAGE] Erreur lors de la mise à jour du message: {e}")
 
+            print(f"🎉 [UPLOAD IMAGE] Processus d'upload terminé avec succès!")
             return True
 
         except Exception as e:
-            print(f"Error handling image upload: {e}")
+            print(f"❌ [UPLOAD IMAGE] Erreur générale lors du traitement de l'upload: {e}")
+            import traceback
+            print(f"❌ [UPLOAD IMAGE] Traceback complet: {traceback.format_exc()}")
             return False
 
     async def process_background_image(self, image_url, target_width, target_height):
@@ -1531,14 +1592,23 @@ class NotificationLevelCardView(discord.ui.View):
         await interaction.response.send_modal(modal)
 
     async def upload_image(self, interaction: discord.Interaction):
+        print(f"📤 [UPLOAD IMAGE] Bouton 'Upload Image' cliqué par {interaction.user.name} (ID: {interaction.user.id})")
+        print(f"📤 [UPLOAD IMAGE] Mode actuel: {self.mode}")
+        
         self.waiting_for_image = True
         self.current_image_type = self.mode.replace("_image", "")
+        
+        print(f"📤 [UPLOAD IMAGE] Attente d'image activée, type: {self.current_image_type}")
+        print(f"📤 [UPLOAD IMAGE] User ID surveillé: {self.user_id}")
+        
         embed = discord.Embed(
             title="<:UploadLOGO:1407072005567545478> Upload Image",
             description="Please send an image file in this channel.\n\n**Only you can upload the image for security reasons.**",
             color=0xFFFFFF
         )
         self.update_buttons()
+        
+        print(f"📤 [UPLOAD IMAGE] Embed 'Upload Image' affiché, en attente d'un fichier...")
         await interaction.response.edit_message(embed=embed, view=self)
 
     async def clear_image(self, interaction: discord.Interaction):
