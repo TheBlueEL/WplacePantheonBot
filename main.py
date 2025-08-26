@@ -105,14 +105,24 @@ async def on_message(message):
 
     # Check for notification image uploads
     if hasattr(client, '_notification_image_listeners') and message.attachments:
-        user_key = message.author.id if message.author.id in client._notification_image_listeners else message.author
-        listener = client._notification_image_listeners.get(user_key)
+        # Check both user object and user ID as keys
+        listener = None
+        for key, view in client._notification_image_listeners.items():
+            # Check if key matches user or user ID
+            if key == message.author or key == message.author.id:
+                listener = view
+                break
+        
         if listener and hasattr(listener, 'waiting_for_image') and listener.waiting_for_image:
             from level_notification_system import NotificationLevelCardView
             if isinstance(listener, NotificationLevelCardView):
+                print(f"🔍 [MAIN] Listener trouvé pour {message.author.name}, traitement de l'image...")
                 success = await listener.handle_image_upload(message, listener)
                 if success:
+                    print(f"✅ [MAIN] Image traitée avec succès")
                     return
+                else:
+                    print(f"❌ [MAIN] Échec du traitement de l'image")
 
     # Optionnel: afficher les messages reçus dans la console
     print(f'Message de {message.author}: {message.content}')
