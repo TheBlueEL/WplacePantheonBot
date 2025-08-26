@@ -55,7 +55,7 @@ class EmbedManagerView(discord.ui.View):
 
     def load_embeds(self):
         try:
-            with open('embed_command.json', 'r') as f:
+            with open('embed_data.json', 'r') as f:
                 data = json.load(f)
                 # Add IDs to existing embeds that don't have them
                 for embed in data.get("created", []):
@@ -69,7 +69,7 @@ class EmbedManagerView(discord.ui.View):
             return {"created": [], "published": []}
 
     def save_embeds(self):
-        with open('embed_command.json', 'w') as f:
+        with open('embed_data.json', 'w') as f:
             json.dump(self.embeds_data, f, indent=2)
 
     def save_current_embed(self):
@@ -1637,7 +1637,7 @@ class EmbedCommand(commands.Cog):
                         pass
 
     @app_commands.command(name="embed", description="Create and manage custom embeds")
-    async def embed_command(self, interaction: discord.Interaction):
+    async def embed_data(self, interaction: discord.Interaction):
         # Defer response immediately to prevent timeout
         await interaction.response.defer(ephemeral=False)
         
