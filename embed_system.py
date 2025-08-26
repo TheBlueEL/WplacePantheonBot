@@ -1589,12 +1589,13 @@ class EmbedCommand(commands.Cog):
 
                         # Create embed showing the image for confirmation
                         embed = discord.Embed(
-                            title="<:ImageLOGO:1407072328134951043> Image Format Selection",                         description="<:SucessLOGO:1407071637840592977> **Image successfully uploaded!**\n\nHow would you like the image to appear in your embed?",
+                            title="<:ImageLOGO:1407072328134951043> Image Format Selection",
+                            description="<:SucessLOGO:1407071637840592977> **Image successfully uploaded!**\n\nHow would you like the image to appear in your embed?",
                             color=discord.Color.green()
                         )
 
-                        # Show the image in the embed using GitHub URL
-                        embed.set_image(url=local_file)
+                        # Show the image in the embed using Discord URL
+                        embed.set_image(url=discord_url)
 
                         # Store the Discord URL for later use
                         view = ImageFormatView(manager.current_embed, discord_url, manager)
