@@ -759,9 +759,14 @@ class NotificationLevelCardView(discord.ui.View):
             try:
                 print(f"⬇️ [UPLOAD IMAGE] Lecture directe des données de l'attachement")
 
-                # Read attachment data directly (no URL download)
-                image_data = await attachment.read()
-                print(f"✅ [UPLOAD IMAGE] Données lues directement: {len(image_data)} bytes")
+                # Download image data using aiohttp before URL expires
+                async with aiohttp.ClientSession() as session:
+                    async with session.get(attachment.url) as response:
+                        if response.status == 200:
+                            image_data = await response.read()
+                            print(f"✅ [UPLOAD IMAGE] Image téléchargée avec aiohttp: {len(image_data)} bytes")
+                        else:
+                            raise Exception(f"Échec du téléchargement: status {response.status}")
 
                 # Validate image data
                 if len(image_data) < 100:  # Minimum reasonable image size
