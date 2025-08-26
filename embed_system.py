@@ -430,7 +430,7 @@ class EmbedManagerView(discord.ui.View):
             self.add_item(image_url_button)
             self.add_item(upload_image_button)
             self.add_item(clear_button)
-            
+
             # Only add back button if not in DM (guild is None means it's a DM)
             if self.guild is not None:
                 self.add_item(back_button)
@@ -1515,50 +1515,52 @@ class EmbedCommand(commands.Cog):
         self.bot = bot
         self.active_managers = {}  # Track active embed managers
 
-    async def download_image(self, image_url):
-        """Download image from URL, save locally, sync to GitHub, then delete locally"""
+    async def upload_image_to_discord_channel(self, image_url):
+        """Upload image to specific Discord channel and return Discord URL"""
         try:
-            # Create images directory if it doesn't exist
-            os.makedirs('images', exist_ok=True)
+            TARGET_CHANNEL_ID = 1409970452570312819  # Canal Discord pour stocker les images
 
-            # Generate unique filename
-            filename = f"{uuid.uuid4()}.png"
-            file_path = os.path.join('images', filename)
+            # Get the target channel
+            channel = self.bot.get_channel(TARGET_CHANNEL_ID)
+            if not channel:
+                print(f"❌ [EMBED] Canal {TARGET_CHANNEL_ID} introuvable")
+                return None
 
             # Download the image
             async with aiohttp.ClientSession() as session:
                 async with session.get(image_url) as response:
                     if response.status == 200:
-                        with open(file_path, 'wb') as f:
-                            async for chunk in response.content.iter_chunked(8192):
-                                f.write(chunk)
+                        image_data = await response.read()
 
-                        # Synchronize with GitHub
-                        from github_sync import GitHubSync
-                        github_sync = GitHubSync()
-                        sync_success = await github_sync.sync_image_to_pictures_repo(file_path)
-
-                        if sync_success:
-                            # Delete local file after successful sync
-                            try:
-                                os.remove(file_path)
-                                print(f"<:ErrorLOGO:1407071682031648850> Fichier local supprimé: {file_path}")
-                            except Exception as e:
-                                print(f"<:ErrorLOGO:1407071682031648850> Erreur lors de la suppression locale: {e}")
-
-                            # Return GitHub raw URL from public pictures repo
-                            filename = os.path.basename(file_path)
-                            github_url = f"https://raw.githubusercontent.com/TheBlueEL/pictures/main/{filename}"
-                            return github_url
+                        # Determine file extension
+                        content_type = response.headers.get('content-type', '')
+                        if 'gif' in content_type:
+                            filename = f"embed_image_{uuid.uuid4()}.gif"
+                        elif 'png' in content_type:
+                            filename = f"embed_image_{uuid.uuid4()}.png"
+                        elif 'jpeg' in content_type or 'jpg' in content_type:
+                            filename = f"embed_image_{uuid.uuid4()}.jpg"
                         else:
-                            print("<:ErrorLOGO:1407071682031648850> Échec de la synchronisation, fichier local conservé")
-                            return None
+                            filename = f"embed_image_{uuid.uuid4()}.png"
+
+                        # Create Discord file
+                        discord_file = discord.File(io.BytesIO(image_data), filename=filename)
+
+                        # Send to Discord channel
+                        message = await channel.send(file=discord_file)
+
+                        # Get the Discord attachment URL
+                        if message.attachments:
+                            discord_url = message.attachments[0].url
+                            print(f"✅ [EMBED] Image uploadée vers Discord: {discord_url}")
+                            return discord_url
+
             return None
         except Exception as e:
-            print(f"Error downloading image: {e}")
+            print(f"❌ [EMBED] Erreur upload Discord: {e}")
             return None
 
-    
+
 
     @commands.Cog.listener()
     async def on_message(self, message):
@@ -1574,11 +1576,11 @@ class EmbedCommand(commands.Cog):
                 attachment = message.attachments[0]
                 allowed_extensions = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.svg']
                 if any(attachment.filename.lower().endswith(ext) for ext in allowed_extensions):
-                    # Download the image locally first
-                    local_file = await self.download_image(attachment.url)
+                    # Upload image to Discord channel and get Discord URL
+                    discord_url = await self.upload_image_to_discord_channel(attachment.url)
 
-                    # Only delete the message if the image was successfully downloaded
-                    if local_file:
+                    # Only delete the message if the image was successfully uploaded
+                    if discord_url:
                         try:
                             await message.delete()
                         except:
@@ -1593,8 +1595,8 @@ class EmbedCommand(commands.Cog):
                         # Show the image in the embed using GitHub URL
                         embed.set_image(url=local_file)
 
-                        # Store the GitHub URL for later use
-                        view = ImageFormatView(manager.current_embed, local_file, manager)
+                        # Store the Discord URL for later use
+                        view = ImageFormatView(manager.current_embed, discord_url, manager)
                         manager.waiting_for_image = False
 
                         # Update the manager view showing the image
