@@ -95,6 +95,11 @@ class NotificationSystemView(discord.ui.View):
         super().__init__(timeout=300)
         self.bot = bot
         self.user = user
+        
+        # Add message listener for image uploads
+        if not hasattr(bot, '_notification_image_listeners'):
+            bot._notification_image_listeners = {}
+        bot._notification_image_listeners[user] = self
 
     def get_main_embed(self):
         embed = discord.Embed(
@@ -290,6 +295,11 @@ class NotificationLevelCardView(discord.ui.View):
         self.waiting_for_image = False
         self.current_image_type = None
         self.preview_image_url = None
+        
+        # Add message listener for image uploads
+        if not hasattr(bot, '_notification_image_listeners'):
+            bot._notification_image_listeners = {}
+        bot._notification_image_listeners[user_id] = self
 
     def get_config(self):
         data = load_notification_data()
@@ -663,7 +673,7 @@ class NotificationLevelCardView(discord.ui.View):
                     if response.status == 200:
                         image_data = await response.read()
                     else:
-                        return None
+                        return image_url  # Return original URL if download fails
 
             # Open and process image
             custom_image = Image.open(io.BytesIO(image_data)).convert("RGBA")
@@ -699,10 +709,10 @@ class NotificationLevelCardView(discord.ui.View):
             except ImportError:
                 print("GitHub sync not available")
 
-            return None
+            return image_url  # Return original URL if GitHub sync fails
         except Exception as e:
             print(f"Error processing text image: {e}")
-            return None
+            return image_url  # Return original URL on error
 
     async def handle_image_upload(self, message, view):
         """Handle image uploads for notification card customization"""
@@ -744,10 +754,7 @@ class NotificationLevelCardView(discord.ui.View):
             if view.current_image_type == "background":
                 # For background, use proportional resizing to fill entire 1080x1080 area
                 processed_url = await view.process_background_image(local_file, 1080, 1080)
-                if processed_url:
-                    config["background_image"] = processed_url
-                else:
-                    config["background_image"] = local_file
+                config["background_image"] = processed_url if processed_url else local_file
                 config.pop("background_color", None)
             elif view.current_image_type == "profile_outline":
                 # For profile outline, process to match outline shape
@@ -762,10 +769,7 @@ class NotificationLevelCardView(discord.ui.View):
 
                 # Process image to fit text area
                 processed_url = await view.process_text_image(local_file, text_area_width, text_area_height)
-                if processed_url:
-                    config[text_key] = processed_url
-                else:
-                    config[text_key] = local_file
+                config[text_key] = processed_url
 
             view.save_config(config)
             view.waiting_for_image = False
@@ -1724,6 +1728,10 @@ class NotificationImageURLModal(discord.ui.Modal):
             config.pop("background_color", None)
         elif self.view.mode == "profile_outline_image":
             config["outline_image"] = url
+        elif self.view.mode.endswith("_text_image"):
+            # Handle text image overlays
+            text_key = f"{self.view.mode.replace('_text_image', '')}_text_image"
+            config[text_key] = url
 
         self.view.save_config(config)
         await self.view.generate_preview_image(interaction.user)
@@ -1734,6 +1742,9 @@ class NotificationImageURLModal(discord.ui.Modal):
             embed = self.view.get_background_embed()
         elif self.view.mode == "profile_outline":
             embed = self.view.get_profile_outline_embed()
+        elif self.view.mode in ["level_text", "username_text", "messages_text", "information_text"]:
+            element_type = self.view.mode.replace("_text", "")
+            embed = self.view.get_text_element_embed(element_type)
 
         self.view.update_buttons()
         await interaction.edit_original_response(embed=embed, view=self.view)
