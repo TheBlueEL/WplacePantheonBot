@@ -7,6 +7,7 @@ from PIL import Image, ImageDraw, ImageFont
 import requests
 import os
 import json
+import time
 import uuid
 
 def get_bot_name(bot):
@@ -1324,6 +1325,37 @@ class WelcomeSystemManagerView(discord.ui.View):
         data["template_config"] = self.config
         with open('welcome_data.json', 'w', encoding='utf-8') as f:
             json.dump(data, f, indent=2, ensure_ascii=False)
+        
+        # Sauvegarder aussi dans embed_command.json pour compatibilité
+        try:
+            with open('embed_command.json', 'r') as f:
+                embed_data = json.load(f)
+        except (FileNotFoundError, json.JSONDecodeError):
+            embed_data = {"created": [], "published": []}
+        
+        # Mettre à jour avec les données du welcome card
+        welcome_card_entry = {
+            "id": f"welcome_card_{self.user_id}",
+            "type": "welcome_card",
+            "user_id": self.user_id,
+            "config": self.config,
+            "timestamp": time.time()
+        }
+        
+        # Chercher si une entrée existe déjà pour cet utilisateur
+        existing_index = None
+        for i, entry in enumerate(embed_data["created"]):
+            if isinstance(entry, dict) and entry.get("type") == "welcome_card" and entry.get("user_id") == self.user_id:
+                existing_index = i
+                break
+        
+        if existing_index is not None:
+            embed_data["created"][existing_index] = welcome_card_entry
+        else:
+            embed_data["created"].append(welcome_card_entry)
+        
+        with open('embed_command.json', 'w') as f:
+            json.dump(embed_data, f, indent=2)
 
     async def generate_preview_image(self, interaction_user):
         """Generate preview image and upload it to GitHub"""
