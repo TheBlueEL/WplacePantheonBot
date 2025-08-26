@@ -742,36 +742,103 @@ class NotificationLevelCardView(discord.ui.View):
                 await message.channel.send(embed=error_embed, delete_after=5)
                 return False
 
-            # Download and upload image to GitHub
-            local_file = await view.download_image_to_github(attachment.url)
-            if not local_file:
-                error_embed = discord.Embed(
-                    title="<:ErrorLOGO:1407071682031648850> Upload Error",
-                    description="Failed to upload image. Please try again.",
-                    color=discord.Color.red()
-                )
-                await message.channel.send(embed=error_embed, delete_after=5)
-                return False
-
+            # Delete the uploaded message first
             try:
                 await message.delete()
             except:
                 pass
 
-            # Apply image based on current mode
+            # Process the image directly from attachment URL
             config = view.get_config()
 
             if view.current_image_type == "background":
-                # For background, use proportional resizing to fill entire 1080x1080 area
-                processed_url = await view.process_background_image(local_file, 1080, 1080)
-                config["background_image"] = processed_url if processed_url else local_file
-                config.pop("background_color", None)
+                # For background, download and process image with proportional resizing to fill 1080x1080
+                try:
+                    # Download the image
+                    async with aiohttp.ClientSession() as session:
+                        async with session.get(attachment.url) as response:
+                            if response.status == 200:
+                                image_data = await response.read()
+                            else:
+                                raise Exception("Failed to download image")
+
+                    # Open and process image
+                    from PIL import Image
+                    import io
+                    custom_image = Image.open(io.BytesIO(image_data)).convert("RGBA")
+
+                    # Use centered proportional resizing for background (1080x1080)
+                    processed_image = view.resize_image_proportionally_centered(
+                        custom_image, 1080, 1080
+                    )
+
+                    # Save processed image
+                    os.makedirs('images', exist_ok=True)
+                    filename = f"{uuid.uuid4()}_bg_processed.png"
+                    file_path = os.path.join('images', filename)
+                    processed_image.save(file_path, 'PNG')
+
+                    # Upload to GitHub
+                    try:
+                        from github_sync import GitHubSync
+                        github_sync = GitHubSync()
+                        sync_success = await github_sync.sync_image_to_pictures_repo(file_path)
+
+                        if sync_success:
+                            # Delete local file after successful sync
+                            try:
+                                os.remove(file_path)
+                            except:
+                                pass
+
+                            # Return GitHub raw URL
+                            filename = os.path.basename(file_path)
+                            github_url = f"https://raw.githubusercontent.com/TheBlueEL/pictures/main/{filename}"
+                            config["background_image"] = github_url
+                            config.pop("background_color", None)
+                        else:
+                            raise Exception("GitHub sync failed")
+                    except ImportError:
+                        print("GitHub sync not available")
+                        raise Exception("GitHub sync not available")
+
+                except Exception as e:
+                    print(f"Error processing background image: {e}")
+                    error_embed = discord.Embed(
+                        title="<:ErrorLOGO:1407071682031648850> Processing Error",
+                        description="Failed to process the background image. Please try again.",
+                        color=discord.Color.red()
+                    )
+                    await message.channel.send(embed=error_embed, delete_after=5)
+                    return False
+
             elif view.current_image_type == "profile_outline":
-                # For profile outline, process to match outline shape
+                # For profile outline, upload as-is
+                local_file = await view.download_image_to_github(attachment.url)
+                if not local_file:
+                    error_embed = discord.Embed(
+                        title="<:ErrorLOGO:1407071682031648850> Upload Error",
+                        description="Failed to upload image. Please try again.",
+                        color=discord.Color.red()
+                    )
+                    await message.channel.send(embed=error_embed, delete_after=5)
+                    return False
                 config["outline_image"] = local_file
+
             elif view.current_image_type in ["level_text", "username_text", "messages_text", "information_text"]:
                 # For text overlays, process to fit text area
                 text_key = f"{view.current_image_type.replace('_text', '')}_text_image"
+
+                # Upload to GitHub first
+                local_file = await view.download_image_to_github(attachment.url)
+                if not local_file:
+                    error_embed = discord.Embed(
+                        title="<:ErrorLOGO:1407071682031648850> Upload Error",
+                        description="Failed to upload image. Please try again.",
+                        color=discord.Color.red()
+                    )
+                    await message.channel.send(embed=error_embed, delete_after=5)
+                    return False
 
                 # Get text dimensions for processing
                 text_area_width = 400  # Default text area width
