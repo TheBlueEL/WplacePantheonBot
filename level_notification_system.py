@@ -841,91 +841,11 @@ class NotificationLevelCardView(discord.ui.View):
                 print(f"📤 [UPLOAD IMAGE] Message d'erreur détaillé envoyé")
                 return False
 
+            # Process based on image type
+            config = view.get_config()
+
             if view.current_image_type == "background":
-                print(f"🖼️ [UPLOAD IMAGE] Traitement d'une image de fond")
-                # Process background image
-                try:
-                    image_data = await attachment.read()
-                    TARGET_CHANNEL_ID = 1409970452570312819
-                    channel = view.bot.get_channel(TARGET_CHANNEL_ID)
-                    if not channel:
-                        raise Exception(f"Canal {TARGET_CHANNEL_ID} introuvable")
-
-                    # Download the attachment data using aiohttp to avoid Discord.py URL expiration issues
-                    async with aiohttp.ClientSession() as session:
-                        async with session.get(attachment.url) as response:
-                            if response.status == 200:
-                                image_data = await response.read()
-                                print(f"✅ [UPLOAD IMAGE] Image téléchargée avec succès ({len(image_data)} bytes)")
-                            else:
-                                raise Exception(f"Échec du téléchargement: status {response.status}")
-
-                    # Validate image data
-                    if len(image_data) < 100:  # Minimum reasonable image size
-                        raise Exception(f"Image data too small: {len(image_data)} bytes")
-
-                    # Open and process image
-                    print(f"🔄 [UPLOAD IMAGE] Ouverture de l'image...")
-                    try:
-                        custom_image = Image.open(io.BytesIO(image_data)).convert("RGBA")
-                        print(f"✅ [UPLOAD IMAGE] Image ouverte: {custom_image.size[0]}x{custom_image.size[1]} pixels, mode: {custom_image.mode}")
-                    except Exception as pil_error:
-                        print(f"❌ [UPLOAD IMAGE] Erreur PIL lors de l'ouverture: {pil_error}")
-                        raise Exception(f"Invalid image format: {pil_error}")
-
-                    # Use centered proportional resizing for background (1080x1080)
-                    print(f"🔄 [UPLOAD IMAGE] Redimensionnement proportionnel vers 1080x1080")
-                    try:
-                        processed_image = view.resize_image_proportionally_centered(
-                            custom_image, 1080, 1080
-                        )
-                        print(f"✅ [UPLOAD IMAGE] Image redimensionnée avec succès: {processed_image.size}")
-                    except Exception as resize_error:
-                        print(f"❌ [UPLOAD IMAGE] Erreur lors du redimensionnement: {resize_error}")
-                        raise Exception(f"Failed to resize image: {resize_error}")
-
-                    # Upload processed image to Discord directly
-                    try:
-                        print(f"☁️ [UPLOAD IMAGE] Upload vers Discord...")
-
-                        # Convert the processed PIL image to bytes
-                        img_byte_arr = io.BytesIO()
-                        processed_image.save(img_byte_arr, format='PNG')
-                        img_byte_arr.seek(0)
-
-                        # Create Discord file from processed image
-                        filename = f"notification_bg_{uuid.uuid4()}.png"
-                        discord_file = discord.File(img_byte_arr, filename=filename)
-
-                        # Send to Discord channel
-                        upload_message = await channel.send(file=discord_file)
-
-                        # Get the Discord attachment URL
-                        if upload_message.attachments:
-                            discord_url = upload_message.attachments[0].url
-                            config["background_image"] = discord_url
-                            config.pop("background_color", None)
-                            print(f"✅ [UPLOAD IMAGE] Configuration mise à jour avec URL Discord: {discord_url}")
-                        else:
-                            raise Exception("Aucun attachement trouvé dans le message Discord")
-
-                    except Exception as discord_error:
-                        print(f"❌ [UPLOAD IMAGE] Erreur Discord upload: {discord_error}")
-                        raise Exception(f"Discord upload failed: {discord_error}")
-
-                except Exception as e:
-                    print(f"❌ [UPLOAD IMAGE] Erreur lors du traitement de l'image de fond: {e}")
-                    import traceback
-                    print(f"❌ [UPLOAD IMAGE] Traceback détaillé: {traceback.format_exc()}")
-
-                    error_embed = discord.Embed(
-                        title="<:ErrorLOGO:1407071682031648850> Processing Error",
-                        description=f"Failed to process the background image:\n```{str(e)[:100]}...```\nPlease try again with a different image.",
-                        color=discord.Color.red()
-                    )
-                    await message.channel.send(embed=error_embed, delete_after=10)
-                    print(f"📤 [UPLOAD IMAGE] Message d'erreur détaillé envoyé")
-                    return False
+                print(f"🖼️ [UPLOAD IMAGE] Traitement d'une image de fond - configuration mise à jour")
 
             elif view.current_image_type == "profile_outline":
                 print(f"👤 [UPLOAD IMAGE] Traitement d'une image de contour de profil")
