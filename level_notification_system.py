@@ -377,8 +377,8 @@ class NotificationLevelCardView(discord.ui.View):
 
         embed.add_field(name="Current Configuration", value=config_status, inline=False)
 
-        # Add preview image if available and in local attachment format
-        if hasattr(self, 'preview_image_url') and self.preview_image_url and self.preview_image_url.startswith("attachment://"):
+        # Add preview image if available
+        if hasattr(self, 'preview_image_url') and self.preview_image_url:
             embed.set_image(url=self.preview_image_url)
 
         return embed
@@ -411,7 +411,7 @@ class NotificationLevelCardView(discord.ui.View):
                 inline=False
             )
 
-        if hasattr(self, 'preview_image_url') and self.preview_image_url and self.preview_image_url.startswith("attachment://"):
+        if hasattr(self, 'preview_image_url') and self.preview_image_url:
             embed.set_image(url=self.preview_image_url)
 
         return embed
@@ -1162,12 +1162,12 @@ class NotificationLevelCardView(discord.ui.View):
             return None
 
     async def generate_preview_image(self, interaction_user):
-        """Generate preview image locally (no automatic Discord upload)"""
+        """Generate preview image and upload to Discord for display"""
         try:
             preview_image = await self.create_notification_level_card(interaction_user, 50)
 
             if preview_image:
-                # Save preview to temp file for potential manual display
+                # Save preview to temp file
                 os.makedirs('images', exist_ok=True)
                 import time
                 timestamp = int(time.time())
@@ -1177,12 +1177,36 @@ class NotificationLevelCardView(discord.ui.View):
                 with open(file_path, 'wb') as f:
                     f.write(preview_image.getvalue())
 
-                # Don't upload to Discord automatically
-                # Preview image will only be uploaded when user manually uploads an image
-                self.preview_image_url = f"attachment://{filename}" # Use local attachment path
-                self.preview_file_path = file_path  # Store for potential later use
+                # Upload preview image to Discord channel for display
+                try:
+                    TARGET_CHANNEL_ID = 1409970452570312819
+                    channel = self.bot.get_channel(TARGET_CHANNEL_ID)
+                    if channel:
+                        # Upload the preview image
+                        discord_file = discord.File(file_path, filename=f"preview_{filename}")
+                        message = await channel.send(file=discord_file)
+                        
+                        if message.attachments:
+                            self.preview_image_url = message.attachments[0].url
+                            print(f"✅ [NOTIFICATION] Preview uploaded to Discord: {self.preview_image_url}")
+                        else:
+                            print(f"❌ [NOTIFICATION] No attachment found in uploaded message")
+                            self.preview_image_url = None
+                    else:
+                        print(f"❌ [NOTIFICATION] Target channel {TARGET_CHANNEL_ID} not found")
+                        self.preview_image_url = None
+                        
+                    # Clean up local file
+                    try:
+                        os.remove(file_path)
+                    except:
+                        pass
+                        
+                except Exception as upload_error:
+                    print(f"❌ [NOTIFICATION] Error uploading preview: {upload_error}")
+                    self.preview_image_url = None
 
-                print(f"✅ [NOTIFICATION] Preview generated locally: {file_path}")
+                print(f"✅ [NOTIFICATION] Preview generated and processed")
                 return True
 
         except Exception as e:
