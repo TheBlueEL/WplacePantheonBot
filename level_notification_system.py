@@ -587,7 +587,7 @@ class NotificationLevelCardView(discord.ui.View):
             print(f"Error resizing image proportionally: {e}")
             return image.resize((target_width, target_height), Image.Resampling.LANCZOS)
 
-    def create_text_with_image_overlay(self, text, font, color, image_url=None, text_width=None, text_height=None):
+    async def create_text_with_image_overlay(self, text, font, color, image_url=None, text_width=None, text_height=None):
         """Create text with optional image overlay for notification cards"""
         try:
             # Create text surface
@@ -603,35 +603,78 @@ class NotificationLevelCardView(discord.ui.View):
 
             if image_url and image_url != "None":
                 # Download overlay image
-                overlay_data = self.download_image(image_url) # Use self.download_image
+                overlay_data = await self.download_image(image_url)
                 if overlay_data:
                     overlay_img = Image.open(io.BytesIO(overlay_data)).convert("RGBA")
 
-                    # Create text mask first
+                    # Create text mask first with precise letter shapes
                     text_mask = Image.new('L', (canvas_width, canvas_height), 0)
                     mask_draw = ImageDraw.Draw(text_mask)
                     text_x = padding
                     text_y = padding
                     mask_draw.text((text_x, text_y), text, font=font, fill=255)
 
-                    # Resize and crop overlay image to fit text zone proportionally
-                    overlay_resized = self.resize_image_proportionally_centered(
-                        overlay_img, canvas_width, canvas_height
-                    )
+                    # Get the actual text bounding box for centering the image
+                    actual_text_bbox = font.getbbox(text)
+                    actual_text_width = actual_text_bbox[2] - actual_text_bbox[0]
+                    actual_text_height = actual_text_bbox[3] - actual_text_bbox[1]
+
+                    # Calculate scaling to fit image proportionally within text bounds
+                    # The image should cover at least all letters while maintaining aspect ratio
+                    scale_x = actual_text_width / overlay_img.width
+                    scale_y = actual_text_height / overlay_img.height
+                    scale = max(scale_x, scale_y)  # Use max to ensure full coverage
+
+                    # Calculate new dimensions
+                    new_width = int(overlay_img.width * scale)
+                    new_height = int(overlay_img.height * scale)
+
+                    # Resize image maintaining proportions
+                    overlay_resized = overlay_img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+
+                    # Center the resized image within the canvas
+                    # Calculate position to center the image over the text
+                    center_x = padding + actual_text_width // 2
+                    center_y = padding + actual_text_height // 2
+                    
+                    paste_x = center_x - new_width // 2
+                    paste_y = center_y - new_height // 2
+
+                    # Create canvas for the centered image
+                    centered_overlay = Image.new('RGBA', (canvas_width, canvas_height), (0, 0, 0, 0))
+                    
+                    # Calculate crop coordinates if image extends beyond canvas
+                    crop_left = max(0, -paste_x)
+                    crop_top = max(0, -paste_y)
+                    crop_right = min(new_width, new_width - (paste_x + new_width - canvas_width))
+                    crop_bottom = min(new_height, new_height - (paste_y + new_height - canvas_height))
+                    
+                    # Crop the overlay if necessary
+                    if crop_left > 0 or crop_top > 0 or crop_right < new_width or crop_bottom < new_height:
+                        cropped_overlay = overlay_resized.crop((crop_left, crop_top, crop_right, crop_bottom))
+                        final_paste_x = max(0, paste_x)
+                        final_paste_y = max(0, paste_y)
+                    else:
+                        cropped_overlay = overlay_resized
+                        final_paste_x = paste_x
+                        final_paste_y = paste_y
+
+                    # Paste the centered and cropped image
+                    centered_overlay.paste(cropped_overlay, (final_paste_x, final_paste_y), cropped_overlay)
 
                     # Create final result
                     result = Image.new('RGBA', (canvas_width, canvas_height), (0, 0, 0, 0))
 
-                    # Apply texture only to text pixels
+                    # Apply texture only to text pixels (letters)
                     import numpy as np
                     mask_array = np.array(text_mask)
-                    overlay_array = np.array(overlay_resized)
+                    overlay_array = np.array(centered_overlay)
                     result_array = np.array(result)
 
-                    # Copy pixels where mask is not 0 (text area)
+                    # Copy pixels where mask is not 0 (text area only)
                     text_pixels = mask_array > 0
                     result_array[text_pixels] = overlay_array[text_pixels]
-                    result_array[:, :, 3] = mask_array
+                    result_array[:, :, 3] = mask_array  # Use text mask as alpha
 
                     result = Image.fromarray(result_array, 'RGBA')
                     return result
@@ -1049,6 +1092,12 @@ class NotificationLevelCardView(discord.ui.View):
                             colored_outline = Image.new("RGBA", outline.size, tuple(color_override + [255]))
                             colored_outline.putalpha(outline.split()[-1])
                             outline = colored_outline
+
+                        # Create mask for outline to only show parts that overlay with avatar
+                        if config.get("outline_image"):
+                            # Create a circular mask for the outline area
+                            outline_mask = self.create_circle_mask((outline_pos["size"], outline_pos["size"]))
+                            outline.putalpha(outline_mask)
 
                         background.paste(outline, (outline_pos["x"], outline_pos["y"]), outline)
 
