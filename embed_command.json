@@ -21,9 +21,9 @@
           255
         ],
         "info_text_color": [
-          20,
-          20,
-          20
+          255,
+          255,
+          255
         ],
         "outline_enabled": true,
         "outline_color": [
@@ -67,7 +67,7 @@
           48
         ]
       },
-      "timestamp": 1756309463.1837082
+      "timestamp": 1756311631.469641
     }
   ],
   "published": []
