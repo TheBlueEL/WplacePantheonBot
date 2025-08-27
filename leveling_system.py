@@ -3502,17 +3502,14 @@ class LevelCardManagerView(discord.ui.View):
             )
             content_button.callback = self.content_settings
 
-            # Add Close button for DMs, Back button for non-DMs
-            if hasattr(self, 'is_dm') and self.is_dm:
-                close_button = discord.ui.Button(
-                    label="Close",
-                    style=discord.ButtonStyle.danger,
-                    emoji="<:CloseLOGO:1391531593524318271>",
-                    row=1
-                )
-                close_button.callback = self.close_dm
-                self.add_item(close_button)
-            else:
+            self.add_item(leveling_bar_button)
+            self.add_item(background_button)
+            self.add_item(username_button)
+            self.add_item(profile_outline_button)
+            self.add_item(content_button)
+
+            # Add Back button only for non-DMs, positioned at the end (right side)
+            if not (hasattr(self, 'is_dm') and self.is_dm):
                 back_button = discord.ui.Button(
                     label="Back",
                     style=discord.ButtonStyle.gray,
@@ -3521,12 +3518,6 @@ class LevelCardManagerView(discord.ui.View):
                 )
                 back_button.callback = self.back_to_level_system
                 self.add_item(back_button)
-
-            self.add_item(leveling_bar_button)
-            self.add_item(background_button)
-            self.add_item(username_button)
-            self.add_item(profile_outline_button)
-            self.add_item(content_button)
 
     # Main navigation callbacks
     async def leveling_bar_settings(self, interaction: discord.Interaction):
