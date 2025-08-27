@@ -449,21 +449,14 @@ class NotificationLevelCardView(discord.ui.View):
             description="Configure text elements of the notification card",
             color=0xFFFFFF
         )
-
         config = self.get_config()
         text_outline_enabled = config.get("text_outline_enabled", True)
         text_outline_status = "<:OnLOGO:1407072463883472978> Enabled" if text_outline_enabled else "<:OffLOGO:1407072621836894380> Disabled"
 
         embed.add_field(name="Text Outline", value=text_outline_status, inline=True)
-
-        if config.get("text_outline_color"):
-            color = config["text_outline_color"]
-            embed.add_field(
-                name="Outline Color",
-                value=f"RGB({color[0]}, {color[1]}, {color[2]})",
-                inline=True
-            )
-
+        # Ajout de l'image de la carte de notification ici
+        if hasattr(self, 'preview_image_url') and self.preview_image_url:
+            embed.set_image(url=self.preview_image_url)
         return embed
 
     def get_text_element_embed(self, element_type):
