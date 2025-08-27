@@ -141,7 +141,7 @@ class NotificationSystemView(discord.ui.View):
     @discord.ui.button(label="Role Notification", style=discord.ButtonStyle.secondary, emoji="<:ParticipantsLOGO:1407733929389199460>")
     async def role_notification(self, interaction: discord.Interaction, button: discord.ui.Button):
         embed = discord.Embed(
-            title="🔔 Role Notifications",
+            title="<:ParticipantsLOGO:1407733929389199460> Role Notifications",
             description="Role notification settings coming soon!",
             color=0xFFFFFF
         )
@@ -150,7 +150,7 @@ class NotificationSystemView(discord.ui.View):
     @discord.ui.button(label="Custom Notification", style=discord.ButtonStyle.secondary, emoji="<:TotalLOGO:1408245313755545752>")
     async def custom_notification(self, interaction: discord.Interaction, button: discord.ui.Button):
         embed = discord.Embed(
-            title="🔔 Custom Notifications",
+            title="<:TotalLOGO:1408245313755545752> Custom Notifications",
             description="Custom notification settings coming soon!",
             color=0xFFFFFF
         )
@@ -451,7 +451,7 @@ class NotificationLevelCardView(discord.ui.View):
 
     def get_text_settings_embed(self):
         embed = discord.Embed(
-            title="📝 Text Settings",
+            title="<:SettingLOGO:1407071854593839239> Text Settings",
             description="Configure text elements of the notification card",
             color=0xFFFFFF
         )
@@ -470,7 +470,7 @@ class NotificationLevelCardView(discord.ui.View):
 
         if element_type == "level":
             embed = discord.Embed(
-                title="🏆 Level Text Settings",
+                title="<:SettingLOGO:1407071854593839239> Level Text Settings",
                 description="Configure the level text display",
                 color=0xFFFFFF
             )
@@ -478,7 +478,7 @@ class NotificationLevelCardView(discord.ui.View):
             embed.set_image(url=self.preview_image_url)
         elif element_type == "username":
             embed = discord.Embed(
-                title="👤 Username Text Settings",
+                title="<:SettingLOGO:1407071854593839239> Username Text Settings",
                 description="Configure the username text display",
                 color=0xFFFFFF
             )
@@ -486,7 +486,7 @@ class NotificationLevelCardView(discord.ui.View):
             embed.set_image(url=self.preview_image_url)
         elif element_type == "messages":
             embed = discord.Embed(
-                title="💬 Message Text Settings",
+                title="<:SettingLOGO:1407071854593839239> Message Text Settings",
                 description="Configure the message text display",
                 color=0xFFFFFF
             )
@@ -494,7 +494,7 @@ class NotificationLevelCardView(discord.ui.View):
             embed.set_image(url=self.preview_image_url)
         elif element_type == "information":
             embed = discord.Embed(
-                title="ℹ️ Information Text Settings",
+                title="<:SettingLOGO:1407071854593839239> Information Text Settings",
                 description="Configure the information text display",
                 color=0xFFFFFF
             )
@@ -529,7 +529,7 @@ class NotificationLevelCardView(discord.ui.View):
             # Get the target channel
             channel = self.bot.get_channel(TARGET_CHANNEL_ID)
             if not channel:
-                print(f"❌ [NOTIFICATION] Canal {TARGET_CHANNEL_ID} introuvable")
+                print(f"❌ Canal {TARGET_CHANNEL_ID} introuvable")
                 return None
 
             # Download the image
@@ -558,12 +558,11 @@ class NotificationLevelCardView(discord.ui.View):
                         # Get the Discord attachment URL
                         if message.attachments:
                             discord_url = message.attachments[0].url
-                            print(f"✅ [NOTIFICATION] Image uploadée vers Discord: {discord_url}")
                             return discord_url
 
             return None
         except Exception as e:
-            print(f"❌ [NOTIFICATION] Erreur upload Discord: {e}")
+            print(f"❌ Erreur upload Discord: {e}")
             return None
 
     def resize_image_proportionally_centered(self, image, target_width, target_height):
@@ -812,33 +811,24 @@ class NotificationLevelCardView(discord.ui.View):
     async def handle_image_upload(self, message, view):
         """Handle image uploads for notification card customization"""
         try:
-            print(f"📤 [UPLOAD IMAGE] Détection d'un message de {message.author.name} (ID: {message.author.id})")
-            print(f"📤 [UPLOAD IMAGE] User attendu: {view.user_id}")
-            print(f"📤 [UPLOAD IMAGE] Nombre d'attachements: {len(message.attachments)}")
-            print(f"📤 [UPLOAD IMAGE] Mode d'attente d'image: {getattr(view, 'waiting_for_image', False)}")
-            print(f"📤 [UPLOAD IMAGE] Type d'image actuel: {getattr(view, 'current_image_type', 'None')}")
 
             # Check if this is the right user
             expected_user_id = view.user_id.id if hasattr(view.user_id, 'id') else view.user_id
             if message.author.id != expected_user_id:
-                print(f"❌ [UPLOAD IMAGE] Utilisateur incorrect - Attendu: {expected_user_id}, Reçu: {message.author.id}")
+                print(f"❌ Utilisateur incorrect - Attendu: {expected_user_id}, Reçu: {message.author.id}")
                 return False
 
             if not message.attachments:
-                print(f"❌ [UPLOAD IMAGE] Aucun attachement trouvé dans le message")
+                print(f"❌ Aucun attachement trouvé dans le message")
                 return False
 
             attachment = message.attachments[0]
             allowed_extensions = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.svg']
-            print(f"📤 [UPLOAD IMAGE] Fichier détecté: {attachment.filename}")
-            print(f"📤 [UPLOAD IMAGE] Taille du fichier: {attachment.size} bytes ({attachment.size / 1024 / 1024:.2f} MB)")
-            print(f"📤 [UPLOAD IMAGE] URL de l'attachement: {attachment.url}")
-            print(f"📤 [UPLOAD IMAGE] Content Type: {getattr(attachment, 'content_type', 'unknown')}")
 
             # Check file size (Discord max is 25MB for regular users, 100MB for Nitro)
             max_size = 100 * 1024 * 1024  # 100MB in bytes
             if attachment.size > max_size:
-                print(f"❌ [UPLOAD IMAGE] Fichier trop volumineux: {attachment.size} bytes (max: {max_size})")
+                print(f"❌ Fichier trop volumineux: {attachment.size} bytes (max: {max_size})")
                 error_embed = discord.Embed(
                     title="<:ErrorLOGO:1407071682031648850> File Too Large",
                     description=f"File size is {attachment.size / 1024 / 1024:.2f}MB. Maximum allowed is {max_size / 1024 / 1024}MB.",
@@ -849,12 +839,11 @@ class NotificationLevelCardView(discord.ui.View):
 
             if not any(attachment.filename.lower().endswith(ext) for ext in allowed_extensions):
                 # Invalid file type
-                print(f"❌ [UPLOAD IMAGE] Type de fichier invalide: {attachment.filename}")
+                print(f"❌ Type de fichier invalide: {attachment.filename}")
                 try:
                     await message.delete()
-                    print(f"✅ [UPLOAD IMAGE] Message supprimé avec succès")
                 except Exception as e:
-                    print(f"❌ [UPLOAD IMAGE] Erreur lors de la suppression du message: {e}")
+                    print(f"❌ Erreur lors de la suppression du message: {e}")
 
                 error_embed = discord.Embed(
                     title="<:ErrorLOGO:1407071682031648850> Invalid File Type",
@@ -865,22 +854,16 @@ class NotificationLevelCardView(discord.ui.View):
                 print(f"📤 [UPLOAD IMAGE] Message d'erreur envoyé pour type de fichier invalide")
                 return False
 
-            print(f"✅ [UPLOAD IMAGE] Type de fichier valide: {attachment.filename}")
-
             # Process the image directly from attachment data BEFORE deleting message
             try:
-                print(f"⬇️ [UPLOAD IMAGE] Lecture directe des données de l'attachement")
-
                 # Read attachment data directly while URL is still valid
                 image_data = await attachment.read()
-                print(f"✅ [UPLOAD IMAGE] Image lue directement depuis l'attachement: {len(image_data)} bytes")
 
                 # Now we can safely delete the message
                 try:
                     await message.delete()
-                    print(f"✅ [UPLOAD IMAGE] Message original supprimé avec succès")
                 except Exception as e:
-                    print(f"❌ [UPLOAD IMAGE] Erreur lors de la suppression du message original: {e}")
+                    print(f"❌ Erreur lors de la suppression du message original: {e}")
 
                 # Validate image data
                 if len(image_data) < 100:  # Minimum reasonable image size
@@ -893,28 +876,23 @@ class NotificationLevelCardView(discord.ui.View):
                     raise Exception(f"Canal {TARGET_CHANNEL_ID} introuvable")
 
                 # Open and process image
-                print(f"🔄 [UPLOAD IMAGE] Ouverture de l'image...")
                 try:
                     custom_image = Image.open(io.BytesIO(image_data)).convert("RGBA")
-                    print(f"✅ [UPLOAD IMAGE] Image ouverte: {custom_image.size[0]}x{custom_image.size[1]} pixels, mode: {custom_image.mode}")
                 except Exception as pil_error:
                     print(f"❌ [UPLOAD IMAGE] Erreur PIL lors de l'ouverture: {pil_error}")
                     raise Exception(f"Invalid image format: {pil_error}")
 
                 # Use centered proportional resizing for background (1080x1080)
-                print(f"🔄 [UPLOAD IMAGE] Redimensionnement proportionnel vers 1080x1080")
                 try:
                     processed_image = view.resize_image_proportionally_centered(
                         custom_image, 1080, 1080
                     )
-                    print(f"✅ [UPLOAD IMAGE] Image redimensionnée avec succès: {processed_image.size}")
                 except Exception as resize_error:
-                    print(f"❌ [UPLOAD IMAGE] Erreur lors du redimensionnement: {resize_error}")
+                    print(f"❌ Erreur lors du redimensionnement: {resize_error}")
                     raise Exception(f"Failed to resize image: {resize_error}")
 
                 # Upload processed image to Discord directly
                 try:
-                    print(f"☁️ [UPLOAD IMAGE] Upload vers Discord canal {TARGET_CHANNEL_ID}...")
 
                     # Convert the processed PIL image to bytes
                     img_byte_arr = io.BytesIO()
@@ -931,24 +909,22 @@ class NotificationLevelCardView(discord.ui.View):
                     # Get the Discord attachment URL
                     if upload_message.attachments:
                         discord_url = upload_message.attachments[0].url
-                        print(f"✅ [UPLOAD IMAGE] Image envoyée vers canal Discord: {discord_url}")
 
                         # Update config for background
                         config = view.get_config()
                         config["background_image"] = discord_url
                         config.pop("background_color", None)
-                        print(f"✅ [UPLOAD IMAGE] Configuration mise à jour avec URL Discord: {discord_url}")
                     else:
                         raise Exception("Aucun attachement trouvé dans le message Discord")
 
                 except Exception as discord_error:
-                    print(f"❌ [UPLOAD IMAGE] Erreur Discord upload: {discord_error}")
+                    print(f"❌ Erreur Discord upload: {discord_error}")
                     raise Exception(f"Discord upload failed: {discord_error}")
 
             except Exception as e:
-                print(f"❌ [UPLOAD IMAGE] Erreur lors du traitement de l'image de fond: {e}")
+                print(f"❌ Erreur lors du traitement de l'image de fond: {e}")
                 import traceback
-                print(f"❌ [UPLOAD IMAGE] Traceback détaillé: {traceback.format_exc()}")
+                print(f"❌ Traceback détaillé: {traceback.format_exc()}")
 
                 error_embed = discord.Embed(
                     title="<:ErrorLOGO:1407071682031648850> Processing Error",
@@ -956,14 +932,11 @@ class NotificationLevelCardView(discord.ui.View):
                     color=discord.Color.red()
                 )
                 await message.channel.send(embed=error_embed, delete_after=10)
-                print(f"📤 [UPLOAD IMAGE] Message d'erreur détaillé envoyé")
                 return False
 
             if view.current_image_type == "background":
-                print(f"🖼️ [UPLOAD IMAGE] Traitement d'une image de fond terminé avec succès")
 
             elif view.current_image_type == "profile_outline":
-                print(f"👤 [UPLOAD IMAGE] Traitement d'une image de contour de profil")
                 # For profile outline, upload directly to Discord
                 try:
                     image_data = await attachment.read()
@@ -981,12 +954,11 @@ class NotificationLevelCardView(discord.ui.View):
                         config = view.get_config()
                         config["outline_image"] = discord_url
                         view.save_config(config)
-                        print(f"✅ [UPLOAD IMAGE] Image de contour de profil configurée: {discord_url}")
                     else:
                         raise Exception("Aucun attachement trouvé dans le message Discord")
 
                 except Exception as e:
-                    print(f"❌ [UPLOAD IMAGE] Échec de l'upload de l'image de contour de profil: {e}")
+                    print(f"❌ Échec de l'upload de l'image de contour de profil: {e}")
                     error_embed = discord.Embed(
                         title="<:ErrorLOGO:1407071682031648850> Upload Error",
                         description="Failed to upload image. Please try again.",
@@ -996,10 +968,7 @@ class NotificationLevelCardView(discord.ui.View):
                     return False
 
             elif view.current_image_type in ["level_text", "username_text", "messages_text", "information_text"]:
-                print(f"📝 [UPLOAD IMAGE] Traitement d'une image de texte: {view.current_image_type}")
                 text_key = f"{view.current_image_type.replace('_text', '')}_text_image"
-                print(f"📝 [UPLOAD IMAGE] Clé de configuration: {text_key}")
-
                 # Upload directly to Discord
                 try:
                     image_data = await attachment.read()
@@ -1015,12 +984,11 @@ class NotificationLevelCardView(discord.ui.View):
                     if upload_message.attachments:
                         discord_url = upload_message.attachments[0].url
                         config[text_key] = discord_url
-                        print(f"✅ [UPLOAD IMAGE] Image de texte configurée: {discord_url}")
                     else:
                         raise Exception("Aucun attachement trouvé dans le message Discord")
 
                 except Exception as e:
-                    print(f"❌ [UPLOAD IMAGE] Échec de l'upload de l'image de texte: {e}")
+                    print(f"❌ Échec de l'upload de l'image de texte: {e}")
                     error_embed = discord.Embed(
                         title="<:ErrorLOGO:1407071682031648850> Upload Error",
                         description="Failed to upload image. Please try again.",
@@ -1028,44 +996,33 @@ class NotificationLevelCardView(discord.ui.View):
                     )
                     await message.channel.send(embed=error_embed, delete_after=5)
                     return False
-
-            print(f"💾 [UPLOAD IMAGE] Sauvegarde de la configuration...")
             view.save_config(config)
             view.waiting_for_image = False
-            print(f"✅ [UPLOAD IMAGE] Configuration sauvegardée, attente d'image désactivée")
 
             # Generate new preview
-            print(f"🖼️ [UPLOAD IMAGE] Génération de la nouvelle prévisualisation...")
             await view.generate_preview_image(message.author)
-            print(f"✅ [UPLOAD IMAGE] Prévisualisation générée")
 
             # Update view mode
             view.mode = view.current_image_type
-            print(f"🔄 [UPLOAD IMAGE] Mode de vue mis à jour: {view.mode}")
-
+            
             # Get appropriate embed
             if view.current_image_type == "background":
                 embed = view.get_background_embed()
                 embed.title = "<:SucessLOGO:1407071637840592977> Background Image Set"
                 embed.description = "Your custom background image has been applied successfully!"
-                print(f"📝 [UPLOAD IMAGE] Embed de succès créé pour image de fond")
             elif view.current_image_type == "profile_outline":
                 embed = view.get_profile_outline_embed()
                 embed.title = "<:SucessLOGO:1407071637840592977> Profile Outline Image Set"
                 embed.description = "Your custom profile outline image has been applied successfully!"
-                print(f"📝 [UPLOAD IMAGE] Embed de succès créé pour contour de profil")
             elif view.current_image_type in ["level_text", "username_text", "messages_text", "information_text"]:
                 element_type = view.current_image_type.replace("_text", "")
                 embed = view.get_text_element_embed(element_type)
                 embed.title = f"<:SucessLOGO:1407071637840592977> {element_type.title()} Text Image Set"
                 embed.description = f"Your custom {element_type} text image overlay has been applied successfully!"
-                print(f"📝 [UPLOAD IMAGE] Embed de succès créé pour texte {element_type}")
             else:
                 embed = view.get_main_embed()
-                print(f"📝 [UPLOAD IMAGE] Embed principal par défaut créé")
 
             view.update_buttons()
-            print(f"🔄 [UPLOAD IMAGE] Boutons mis à jour")
 
             # Find and update the original message
             try:
@@ -1312,12 +1269,11 @@ class NotificationLevelCardView(discord.ui.View):
                         
                         if message.attachments:
                             self.preview_image_url = message.attachments[0].url
-                            print(f"✅ [NOTIFICATION] Preview uploaded to Discord: {self.preview_image_url}")
                         else:
-                            print(f"❌ [NOTIFICATION] No attachment found in uploaded message")
+                            print(f"❌ No attachment found in uploaded message")
                             self.preview_image_url = None
                     else:
-                        print(f"❌ [NOTIFICATION] Target channel {TARGET_CHANNEL_ID} not found")
+                        print(f"❌ Target channel {TARGET_CHANNEL_ID} not found")
                         self.preview_image_url = None
                         
                     # Clean up local file
@@ -1327,10 +1283,8 @@ class NotificationLevelCardView(discord.ui.View):
                         pass
                         
                 except Exception as upload_error:
-                    print(f"❌ [NOTIFICATION] Error uploading preview: {upload_error}")
+                    print(f"❌ Error uploading preview: {upload_error}")
                     self.preview_image_url = None
-
-                print(f"✅ [NOTIFICATION] Preview generated and processed")
                 return True
 
         except Exception as e:
@@ -1371,7 +1325,7 @@ class NotificationLevelCardView(discord.ui.View):
             text_settings_button = discord.ui.Button(
                 label="Text Settings",
                 style=discord.ButtonStyle.secondary,
-                emoji="📝",  # Use Unicode emoji as fallback
+                emoji="<:DescriptionLOGO:1407733417172533299>",  # Use Unicode emoji as fallback
                 row=0
             )
             text_settings_button.callback = self.text_settings
@@ -1459,7 +1413,7 @@ class NotificationLevelCardView(discord.ui.View):
             level_button = discord.ui.Button(
                 label="Level",
                 style=discord.ButtonStyle.secondary,
-                emoji="🏆",  # Use Unicode emoji as fallback
+                emoji="<:XPbarLOGO:1409633757018984531>",  # Use Unicode emoji as fallback
                 row=0
             )
             level_button.callback = self.level_text_settings
@@ -1467,7 +1421,7 @@ class NotificationLevelCardView(discord.ui.View):
             username_button = discord.ui.Button(
                 label="Username",
                 style=discord.ButtonStyle.secondary,
-                emoji="👤",  # Use Unicode emoji as fallback
+                emoji="<:ParticipantsLOGO:1407733929389199460>",  # Use Unicode emoji as fallback
                 row=0
             )
             username_button.callback = self.username_text_settings
@@ -1475,15 +1429,15 @@ class NotificationLevelCardView(discord.ui.View):
             messages_button = discord.ui.Button(
                 label="Messages",
                 style=discord.ButtonStyle.secondary,
-                emoji="💬",  # Use Unicode emoji as fallback
-                row=1
+                emoji="<:MessagesLOGO:1409586848577093837>",  # Use Unicode emoji as fallback
+                row=0
             )
             messages_button.callback = self.messages_text_settings
 
             information_button = discord.ui.Button(
                 label="Information",
                 style=discord.ButtonStyle.secondary,
-                emoji="ℹ️",  # Use Unicode emoji as fallback
+                emoji="<:DescriptionLOGO:1407733417172533299>",  # Use Unicode emoji as fallback
                 row=1
             )
             information_button.callback = self.information_text_settings
@@ -1492,7 +1446,7 @@ class NotificationLevelCardView(discord.ui.View):
                 label="Back",
                 style=discord.ButtonStyle.gray,
                 emoji="<:BackLOGO:1407071474233114766>",
-                row=2
+                row=1
             )
             back_button.callback = self.back_to_main
 
