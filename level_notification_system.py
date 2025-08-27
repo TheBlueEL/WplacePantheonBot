@@ -299,6 +299,7 @@ class NotificationLevelCardView(discord.ui.View):
         self.waiting_for_image = False
         self.current_image_type = None
         self.preview_image_url = None
+        self.preview_file_path = None # Added to store the local path of the preview image
 
         # Add message listener for image uploads
         if not hasattr(bot, '_notification_image_listeners'):
@@ -376,15 +377,9 @@ class NotificationLevelCardView(discord.ui.View):
 
         embed.add_field(name="Current Configuration", value=config_status, inline=False)
 
-        # Add preview image if available
-        if hasattr(self, 'preview_image_url') and self.preview_image_url:
-            import time
-            timestamp = int(time.time())
-            if '?' in self.preview_image_url:
-                image_url = self.preview_image_url.split('?')[0] + f"?refresh={timestamp}"
-            else:
-                image_url = self.preview_image_url + f"?refresh={timestamp}"
-            embed.set_image(url=image_url)
+        # Add preview image if available and in local attachment format
+        if hasattr(self, 'preview_image_url') and self.preview_image_url and self.preview_image_url.startswith("attachment://"):
+            embed.set_image(url=self.preview_image_url)
 
         return embed
 
@@ -416,7 +411,7 @@ class NotificationLevelCardView(discord.ui.View):
                 inline=False
             )
 
-        if hasattr(self, 'preview_image_url') and self.preview_image_url:
+        if hasattr(self, 'preview_image_url') and self.preview_image_url and self.preview_image_url.startswith("attachment://"):
             embed.set_image(url=self.preview_image_url)
 
         return embed
@@ -442,9 +437,6 @@ class NotificationLevelCardView(discord.ui.View):
                 inline=True
             )
 
-        if hasattr(self, 'preview_image_url') and self.preview_image_url:
-            embed.set_image(url=self.preview_image_url)
-
         return embed
 
     def get_text_settings_embed(self):
@@ -467,9 +459,6 @@ class NotificationLevelCardView(discord.ui.View):
                 value=f"RGB({color[0]}, {color[1]}, {color[2]})",
                 inline=True
             )
-
-        if hasattr(self, 'preview_image_url') and self.preview_image_url:
-            embed.set_image(url=self.preview_image_url)
 
         return embed
 
@@ -510,9 +499,6 @@ class NotificationLevelCardView(discord.ui.View):
             value=f"RGB({color[0]}, {color[1]}, {color[2]})",
             inline=False
         )
-
-        if hasattr(self, 'preview_image_url') and self.preview_image_url:
-            embed.set_image(url=self.preview_image_url)
 
         return embed
 
@@ -601,7 +587,7 @@ class NotificationLevelCardView(discord.ui.View):
             print(f"Error resizing image proportionally: {e}")
             return image.resize((target_width, target_height), Image.Resampling.LANCZOS)
 
-    async def create_text_with_image_overlay(self, text, font, color, image_url=None, text_width=None, text_height=None):
+    def create_text_with_image_overlay(self, text, font, color, image_url=None, text_width=None, text_height=None):
         """Create text with optional image overlay for notification cards"""
         try:
             # Create text surface
@@ -617,7 +603,7 @@ class NotificationLevelCardView(discord.ui.View):
 
             if image_url and image_url != "None":
                 # Download overlay image
-                overlay_data = await self.download_image(image_url)
+                overlay_data = self.download_image(image_url) # Use self.download_image
                 if overlay_data:
                     overlay_img = Image.open(io.BytesIO(overlay_data)).convert("RGBA")
 
@@ -776,25 +762,20 @@ class NotificationLevelCardView(discord.ui.View):
 
             print(f"✅ [UPLOAD IMAGE] Type de fichier valide: {attachment.filename}")
 
-            # Delete the uploaded message first
-            try:
-                await message.delete()
-                print(f"✅ [UPLOAD IMAGE] Message original supprimé avec succès")
-            except Exception as e:
-                print(f"❌ [UPLOAD IMAGE] Erreur lors de la suppression du message original: {e}")
-
-            # Process the image directly from attachment data
+            # Process the image directly from attachment data BEFORE deleting message
             try:
                 print(f"⬇️ [UPLOAD IMAGE] Lecture directe des données de l'attachement")
 
-                # Download image data using aiohttp before URL expires
-                async with aiohttp.ClientSession() as session:
-                    async with session.get(attachment.url) as response:
-                        if response.status == 200:
-                            image_data = await response.read()
-                            print(f"✅ [UPLOAD IMAGE] Image téléchargée avec aiohttp: {len(image_data)} bytes")
-                        else:
-                            raise Exception(f"Échec du téléchargement: status {response.status}")
+                # Read attachment data directly while URL is still valid
+                image_data = await attachment.read()
+                print(f"✅ [UPLOAD IMAGE] Image lue directement depuis l'attachement: {len(image_data)} bytes")
+
+                # Now we can safely delete the message
+                try:
+                    await message.delete()
+                    print(f"✅ [UPLOAD IMAGE] Message original supprimé avec succès")
+                except Exception as e:
+                    print(f"❌ [UPLOAD IMAGE] Erreur lors de la suppression du message original: {e}")
 
                 # Validate image data
                 if len(image_data) < 100:  # Minimum reasonable image size
@@ -846,7 +827,7 @@ class NotificationLevelCardView(discord.ui.View):
                     if upload_message.attachments:
                         discord_url = upload_message.attachments[0].url
                         print(f"✅ [UPLOAD IMAGE] Image envoyée vers canal Discord: {discord_url}")
-                        
+
                         # Update config for background
                         config = view.get_config()
                         config["background_image"] = discord_url
@@ -1181,12 +1162,12 @@ class NotificationLevelCardView(discord.ui.View):
             return None
 
     async def generate_preview_image(self, interaction_user):
-        """Generate preview image and upload to GitHub"""
+        """Generate preview image locally (no automatic Discord upload)"""
         try:
             preview_image = await self.create_notification_level_card(interaction_user, 50)
 
             if preview_image:
-                # Save preview to temp file
+                # Save preview to temp file for potential manual display
                 os.makedirs('images', exist_ok=True)
                 import time
                 timestamp = int(time.time())
@@ -1196,30 +1177,13 @@ class NotificationLevelCardView(discord.ui.View):
                 with open(file_path, 'wb') as f:
                     f.write(preview_image.getvalue())
 
-                # Upload to Discord
-                try:
-                    TARGET_CHANNEL_ID = 1409970452570312819
-                    channel = self.bot.get_channel(TARGET_CHANNEL_ID)
-                    if channel:
-                        # Create Discord file
-                        discord_file = discord.File(file_path, filename=filename)
+                # Don't upload to Discord automatically
+                # Preview image will only be uploaded when user manually uploads an image
+                self.preview_image_url = f"attachment://{filename}" # Use local attachment path
+                self.preview_file_path = file_path  # Store for potential later use
 
-                        # Send to Discord channel
-                        message = await channel.send(file=discord_file)
-
-                        # Get the Discord attachment URL
-                        if message.attachments:
-                            self.preview_image_url = f"{message.attachments[0].url}?t={timestamp}"
-
-                            # Delete local file
-                            try:
-                                os.remove(file_path)
-                            except:
-                                pass
-
-                            return True
-                except Exception as e:
-                    print(f"Discord upload error: {e}")
+                print(f"✅ [NOTIFICATION] Preview generated locally: {file_path}")
+                return True
 
         except Exception as e:
             print(f"Error generating preview: {e}")
