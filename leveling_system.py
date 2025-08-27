@@ -3508,8 +3508,8 @@ class LevelCardManagerView(discord.ui.View):
             self.add_item(profile_outline_button)
             self.add_item(content_button)
 
-            # Add Close button for DMs or Back button for guilds
-            if getattr(self, 'is_dm', False):
+            # Add Back/Close button - Close for all DM contexts
+            if isinstance(getattr(self, 'guild', None), type(None)) or getattr(self, 'is_dm', False):
                 close_button = discord.ui.Button(
                     label="Close",
                     style=discord.ButtonStyle.danger,
