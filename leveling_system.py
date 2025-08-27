@@ -3955,6 +3955,12 @@ class LevelCardManagerView(discord.ui.View):
     async def back_to_level_system(self, interaction: discord.Interaction):
         """Go back to the main level system menu"""
         view = LevelSystemMainView(self.bot, interaction.user)
+        
+        # Regenerate demo card to ensure image is displayed
+        leveling_system = self.bot.get_cog('LevelingSystem')
+        if leveling_system:
+            await leveling_system.generate_demo_card_for_main_view(view)
+        
         embed = view.get_main_embed()
         await interaction.response.edit_message(embed=embed, view=view)
 
