@@ -208,9 +208,9 @@
           255
         ],
         "info_text_color": [
-          20,
-          20,
-          20
+          255,
+          255,
+          255
         ],
         "outline_enabled": true,
         "outline_color": [
