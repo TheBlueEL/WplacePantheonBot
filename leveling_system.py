@@ -1796,13 +1796,13 @@ class LevelSystemMainView(discord.ui.View):
 
         await interaction.edit_original_response(embed=embed, view=view)
 
-    @discord.ui.button(label="Level Settings", style=discord.ButtonStyle.secondary, emoji="<:SettingLOGO:1407071854593839239>")
+    @discord.ui.button(label="Level Settings", style=discord.ButtonStyle.secondary, emoji="<:SettingLOGO:1407071854593839239>", row=1)
     async def level_settings(self, interaction: discord.Interaction, button: discord.ui.Button):
         view = LevelSettingsView(self.bot, self.user)
         embed = view.get_embed()
         await interaction.response.edit_message(embed=embed, view=view)
 
-    @discord.ui.button(label="Notification", style=discord.ButtonStyle.secondary, emoji="🔔")
+    @discord.ui.button(label="Notification", style=discord.ButtonStyle.secondary, emoji="🔔", row=1)
     async def notification_settings(self, interaction: discord.Interaction, button: discord.ui.Button):
         from level_notification_system import NotificationSystemView
         view = NotificationSystemView(self.bot, self.user)
