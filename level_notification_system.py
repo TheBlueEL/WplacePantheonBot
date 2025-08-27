@@ -437,6 +437,10 @@ class NotificationLevelCardView(discord.ui.View):
                 inline=True
             )
 
+        # Add preview image if available
+        if hasattr(self, 'preview_image_url') and self.preview_image_url:
+            embed.set_image(url=self.preview_image_url)
+
         return embed
 
     def get_text_settings_embed(self):
@@ -916,7 +920,9 @@ class NotificationLevelCardView(discord.ui.View):
 
                     if upload_message.attachments:
                         discord_url = upload_message.attachments[0].url
+                        config = view.get_config()
                         config["outline_image"] = discord_url
+                        view.save_config(config)
                         print(f"✅ [UPLOAD IMAGE] Image de contour de profil configurée: {discord_url}")
                     else:
                         raise Exception("Aucun attachement trouvé dans le message Discord")
@@ -1095,9 +1101,20 @@ class NotificationLevelCardView(discord.ui.View):
 
                         # Create mask for outline to only show parts that overlay with avatar
                         if config.get("outline_image"):
-                            # Create a circular mask for the outline area
-                            outline_mask = self.create_circle_mask((outline_pos["size"], outline_pos["size"]))
-                            outline.putalpha(outline_mask)
+                            # Download the default outline to use as a template mask
+                            default_outline_url = "https://raw.githubusercontent.com/TheBlueEL/pictures/refs/heads/main/ProfileOutline.png"
+                            default_outline_data = await self.download_image(default_outline_url)
+                            if default_outline_data:
+                                default_outline = Image.open(io.BytesIO(default_outline_data)).convert("RGBA")
+                                default_outline_resized = default_outline.resize((outline_pos["size"], outline_pos["size"]), Image.Resampling.LANCZOS)
+                                
+                                # Use the alpha channel of the default outline as the mask
+                                outline_template_alpha = default_outline_resized.split()[-1]
+                                outline.putalpha(outline_template_alpha)
+                            else:
+                                # Fallback to circular mask if default outline can't be loaded
+                                outline_mask = self.create_circle_mask((outline_pos["size"], outline_pos["size"]))
+                                outline.putalpha(outline_mask)
 
                         background.paste(outline, (outline_pos["x"], outline_pos["y"]), outline)
 
