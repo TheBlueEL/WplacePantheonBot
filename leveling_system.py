@@ -2645,10 +2645,9 @@ class LevelCardSettingsButtonView(discord.ui.View):
         user_level = user_data["level"]
 
         # Create level card manager for DMs
-        view = LevelCardManagerView(interaction.client, interaction.user.id)
+        view = DMsLevelCardManagerView(interaction.client, interaction.user.id)
         view.guild = interaction.guild
         view.user_level = user_level  # Store user level for permission checks
-        view.is_dm = True  # Mark as DM context
 
         # Generate preview image
         await view.generate_preview_image(interaction.user)
@@ -3998,6 +3997,50 @@ class LevelCardHexColorModal(discord.ui.Modal):
             current_color = f"#{rgb[0]:02x}{rgb[1]:02x}{rgb[2]:02x}"
         elif self.view.mode == "xp_progress_color" and self.view.config.get("xp_bar_color"):
             rgb = self.view.config["xp_bar_color"]
+
+
+# DM Level Card Manager View - Independent version for DMs
+class DMsLevelCardManagerView(LevelCardManagerView):
+    def __init__(self, bot, user_id):
+        super().__init__(bot, user_id)
+        self.is_dm = True  # Always in DM context
+
+    def update_buttons(self):
+        """Override to replace Back button with Close button in main mode"""
+        # Call parent's update_buttons to get all the regular functionality
+        super().update_buttons()
+        
+        # Only modify the main mode to replace Back with Close
+        if self.mode == "main":
+            # Remove the existing Back button if it exists
+            items_to_keep = []
+            for item in self.children:
+                if not (hasattr(item, 'label') and item.label == "Back"):
+                    items_to_keep.append(item)
+            
+            # Clear and re-add items without the Back button
+            self.clear_items()
+            for item in items_to_keep:
+                self.add_item(item)
+            
+            # Add Close button instead
+            close_button = discord.ui.Button(
+                label="Close",
+                style=discord.ButtonStyle.danger,
+                emoji="<:CloseLOGO:1407072519420248256>",
+                row=1
+            )
+            close_button.callback = self.close_dm
+            self.add_item(close_button)
+
+    async def close_dm(self, interaction: discord.Interaction):
+        """Close the DM message"""
+        try:
+            await interaction.message.delete()
+        except:
+            # If we can't delete the message, just respond with an ephemeral message
+            await interaction.response.send_message("Settings closed.", ephemeral=True)
+
             current_color = f"#{rgb[0]:02x}{rgb[1]:02x}{rgb[2]:02x}"
         elif self.view.mode == "xp_bar_color" and self.view.config.get("xp_bar_color"):
             rgb = self.view.config["xp_bar_color"]
