@@ -675,6 +675,34 @@ class NotificationLevelCardView(discord.ui.View):
         draw.ellipse((0, 0, size[0], size[1]), fill=255)
         return mask
 
+    def resize_image_proportionally_centered(self, image, target_width, target_height):
+        """Resize image maintaining proportions and cropping from center"""
+        try:
+            # Calculate scaling factor to make image fit target dimensions
+            scale_factor = max(target_width / image.width, target_height / image.height)
+
+            # Calculate new dimensions after scaling
+            new_width = int(image.width * scale_factor)
+            new_height = int(image.height * scale_factor)
+
+            # Resize image to new dimensions
+            resized_image = image.resize((new_width, new_height), Image.Resampling.LANCZOS)
+
+            # Calculate crop coordinates to center the image
+            left = (new_width - target_width) // 2
+            top = (new_height - target_height) // 2
+            right = left + target_width
+            bottom = top + target_height
+
+            # Crop to exact target size, centered
+            cropped_image = resized_image.crop((left, top, right, bottom))
+
+            return cropped_image
+
+        except Exception as e:
+            print(f"Error resizing image proportionally: {e}")
+            return image.resize((target_width, target_height), Image.Resampling.LANCZOS)
+
     def draw_text_with_outline(self, draw, text, position, font, color, outline_color, outline_width):
         """Draw text with outline"""
         x, y = position
@@ -989,13 +1017,15 @@ class NotificationLevelCardView(discord.ui.View):
             # Create 1080x1080 background
             background = Image.new("RGBA", (1080, 1080), (0, 0, 0, 0))
 
-            # Set background
+            # Set background with proper proportional resizing
             if config.get("background_image"):
                 bg_data = await self.download_image(config["background_image"])
                 if bg_data:
                     bg_img = Image.open(io.BytesIO(bg_data)).convert("RGBA")
-                    bg_img = bg_img.resize((1080, 1080), Image.Resampling.LANCZOS)
-                    background = bg_img
+                    # Use centered proportional resizing for background
+                    background = self.resize_image_proportionally_centered(
+                        bg_img, 1080, 1080
+                    )
                 else:
                     bg_color = tuple(config.get("background_color", [245, 55, 48])) + (255,)
                     background = Image.new("RGBA", (1080, 1080), bg_color)
