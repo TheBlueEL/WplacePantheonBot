@@ -469,6 +469,7 @@ class NotificationLevelCardView(discord.ui.View):
                 color=0xFFFFFF
             )
             color = config.get("level_text_color", [255, 255, 255])
+            embed.set_image(url=self.preview_image_url)
         elif element_type == "username":
             embed = discord.Embed(
                 title="👤 Username Text Settings",
@@ -476,6 +477,7 @@ class NotificationLevelCardView(discord.ui.View):
                 color=0xFFFFFF
             )
             color = config.get("username_color", [255, 255, 255])
+            embed.set_image(url=self.preview_image_url)
         elif element_type == "messages":
             embed = discord.Embed(
                 title="💬 Message Text Settings",
@@ -483,6 +485,7 @@ class NotificationLevelCardView(discord.ui.View):
                 color=0xFFFFFF
             )
             color = config.get("message_text_color", [255, 255, 255])
+            embed.set_image(url=self.preview_image_url)
         elif element_type == "information":
             embed = discord.Embed(
                 title="ℹ️ Information Text Settings",
@@ -490,6 +493,7 @@ class NotificationLevelCardView(discord.ui.View):
                 color=0xFFFFFF
             )
             color = config.get("info_text_color", [200, 200, 200])
+            embed.set_image(url=self.preview_image_url)
 
         embed.add_field(
             name="Current Color",
