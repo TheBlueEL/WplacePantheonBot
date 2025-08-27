@@ -1765,8 +1765,7 @@ class LevelSystemMainView(discord.ui.View):
         embed.add_field(name="System Status", value=status, inline=True)
 
         # Add demo level card image if available
-        if hasattr(self, 'demo_card_url') and self.demo_card_url:
-            embed.set_image(url=self.demo_card_url)
+        embed.set_image(url=self.demo_card_url)
 
         return embed
 
