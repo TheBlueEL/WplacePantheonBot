@@ -3974,16 +3974,25 @@ class LevelCardManagerView(discord.ui.View):
             await interaction.response.send_message("Settings closed.", ephemeral=True)
 
     async def back_to_level_system(self, interaction: discord.Interaction):
-        """Go back to the main level system menu"""
-        view = LevelSystemMainView(self.bot, interaction.user)
-        
-        # Regenerate demo card to ensure image is displayed
-        leveling_system = self.bot.get_cog('LevelingSystem')
-        if leveling_system:
-            await leveling_system.generate_demo_card_for_main_view(view)
-        
-        embed = view.get_main_embed()
-        await interaction.response.edit_message(embed=embed, view=view)
+        """Go back to the main level system menu or close if in DM"""
+        # Check if we're in DMs
+        if isinstance(interaction.channel, discord.DMChannel):
+            # In DMs, close the message
+            try:
+                await interaction.response.edit_message(view=None)
+            except:
+                await interaction.response.send_message("Settings closed.", ephemeral=True)
+        else:
+            # In guild, go back to level system
+            view = LevelSystemMainView(self.bot, interaction.user)
+            
+            # Regenerate demo card to ensure image is displayed
+            leveling_system = self.bot.get_cog('LevelingSystem')
+            if leveling_system:
+                await leveling_system.generate_demo_card_for_main_view(view)
+            
+            embed = view.get_main_embed()
+            await interaction.response.edit_message(embed=embed, view=view)
 
 # Modal classes for Level Card
 class LevelCardHexColorModal(discord.ui.Modal):
