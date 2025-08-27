@@ -31,7 +31,6 @@
           255,
           255
         ],
-        "outline_image": "https://cdn.discordapp.com/attachments/1409970452570312819/1410286083261861969/notification_outline_63b13233-6225-49aa-8c11-f5acc1f9267d.png?ex=68b076c4&is=68af2544&hm=b68dc799c52de104d2de78f9fd457906e5c80e78e6375d8b72c2f031a15c7f8a&",
         "username_position": {
           "x": 275,
           "y": 650,
@@ -62,9 +61,13 @@
           "y": 10,
           "size": 600
         },
-        "background_image": "https://cdn.discordapp.com/attachments/1409970452570312819/1410286081311641680/notification_bg_1e10c745-5167-48c9-ae2b-197b99751a8e.png?ex=68b076c3&is=68af2543&hm=c97a458a1a922084907954a0129c7fc2592afbbbecbcbefaad9a6a588717b836&"
+        "background_color": [
+          245,
+          55,
+          48
+        ]
       },
-      "timestamp": 1756308804.3042955
+      "timestamp": 1756309463.1837082
     }
   ],
   "published": []
