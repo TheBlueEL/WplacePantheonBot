@@ -935,9 +935,15 @@ class NotificationLevelCardView(discord.ui.View):
                 return False
 
             if view.current_image_type == "background":
+                discord_url = upload_message.attachments[0].url
 
+                # Update config for background
+                config = view.get_config()
+                config["background_image"] = discord_url
+                config.pop("background_color", None)
+                
             elif view.current_image_type == "profile_outline":
-                # For profile outline, upload directly to Discord
+                    # For profile outline, upload directly to Discord
                 try:
                     image_data = await attachment.read()
                     TARGET_CHANNEL_ID = 1409970452570312819
