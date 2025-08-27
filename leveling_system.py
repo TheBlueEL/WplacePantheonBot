@@ -1809,7 +1809,7 @@ class LevelSystemMainView(discord.ui.View):
         embed = view.get_main_embed()
         await interaction.response.edit_message(embed=embed, view=view)
 
-    @discord.ui.button(label="ON", style=discord.ButtonStyle.success, emoji="<:OnLOGO:1407072463883472978>")
+    @discord.ui.button(label="ON", style=discord.ButtonStyle.success, emoji="<:OnLOGO:1407072463883472978>", row=1)
     async def toggle_system(self, interaction: discord.Interaction, button: discord.ui.Button):
         data = load_leveling_data()
         current_state = data["leveling_settings"]["enabled"]
