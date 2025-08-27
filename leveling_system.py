@@ -74,11 +74,11 @@ def load_user_level_card_config(user_id):
     """Load user-specific level card configuration"""
     data = load_leveling_data()
     user_id_str = str(user_id)
-    
+
     # If user has custom config, return it
     if user_id_str in data.get("user_level_cards", {}):
         return data["user_level_cards"][user_id_str]
-    
+
     # Otherwise return default config
     return data["leveling_settings"]["level_card"].copy()
 
@@ -86,10 +86,10 @@ def save_user_level_card_config(user_id, config):
     """Save user-specific level card configuration"""
     data = load_leveling_data()
     user_id_str = str(user_id)
-    
+
     if "user_level_cards" not in data:
         data["user_level_cards"] = {}
-    
+
     data["user_level_cards"][user_id_str] = config
     save_leveling_data(data)
 
@@ -681,7 +681,7 @@ class LevelingSystem(commands.Cog):
                                         crop_mask = Image.new('L', (levelbar.width, levelbar.height), 0)
                                         crop_draw = ImageDraw.Draw(crop_mask)
                                         crop_draw.rectangle([(0, 0), (progress_width - 1, levelbar.height - 1)], fill=255)
-                                        
+
                                         # Apply crop mask to progress mask
                                         import numpy as np
                                         progress_array = np.array(progress_mask)
@@ -1067,7 +1067,7 @@ class LevelingSystem(commands.Cog):
 
         # Check for level card manager image uploads
         user_id = message.author.id
-        
+
         # Check for notification card image uploads
         if hasattr(self.bot, '_notification_image_listeners') and message.attachments:
             listener = self.bot._notification_image_listeners.get(user_id)
@@ -1077,7 +1077,7 @@ class LevelingSystem(commands.Cog):
                     success = await listener.handle_image_upload(message, listener)
                     if success:
                         return
-        
+
         # Check if user has an active level card manager
         for view in self.bot._connection._view_store._synced_message_views.values():
             if (hasattr(view, 'user_id') and view.user_id == user_id and
@@ -1244,7 +1244,7 @@ class LevelingSystem(commands.Cog):
         if xp_gained > 0:
             old_level = get_level_from_xp(user_data["xp"])
             max_level = data["leveling_settings"].get("max_level", 100)
-            
+
             # Check if user has reached max level
             if old_level >= max_level:
                 # User is at max level, no more XP gained
@@ -1254,12 +1254,12 @@ class LevelingSystem(commands.Cog):
             else:
                 user_data["xp"] += xp_gained
                 new_level = get_level_from_xp(user_data["xp"])
-                
+
                 # Cap level at max_level
                 if new_level > max_level:
                     new_level = max_level
                     user_data["xp"] = calculate_xp_for_level(max_level)
-                
+
                 user_data["level"] = new_level
 
                 save_leveling_data(data)
@@ -1267,7 +1267,7 @@ class LevelingSystem(commands.Cog):
                 # Check for role rewards
                 if new_level > old_level:
                     await self.check_level_rewards(message.author, new_level)
-                    
+
                     # Check for level notifications
                     await self.check_level_notifications(message.author, new_level)
 
@@ -1432,21 +1432,21 @@ class LevelingSystem(commands.Cog):
         try:
             data = load_leveling_data()
             notification_settings = data.get("notification_settings", {}).get("level_notifications", {})
-            
+
             if not notification_settings.get("enabled", True):
                 return
-            
+
             cycle = notification_settings.get("cycle", 1)
-            
+
             # Check if this level should trigger a notification
             if level % cycle == 0:
                 # Import here to avoid circular import
                 from level_notification_system import NotificationLevelCardView
-                
+
                 # Create notification card
                 card_view = NotificationLevelCardView(self.bot, user.id)
                 level_card = await card_view.create_notification_level_card(user, level)
-                
+
                 if level_card:
                     try:
                         # Send to user's DM
@@ -1754,11 +1754,11 @@ class LevelSystemMainView(discord.ui.View):
         self.bot = bot
         self.user = user
         self.demo_card_url = None
-        
+
         # Initialize toggle button state based on current system status
         data = load_leveling_data()
         system_enabled = data["leveling_settings"]["enabled"]
-        
+
         # Find and update the toggle button
         for item in self.children:
             if hasattr(item, 'callback') and hasattr(item.callback, 'callback') and item.callback.callback.__name__ == 'toggle_system':
@@ -2294,11 +2294,11 @@ class MessageXPView(discord.ui.View):
     def __init__(self, user):
         super().__init__(timeout=300)
         self.user = user
-        
+
         # Initialize toggle button state
         data = load_leveling_data()
         messages_enabled = data["leveling_settings"]["xp_settings"]["messages"]["enabled"]
-        
+
         # Update the toggle button based on current state
         for item in self.children:
             if hasattr(item, 'callback') and item.callback.__name__ == 'toggle_messages_xp':
@@ -2417,11 +2417,11 @@ class CharacterXPView(discord.ui.View):
     def __init__(self, user):
         super().__init__(timeout=300)
         self.user = user
-        
+
         # Initialize toggle button state
         data = load_leveling_data()
         characters_enabled = data["leveling_settings"]["xp_settings"]["characters"]["enabled"]
-        
+
         # Update the toggle button based on current state
         for item in self.children:
             if hasattr(item, 'callback') and item.callback.__name__ == 'toggle_characters_xp':
@@ -2560,16 +2560,16 @@ class LevelSettingsView(discord.ui.View):
     def get_embed(self):
         data = load_leveling_data()
         max_level = data["leveling_settings"].get("max_level", 100)
-        
+
         embed = discord.Embed(
             title="<:SettingLOGO:1407071854593839239> Level Settings",
             description="Configure level system limitations and rules:",
             color=0xFFFFFF
         )
-        
+
         embed.add_field(name="Maximum Level", value=str(max_level), inline=True)
         embed.add_field(name="XP Cap", value="Users stop gaining XP at max level", inline=True)
-        
+
         return embed
 
     @discord.ui.button(label="Level Max", style=discord.ButtonStyle.primary, emoji="<a:XPLOGO:1409634015043915827>")
@@ -2601,7 +2601,7 @@ class MaxLevelModal(discord.ui.Modal):
                 data = load_leveling_data()
                 data["leveling_settings"]["max_level"] = max_level_value
                 save_leveling_data(data)
-                
+
                 await interaction.response.send_message(f"<:SucessLOGO:1407071637840592977> Maximum level set to {max_level_value}!", ephemeral=True)
             else:
                 await interaction.response.send_message("<:ErrorLOGO:1407071682031648850> Maximum level must be between 1 and 999!", ephemeral=True)
@@ -3138,19 +3138,19 @@ class LevelCardManagerView(discord.ui.View):
     def get_current_button_states(self):
         """Get current button states for dynamic toggles"""
         data = load_leveling_data()
-        
+
         # System toggle state
         system_enabled = data["leveling_settings"]["enabled"]
-        
+
         # Messages XP toggle state
         messages_enabled = data["leveling_settings"]["xp_settings"]["messages"]["enabled"]
-        
+
         # Characters XP toggle state
         characters_enabled = data["leveling_settings"]["xp_settings"]["characters"]["enabled"]
-        
+
         # Profile outline toggle state
         profile_outline_enabled = self.config.get("profile_outline", {}).get("enabled", True)
-        
+
         return {
             "system": system_enabled,
             "messages": messages_enabled,
@@ -3508,8 +3508,17 @@ class LevelCardManagerView(discord.ui.View):
             self.add_item(profile_outline_button)
             self.add_item(content_button)
 
-            # Add Back button only for non-DMs, positioned at the end (right side)
-            if not (hasattr(self, 'is_dm') and self.is_dm):
+            # Add Close button for DMs or Back button for guilds
+            if hasattr(self, 'is_dm') and self.is_dm:
+                close_button = discord.ui.Button(
+                    label="Close",
+                    style=discord.ButtonStyle.danger,
+                    emoji="❌",
+                    row=1
+                )
+                close_button.callback = self.close_dm
+                self.add_item(close_button)
+            else:
                 back_button = discord.ui.Button(
                     label="Back",
                     style=discord.ButtonStyle.gray,
@@ -3964,6 +3973,13 @@ class LevelCardManagerView(discord.ui.View):
             # If we can't delete the message, just respond with an ephemeral message
             await interaction.response.send_message("Settings closed.", ephemeral=True)
 
+    async def close_dm(self, interaction: discord.Interaction):
+        """Close the DM message"""
+        try:
+            await interaction.response.edit_message(content="Settings closed.", embed=None, view=None)
+        except:
+            await interaction.response.send_message("Settings closed.", ephemeral=True)
+
     async def back_to_level_system(self, interaction: discord.Interaction):
         """Go back to the main level system menu or close if in DM"""
         # Check if we're in DMs
@@ -3976,12 +3992,12 @@ class LevelCardManagerView(discord.ui.View):
         else:
             # In guild, go back to level system
             view = LevelSystemMainView(self.bot, interaction.user)
-            
+
             # Regenerate demo card to ensure image is displayed
             leveling_system = self.bot.get_cog('LevelingSystem')
             if leveling_system:
                 await leveling_system.generate_demo_card_for_main_view(view)
-            
+
             embed = view.get_main_embed()
             await interaction.response.edit_message(embed=embed, view=view)
 
@@ -5271,7 +5287,7 @@ class UserLevelCardManagerView(LevelCardManagerView):
         """Use exact same interface as LevelCardManagerView but with permission checks"""
         # Call parent's update_buttons method to get the exact same interface
         super().update_buttons()
-        
+
         # Now disable buttons based on permissions for DM users
         for item in self.children:
             if hasattr(item, 'disabled') and hasattr(item, 'label'):
