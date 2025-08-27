@@ -4152,29 +4152,6 @@ class DMsLevelCardManagerView(LevelCardManagerView):
         except:
             # If we can't delete the message, just respond with an ephemeral message
             await interaction.response.send_message("Settings closed.", ephemeral=True)
-            current_color = f"#{rgb[0]:02x}{rgb[1]:02x}{rgb[2]:02x}"
-        elif self.view.mode == "profile_outline_color":
-            profile_config = self.view.config.get("profile_outline", {})
-            if profile_config.get("color_override"):
-                rgb = profile_config["color_override"]
-                current_color = f"#{rgb[0]:02x}{rgb[1]:02x}{rgb[2]:02x}"
-        elif self.view.mode == "level_text_color" and self.view.config.get("level_color"):
-            rgb = self.view.config["level_color"]
-            current_color = f"#{rgb[0]:02x}{rgb[1]:02x}{rgb[2]:02x}"
-        elif self.view.mode == "ranking_text_color":
-            ranking_config = self.view.config.get("ranking_position", {})
-            if ranking_config.get("color"):
-                rgb = ranking_config["color"]
-                current_color = f"#{rgb[0]:02x}{rgb[1]:02x}{rgb[2]:02x}"
-
-        self.hex_input = discord.ui.TextInput(
-            label='Hex Color Code',
-            placeholder='#FFFFFF or FFFFFF',
-            required=True,
-            max_length=7,
-            default=current_color
-        )
-        self.add_item(self.hex_input)
 
     async def on_submit(self, interaction: discord.Interaction):
         await interaction.response.defer()
