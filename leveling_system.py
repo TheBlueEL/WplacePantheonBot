@@ -4928,7 +4928,7 @@ class DMsLevelCardManagerView(discord.ui.View):
             )
             content_button.callback = self.content_settings
 
-            # Add Close button instead of Back for DM
+            # Add Close button for DM (only in main mode)
             close_button = discord.ui.Button(
                 label="Close",
                 style=discord.ButtonStyle.danger,
