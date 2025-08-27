@@ -445,7 +445,7 @@ class NotificationLevelCardView(discord.ui.View):
 
     def get_text_settings_embed(self):
         embed = discord.Embed(
-            title="<:DescriptionLOGO:1407733417172533299> Text Settings",
+            title="📝 Text Settings",
             description="Configure text elements of the notification card",
             color=0xFFFFFF
         )
@@ -471,28 +471,28 @@ class NotificationLevelCardView(discord.ui.View):
 
         if element_type == "level":
             embed = discord.Embed(
-                title="<a:XPLOGO:1409634015043915827> Level Text Settings",
+                title="🏆 Level Text Settings",
                 description="Configure the level text display",
                 color=0xFFFFFF
             )
             color = config.get("level_text_color", [255, 255, 255])
         elif element_type == "username":
             embed = discord.Embed(
-                title="<:ParticipantsLOGO:1407733929389199460> Username Text Settings",
+                title="👤 Username Text Settings",
                 description="Configure the username text display",
                 color=0xFFFFFF
             )
             color = config.get("username_color", [255, 255, 255])
         elif element_type == "messages":
             embed = discord.Embed(
-                title="<:MessagesLOGO:1409586848577093837> Message Text Settings",
+                title="💬 Message Text Settings",
                 description="Configure the message text display",
                 color=0xFFFFFF
             )
             color = config.get("message_text_color", [255, 255, 255])
         elif element_type == "information":
             embed = discord.Embed(
-                title="<:InfoLOGO:1409635426507583508> Information Text Settings",
+                title="ℹ️ Information Text Settings",
                 description="Configure the information text display",
                 color=0xFFFFFF
             )
@@ -1313,7 +1313,7 @@ class NotificationLevelCardView(discord.ui.View):
             text_settings_button = discord.ui.Button(
                 label="Text Settings",
                 style=discord.ButtonStyle.secondary,
-                emoji="<:DescriptionLOGO:1407733417172533299>",
+                emoji="📝",  # Use Unicode emoji as fallback
                 row=0
             )
             text_settings_button.callback = self.text_settings
@@ -1401,7 +1401,7 @@ class NotificationLevelCardView(discord.ui.View):
             level_button = discord.ui.Button(
                 label="Level",
                 style=discord.ButtonStyle.secondary,
-                emoji="<a:XPLOGO:1409634015043915827>",
+                emoji="🏆",  # Use Unicode emoji as fallback
                 row=0
             )
             level_button.callback = self.level_text_settings
@@ -1409,7 +1409,7 @@ class NotificationLevelCardView(discord.ui.View):
             username_button = discord.ui.Button(
                 label="Username",
                 style=discord.ButtonStyle.secondary,
-                emoji="<:ParticipantsLOGO:1407733929389199460>",
+                emoji="👤",  # Use Unicode emoji as fallback
                 row=0
             )
             username_button.callback = self.username_text_settings
@@ -1417,7 +1417,7 @@ class NotificationLevelCardView(discord.ui.View):
             messages_button = discord.ui.Button(
                 label="Messages",
                 style=discord.ButtonStyle.secondary,
-                emoji="<:MessagesLOGO:1409586848577093837>",
+                emoji="💬",  # Use Unicode emoji as fallback
                 row=1
             )
             messages_button.callback = self.messages_text_settings
@@ -1425,7 +1425,7 @@ class NotificationLevelCardView(discord.ui.View):
             information_button = discord.ui.Button(
                 label="Information",
                 style=discord.ButtonStyle.secondary,
-                emoji="<:InfoLOGO:1409635426507583508>",
+                emoji="ℹ️",  # Use Unicode emoji as fallback
                 row=1
             )
             information_button.callback = self.information_text_settings
