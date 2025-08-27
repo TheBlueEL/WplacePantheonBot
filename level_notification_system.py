@@ -232,7 +232,7 @@ class LevelNotificationView(discord.ui.View):
         embed = self.get_embed()
         await interaction.response.edit_message(embed=embed, view=self)
 
-    @discord.ui.button(label="Cycle", style=discord.ButtonStyle.secondary, emoji="<:CooldownLOGO:1409586926071054448>")
+    @discord.ui.button(label="Cycle", style=discord.ButtonStyle.secondary, emoji="<:CooldownLOGO:1409586926071054448>", row=1)
     async def set_cycle(self, interaction: discord.Interaction, button: discord.ui.Button):
         modal = CycleModal()
         await interaction.response.send_modal(modal)
