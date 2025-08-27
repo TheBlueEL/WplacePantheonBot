@@ -670,11 +670,24 @@ class LevelingSystem(commands.Cog):
                                             fill=255
                                         )
                                     else:
-                                        # Just a circle/partial circle for small progress
+                                        # Create proper half-circle for small progress
+                                        # Draw a full circle but crop it to progress width
+                                        circle_diameter = levelbar.height
                                         progress_mask_draw.ellipse(
-                                            [(0, 0), (min(progress_width * 2, levelbar.height) - 1, levelbar.height - 1)],
+                                            [(0, 0), (circle_diameter - 1, circle_diameter - 1)],
                                             fill=255
                                         )
+                                        # Create a mask to crop the circle to progress width
+                                        crop_mask = Image.new('L', (levelbar.width, levelbar.height), 0)
+                                        crop_draw = ImageDraw.Draw(crop_mask)
+                                        crop_draw.rectangle([(0, 0), (progress_width - 1, levelbar.height - 1)], fill=255)
+                                        
+                                        # Apply crop mask to progress mask
+                                        import numpy as np
+                                        progress_array = np.array(progress_mask)
+                                        crop_array = np.array(crop_mask)
+                                        progress_array = np.minimum(progress_array, crop_array)
+                                        progress_mask = Image.fromarray(progress_array, 'L')
 
                                     # Apply texture only to the progress area
                                     import numpy as np
@@ -727,10 +740,18 @@ class LevelingSystem(commands.Cog):
                                         fill=xp_bar_color
                                     )
                                 else:
-                                    progress_draw.ellipse(
-                                        [(0, 0), (min(progress_width * 2, levelbar.height) - 1, levelbar.height - 1)],
+                                    # Create proper half-circle for small progress
+                                    circle_diameter = levelbar.height
+                                    # Create a temporary surface for the full circle
+                                    temp_surface = Image.new("RGBA", (circle_diameter, levelbar.height), (0, 0, 0, 0))
+                                    temp_draw = ImageDraw.Draw(temp_surface)
+                                    temp_draw.ellipse(
+                                        [(0, 0), (circle_diameter - 1, circle_diameter - 1)],
                                         fill=xp_bar_color
                                     )
+                                    # Crop the circle to progress width
+                                    cropped_circle = temp_surface.crop((0, 0, progress_width, levelbar.height))
+                                    progress_bar.paste(cropped_circle, (0, 0), cropped_circle)
                                 background.paste(progress_bar, (levelbar_x, levelbar_y), progress_bar)
                         else:
                             # Use default colored progress bar
@@ -1781,7 +1802,7 @@ class LevelSystemMainView(discord.ui.View):
         embed = view.get_embed()
         await interaction.response.edit_message(embed=embed, view=view)
 
-    @discord.ui.button(label="Level Card", style=discord.ButtonStyle.secondary, emoji="<:CardLOGO:1409586383047233536>")
+    @discord.ui.button(label="Level Card", style=discord.ButtonStyle.secondary, emoji="<:CardLOGO:1409586383047233536>", row=1)
     async def level_card(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.defer()
 
@@ -1802,14 +1823,14 @@ class LevelSystemMainView(discord.ui.View):
         embed = view.get_embed()
         await interaction.response.edit_message(embed=embed, view=view)
 
-    @discord.ui.button(label="Notification", style=discord.ButtonStyle.secondary, emoji="🔔", row=1)
+    @discord.ui.button(label="Notification", style=discord.ButtonStyle.secondary, emoji="🔔")
     async def notification_settings(self, interaction: discord.Interaction, button: discord.ui.Button):
         from level_notification_system import NotificationSystemView
         view = NotificationSystemView(self.bot, self.user)
         embed = view.get_main_embed()
         await interaction.response.edit_message(embed=embed, view=view)
 
-    @discord.ui.button(label="ON", style=discord.ButtonStyle.success, emoji="<:OnLOGO:1407072463883472978>", row=1)
+    @discord.ui.button(label="ON", style=discord.ButtonStyle.success, emoji="<:OnLOGO:1407072463883472978>")
     async def toggle_system(self, interaction: discord.Interaction, button: discord.ui.Button):
         data = load_leveling_data()
         current_state = data["leveling_settings"]["enabled"]
