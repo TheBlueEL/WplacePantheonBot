@@ -161,6 +161,12 @@ class NotificationSystemView(discord.ui.View):
         # Import here to avoid circular import
         from leveling_system import LevelSystemMainView
         view = LevelSystemMainView(self.bot, self.user)
+        
+        # Regenerate demo card to ensure image is displayed
+        leveling_system = self.bot.get_cog('LevelingSystem')
+        if leveling_system:
+            await leveling_system.generate_demo_card_for_main_view(view)
+        
         embed = view.get_main_embed()
         await interaction.response.edit_message(embed=embed, view=view)
 
@@ -597,8 +603,8 @@ class NotificationLevelCardView(discord.ui.View):
                 text_width = text_bbox[2] - text_bbox[0]
                 text_height = text_bbox[3] - text_bbox[1]
 
-            # Add padding
-            padding = 30
+            # Add padding (extra for outline when image is used)
+            padding = 35 if image_url and image_url != "None" else 30
             canvas_width = text_width + (padding * 2)
             canvas_height = text_height + (padding * 2)
 
@@ -608,11 +614,20 @@ class NotificationLevelCardView(discord.ui.View):
                 if overlay_data:
                     overlay_img = Image.open(io.BytesIO(overlay_data)).convert("RGBA")
 
-                    # Create text mask first with precise letter shapes
+                    # Create text mask with outline for better definition
                     text_mask = Image.new('L', (canvas_width, canvas_height), 0)
                     mask_draw = ImageDraw.Draw(text_mask)
                     text_x = padding
                     text_y = padding
+                    
+                    # Draw outline in mask for better edge definition
+                    outline_width = 3
+                    for dx in range(-outline_width, outline_width + 1):
+                        for dy in range(-outline_width, outline_width + 1):
+                            if dx != 0 or dy != 0:
+                                mask_draw.text((text_x + dx, text_y + dy), text, font=font, fill=128)
+                    
+                    # Draw main text in mask
                     mask_draw.text((text_x, text_y), text, font=font, fill=255)
 
                     # Get the actual text bounding box for centering the image
@@ -621,10 +636,9 @@ class NotificationLevelCardView(discord.ui.View):
                     actual_text_height = actual_text_bbox[3] - actual_text_bbox[1]
 
                     # Calculate scaling to fit image proportionally within text bounds
-                    # The image should cover at least all letters while maintaining aspect ratio
                     scale_x = actual_text_width / overlay_img.width
                     scale_y = actual_text_height / overlay_img.height
-                    scale = max(scale_x, scale_y)  # Use max to ensure full coverage
+                    scale = max(scale_x, scale_y)
 
                     # Calculate new dimensions
                     new_width = int(overlay_img.width * scale)
@@ -634,7 +648,6 @@ class NotificationLevelCardView(discord.ui.View):
                     overlay_resized = overlay_img.resize((new_width, new_height), Image.Resampling.LANCZOS)
 
                     # Center the resized image within the canvas
-                    # Calculate position to center the image over the text
                     center_x = padding + actual_text_width // 2
                     center_y = padding + actual_text_height // 2
                     
@@ -663,19 +676,37 @@ class NotificationLevelCardView(discord.ui.View):
                     # Paste the centered and cropped image
                     centered_overlay.paste(cropped_overlay, (final_paste_x, final_paste_y), cropped_overlay)
 
-                    # Create final result
+                    # Create final result with black outline
                     result = Image.new('RGBA', (canvas_width, canvas_height), (0, 0, 0, 0))
 
-                    # Apply texture only to text pixels (letters)
+                    # First, create black outline
+                    outline_result = Image.new('RGBA', (canvas_width, canvas_height), (0, 0, 0, 0))
+                    outline_draw = ImageDraw.Draw(outline_result)
+                    
+                    # Draw black outline
+                    outline_width = 3
+                    for dx in range(-outline_width, outline_width + 1):
+                        for dy in range(-outline_width, outline_width + 1):
+                            if dx != 0 or dy != 0:
+                                outline_draw.text((text_x + dx, text_y + dy), text, font=font, fill=(0, 0, 0, 255))
+
+                    # Apply texture only to main text pixels
                     import numpy as np
                     mask_array = np.array(text_mask)
                     overlay_array = np.array(centered_overlay)
                     result_array = np.array(result)
+                    outline_array = np.array(outline_result)
 
-                    # Copy pixels where mask is not 0 (text area only)
-                    text_pixels = mask_array > 0
+                    # First apply the black outline where mask > 0 but < 255 (outline area)
+                    outline_pixels = (mask_array > 0) & (mask_array < 255)
+                    result_array[outline_pixels] = outline_array[outline_pixels]
+
+                    # Then apply texture where mask == 255 (main text area)
+                    text_pixels = mask_array == 255
                     result_array[text_pixels] = overlay_array[text_pixels]
-                    result_array[:, :, 3] = mask_array  # Use text mask as alpha
+                    
+                    # Set alpha channel
+                    result_array[:, :, 3] = mask_array
 
                     result = Image.fromarray(result_array, 'RGBA')
                     return result
@@ -745,6 +776,36 @@ class NotificationLevelCardView(discord.ui.View):
 
         # Draw main text
         draw.text((x, y), text, font=font, fill=color)
+
+    def create_text_surface_with_outline(self, text, font, color, outline_color=(0, 0, 0), outline_width=3):
+        """Create text surface with outline for image overlays"""
+        # Get text dimensions
+        text_bbox = font.getbbox(text)
+        text_width = text_bbox[2] - text_bbox[0]
+        text_height = text_bbox[3] - text_bbox[1]
+        
+        # Add padding for outline
+        padding = outline_width + 5
+        canvas_width = text_width + (padding * 2)
+        canvas_height = text_height + (padding * 2)
+        
+        # Create text surface with outline
+        text_surface = Image.new('RGBA', (canvas_width, canvas_height), (0, 0, 0, 0))
+        draw = ImageDraw.Draw(text_surface)
+        
+        text_x = padding
+        text_y = padding
+        
+        # Draw outline
+        for dx in range(-outline_width, outline_width + 1):
+            for dy in range(-outline_width, outline_width + 1):
+                if dx != 0 or dy != 0:
+                    draw.text((text_x + dx, text_y + dy), text, font=font, fill=outline_color)
+        
+        # Draw main text
+        draw.text((text_x, text_y), text, font=font, fill=tuple(color))
+        
+        return text_surface
 
 
 
@@ -1763,6 +1824,19 @@ class NotificationLevelCardView(discord.ui.View):
     async def back_to_notification(self, interaction: discord.Interaction):
         view = LevelNotificationView(self.bot, self.user_id)
         embed = view.get_embed()
+        await interaction.response.edit_message(embed=embed, view=view)
+
+    async def back_to_level_system(self, interaction: discord.Interaction):
+        """Go back to level system with regenerated demo image"""
+        from leveling_system import LevelSystemMainView
+        view = LevelSystemMainView(self.bot, interaction.user)
+        
+        # Regenerate demo card to ensure image is displayed
+        leveling_system = self.bot.get_cog('LevelingSystem')
+        if leveling_system:
+            await leveling_system.generate_demo_card_for_main_view(view)
+        
+        embed = view.get_main_embed()
         await interaction.response.edit_message(embed=embed, view=view)
 
 # Modal classes
