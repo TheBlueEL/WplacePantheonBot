@@ -3509,7 +3509,7 @@ class LevelCardManagerView(discord.ui.View):
             self.add_item(content_button)
 
             # Add Close button for DMs or Back button for guilds
-            if hasattr(self, 'is_dm') and self.is_dm:
+            if getattr(self, 'is_dm', False):
                 close_button = discord.ui.Button(
                     label="Close",
                     style=discord.ButtonStyle.danger,
@@ -3964,14 +3964,6 @@ class LevelCardManagerView(discord.ui.View):
 
         self.update_buttons()
         await interaction.response.edit_message(embed=embed, view=self)
-
-    async def close_dm(self, interaction: discord.Interaction):
-        """Close the DM message"""
-        try:
-            await interaction.message.delete()
-        except:
-            # If we can't delete the message, just respond with an ephemeral message
-            await interaction.response.send_message("Settings closed.", ephemeral=True)
 
     async def close_dm(self, interaction: discord.Interaction):
         """Close the DM message"""
