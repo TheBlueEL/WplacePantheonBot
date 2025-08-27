@@ -3997,6 +3997,118 @@ class LevelCardHexColorModal(discord.ui.Modal):
             current_color = f"#{rgb[0]:02x}{rgb[1]:02x}{rgb[2]:02x}"
         elif self.view.mode == "xp_progress_color" and self.view.config.get("xp_bar_color"):
             rgb = self.view.config["xp_bar_color"]
+            current_color = f"#{rgb[0]:02x}{rgb[1]:02x}{rgb[2]:02x}"
+        elif self.view.mode == "xp_bar_color" and self.view.config.get("xp_bar_color"):
+            rgb = self.view.config["xp_bar_color"]
+            current_color = f"#{rgb[0]:02x}{rgb[1]:02x}{rgb[2]:02x}"
+        elif self.view.mode == "background_color" and self.view.config.get("background_color"):
+            rgb = self.view.config["background_color"]
+            current_color = f"#{rgb[0]:02x}{rgb[1]:02x}{rgb[2]:02x}"
+        elif self.view.mode == "username_color" and self.view.config.get("username_color"):
+            rgb = self.view.config["username_color"]
+            current_color = f"#{rgb[0]:02x}{rgb[1]:02x}{rgb[2]:02x}"
+        elif self.view.mode == "profile_outline_color":
+            profile_config = self.view.config.get("profile_outline", {})
+            if profile_config.get("color_override"):
+                rgb = profile_config["color_override"]
+                current_color = f"#{rgb[0]:02x}{rgb[1]:02x}{rgb[2]:02x}"
+        elif self.view.mode == "level_text_color" and self.view.config.get("level_color"):
+            rgb = self.view.config["level_color"]
+            current_color = f"#{rgb[0]:02x}{rgb[1]:02x}{rgb[2]:02x}"
+        elif self.view.mode == "ranking_text_color":
+            ranking_config = self.view.config.get("ranking_position", {})
+            if ranking_config.get("color"):
+                rgb = ranking_config["color"]
+                current_color = f"#{rgb[0]:02x}{rgb[1]:02x}{rgb[2]:02x}"
+
+        self.hex_input = discord.ui.TextInput(
+            label='Hex Color Code',
+            placeholder='#FFFFFF or FFFFFF',
+            required=True,
+            max_length=7,
+            default=current_color
+        )
+        self.add_item(self.hex_input)
+
+    async def on_submit(self, interaction: discord.Interaction):
+        await interaction.response.defer()
+
+        hex_value = self.hex_input.value.strip()
+        if hex_value.startswith('#'):
+            hex_value = hex_value[1:]
+
+        try:
+            rgb = tuple(int(hex_value[i:i+2], 16) for i in (0, 2, 4))
+
+            if self.view.mode == "xp_info_color":
+                self.view.config["xp_text_color"] = list(rgb)
+            elif self.view.mode == "xp_progress_color":
+                self.view.config["xp_bar_color"] = list(rgb)
+            elif self.view.mode == "xp_bar_color":
+                self.view.config["xp_bar_color"] = list(rgb)
+            elif self.view.mode == "background_color":
+                self.view.config["background_color"] = list(rgb)
+                self.view.config.pop("background_image", None)
+            elif self.view.mode == "username_color":
+                self.view.config["username_color"] = list(rgb)
+            elif self.view.mode == "profile_outline_color":
+                if "profile_outline" not in self.view.config:
+                    self.view.config["profile_outline"] = {}
+                self.view.config["profile_outline"]["color_override"] = list(rgb)
+                self.view.config["profile_outline"].pop("custom_image", None)
+            elif self.view.mode == "level_text_color":
+                self.view.config["level_color"] = list(rgb)
+            elif self.view.mode == "ranking_text_color":
+                if "ranking_position" not in self.view.config:
+                    self.view.config["ranking_position"] = {}
+                self.view.config["ranking_position"]["color"] = list(rgb)
+
+            self.view.save_config()
+            await self.view.generate_preview_image(interaction.user)
+
+            # Return to appropriate embed
+            if self.view.mode == "xp_info_color":
+                embed = self.view.get_xp_info_embed()
+                embed.title = "<:ColorLOGO:1408828590241615883> XP Info Color"
+                embed.description = "Choose how to set your XP text color"
+            elif self.view.mode == "xp_progress_color":
+                embed = self.view.get_xp_progress_embed()
+                embed.title = "<:ColorLOGO:1408828590241615883> XP Progress Color"
+                embed.description = "Choose how to set your XP progress bar color"
+            elif self.view.mode == "xp_bar_color":
+                embed = self.view.get_xp_bar_embed()
+                embed.title = "<:ColorLOGO:1408828590241615883> XP Bar Color"
+                embed.description = "Choose how to set your XP bar color"
+            elif self.view.mode == "background_color":
+                embed = self.view.get_background_embed()
+                embed.title = "<:ColorLOGO:1408828590241615883> Background Color"
+                embed.description = "Choose how to set your background color"
+            elif self.view.mode == "username_color":
+                embed = self.view.get_username_embed()
+                embed.title = "<:ColorLOGO:1408828590241615883> Username Color"
+                embed.description = "Choose how to set your username color"
+            elif self.view.mode == "profile_outline_color":
+                embed = self.view.get_profile_outline_embed()
+                embed.title = "<:ColorLOGO:1408828590241615883> Profile Outline Color"
+                embed.description = "Choose how to set your profile outline color"
+            elif self.view.mode == "level_text_color":
+                embed = self.view.get_level_text_embed()
+                embed.title = "<:ColorLOGO:1408828590241615883> Level Text Color"
+                embed.description = "Choose how to set your level text color"
+            elif self.view.mode == "ranking_text_color":
+                embed = self.view.get_ranking_text_embed()
+                embed.title = "<:ColorLOGO:1408828590241615883> Ranking Text Color"
+                embed.description = "Choose how to set your ranking text color"
+
+            self.view.update_buttons()
+            await interaction.edit_original_response(embed=embed, view=self.view)
+        except ValueError:
+            error_embed = discord.Embed(
+                title="<:ErrorLOGO:1407071682031648850> Invalid Hex Color",
+                description="Please enter a valid hex color code (e.g., #FF0000 or FF0000)",
+                color=discord.Color.red()
+            )
+            await interaction.followup.send(embed=error_embed, ephemeral=True)
 
 
 # DM Level Card Manager View - Independent version for DMs
@@ -4009,7 +4121,7 @@ class DMsLevelCardManagerView(LevelCardManagerView):
         """Override to replace Back button with Close button in main mode"""
         # Call parent's update_buttons to get all the regular functionality
         super().update_buttons()
-        
+
         # Only modify the main mode to replace Back with Close
         if self.mode == "main":
             # Remove the existing Back button if it exists
@@ -4017,12 +4129,12 @@ class DMsLevelCardManagerView(LevelCardManagerView):
             for item in self.children:
                 if not (hasattr(item, 'label') and item.label == "Back"):
                     items_to_keep.append(item)
-            
+
             # Clear and re-add items without the Back button
             self.clear_items()
             for item in items_to_keep:
                 self.add_item(item)
-            
+
             # Add Close button instead
             close_button = discord.ui.Button(
                 label="Close",
@@ -4040,10 +4152,6 @@ class DMsLevelCardManagerView(LevelCardManagerView):
         except:
             # If we can't delete the message, just respond with an ephemeral message
             await interaction.response.send_message("Settings closed.", ephemeral=True)
-
-            current_color = f"#{rgb[0]:02x}{rgb[1]:02x}{rgb[2]:02x}"
-        elif self.view.mode == "xp_bar_color" and self.view.config.get("xp_bar_color"):
-            rgb = self.view.config["xp_bar_color"]
             current_color = f"#{rgb[0]:02x}{rgb[1]:02x}{rgb[2]:02x}"
         elif self.view.mode == "background_color" and self.view.config.get("background_color"):
             rgb = self.view.config["background_color"]
