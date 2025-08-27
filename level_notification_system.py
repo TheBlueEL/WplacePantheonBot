@@ -156,7 +156,7 @@ class NotificationSystemView(discord.ui.View):
         )
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
-    @discord.ui.button(label="Back", style=discord.ButtonStyle.gray, emoji="<:BackLOGO:1407071474233114766>")
+    @discord.ui.button(label="Back", style=discord.ButtonStyle.gray, emoji="<:BackLOGO:1407071474233114766>", row=1)
     async def back(self, interaction: discord.Interaction, button: discord.ui.Button):
         # Import here to avoid circular import
         from leveling_system import LevelSystemMainView
@@ -232,7 +232,7 @@ class LevelNotificationView(discord.ui.View):
         embed = self.get_embed()
         await interaction.response.edit_message(embed=embed, view=self)
 
-    @discord.ui.button(label="Cycle", style=discord.ButtonStyle.secondary, emoji="<:CooldownLOGO:1409586926071054448>", row=1)
+    @discord.ui.button(label="Cycle", style=discord.ButtonStyle.secondary, emoji="<:CooldownLOGO:1409586926071054448>")
     async def set_cycle(self, interaction: discord.Interaction, button: discord.ui.Button):
         modal = CycleModal()
         await interaction.response.send_modal(modal)
@@ -249,7 +249,7 @@ class LevelNotificationView(discord.ui.View):
 
         await interaction.edit_original_response(embed=embed, view=view)
 
-    @discord.ui.button(label="Back", style=discord.ButtonStyle.gray, emoji="<:BackLOGO:1407071474233114766>")
+    @discord.ui.button(label="Back", style=discord.ButtonStyle.gray, emoji="<:BackLOGO:1407071474233114766>", row=1)
     async def back(self, interaction: discord.Interaction, button: discord.ui.Button):
         view = NotificationSystemView(self.bot, self.user)
         embed = view.get_main_embed()
