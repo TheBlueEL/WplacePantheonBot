@@ -3508,17 +3508,8 @@ class LevelCardManagerView(discord.ui.View):
             self.add_item(profile_outline_button)
             self.add_item(content_button)
 
-            # Add Back/Close button - Close for all DM contexts
-            if isinstance(getattr(self, 'guild', None), type(None)) or getattr(self, 'is_dm', False):
-                close_button = discord.ui.Button(
-                    label="Close",
-                    style=discord.ButtonStyle.danger,
-                    emoji="❌",
-                    row=1
-                )
-                close_button.callback = self.close_dm
-                self.add_item(close_button)
-            else:
+            # Only add Back button for guild context (hide completely in DMs)
+            if not (isinstance(getattr(self, 'guild', None), type(None)) or getattr(self, 'is_dm', False)):
                 back_button = discord.ui.Button(
                     label="Back",
                     style=discord.ButtonStyle.gray,
