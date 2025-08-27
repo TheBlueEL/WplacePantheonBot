@@ -2647,7 +2647,7 @@ class LevelCardSettingsButtonView(discord.ui.View):
         view = LevelCardManagerView(interaction.client, interaction.user.id)
         view.guild = interaction.guild
         view.user_level = user_level  # Store user level for permission checks
-        view.is_dm = True  # Mark as DM
+        view.is_dm = True  # Mark as DM context
 
         # Generate preview image
         await view.generate_preview_image(interaction.user)
@@ -3508,8 +3508,8 @@ class LevelCardManagerView(discord.ui.View):
             self.add_item(profile_outline_button)
             self.add_item(content_button)
 
-            # Only add Back button for guild context (hide completely in DMs)
-            if not (isinstance(getattr(self, 'guild', None), type(None)) or getattr(self, 'is_dm', False)):
+            # Only add Back button if NOT in DMs
+            if not getattr(self, 'is_dm', False):
                 back_button = discord.ui.Button(
                     label="Back",
                     style=discord.ButtonStyle.gray,
