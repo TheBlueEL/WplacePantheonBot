@@ -4153,12 +4153,6 @@ class DMsLevelCardManagerView(LevelCardManagerView):
             # If we can't delete the message, just respond with an ephemeral message
             await interaction.response.send_message("Settings closed.", ephemeral=True)
             current_color = f"#{rgb[0]:02x}{rgb[1]:02x}{rgb[2]:02x}"
-        elif self.view.mode == "background_color" and self.view.config.get("background_color"):
-            rgb = self.view.config["background_color"]
-            current_color = f"#{rgb[0]:02x}{rgb[1]:02x}{rgb[2]:02x}"
-        elif self.view.mode == "username_color" and self.view.config.get("username_color"):
-            rgb = self.view.config["username_color"]
-            current_color = f"#{rgb[0]:02x}{rgb[1]:02x}{rgb[2]:02x}"
         elif self.view.mode == "profile_outline_color":
             profile_config = self.view.config.get("profile_outline", {})
             if profile_config.get("color_override"):
