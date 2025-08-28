@@ -10,7 +10,7 @@ load_dotenv()
 class GitHubSync:
     def __init__(self):
         self.github_token = os.getenv('GITHUB_TOKEN')
-        self.repository = os.getenv('GITHUB_REPO2')
+        self.repository = os.getenv('GITHUB_REPO')
         self.branch = os.getenv('GITHUB_BRANCH', 'main')
 
     def _get_repo_info(self):
