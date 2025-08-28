@@ -1,0 +1,4538 @@
+{
+  "HyperShift 2023 (HyperChrome)": {
+    "Cash Value": "340 000 000",
+    "Duped Value": "300 000 000",
+    "Type": "HyperChrome",
+    "Demand": "Medium"
+  },
+  "HyperShift Level 4 (HyperChrome)": {
+    "Cash Value": "265 000 000",
+    "Duped Value": "N/A",
+    "Type": "HyperChrome",
+    "Demand": "Medium"
+  },
+  "HyperDiamond Level 5 2023 (HyperChrome)": {
+    "Cash Value": "70 000 000",
+    "Duped Value": "60 000 000",
+    "Type": "HyperChrome",
+    "Demand": "Decent"
+  },
+  "HyperBlue Level 4 (HyperChrome)": {
+    "Cash Value": "60 000 000",
+    "Duped Value": "N/A",
+    "Type": "HyperChrome",
+    "Demand": "Medium"
+  },
+  "HyperBlue Level 5 2023 (HyperChrome)": {
+    "Cash Value": "60 000 000",
+    "Duped Value": "50 000 000",
+    "Type": "HyperChrome",
+    "Demand": "Low"
+  },
+  "HyperDiamond Level 4 (HyperChrome)": {
+    "Cash Value": "49 000 000",
+    "Duped Value": "N/A",
+    "Type": "HyperChrome",
+    "Demand": "Decent"
+  },
+  "Torpedo (Vehicle)": {
+    "Cash Value": "48 000 000",
+    "Duped Value": "42 500 000",
+    "Type": "Vehicle",
+    "Demand": "Decent"
+  },
+  "HyperPink Level 5 2023 (HyperChrome)": {
+    "Cash Value": "46 000 000",
+    "Duped Value": "43 000 000",
+    "Type": "HyperChrome",
+    "Demand": "Decent"
+  },
+  "HyperRed Level 5 2023 (HyperChrome)": {
+    "Cash Value": "46 000 000",
+    "Duped Value": "42 000 000",
+    "Type": "HyperChrome",
+    "Demand": "Decent"
+  },
+  "Javelin (Vehicle)": {
+    "Cash Value": "45 000 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "High"
+  },
+  "HyperPink Level 4 (HyperChrome)": {
+    "Cash Value": "40 000 000",
+    "Duped Value": "N/A",
+    "Type": "HyperChrome",
+    "Demand": "Decent"
+  },
+  "HyperPurple Level 5 2023 (HyperChrome)": {
+    "Cash Value": "40 000 000",
+    "Duped Value": "40 000 000",
+    "Type": "HyperChrome",
+    "Demand": "Decent"
+  },
+  "Void (Rim)": {
+    "Cash Value": "37 500 000",
+    "Duped Value": "35 000 000",
+    "Type": "Rim",
+    "Demand": "Medium"
+  },
+  "Beignet (Vehicle)": {
+    "Cash Value": "37 000 000",
+    "Duped Value": "33 500 000",
+    "Type": "Vehicle",
+    "Demand": "Decent"
+  },
+  "Checker (Texture)": {
+    "Cash Value": "37 000 000",
+    "Duped Value": "32 000 000",
+    "Type": "Texture",
+    "Demand": "Decent"
+  },
+  "HyperRed Level 4 (HyperChrome)": {
+    "Cash Value": "36 000 000",
+    "Duped Value": "N/A",
+    "Type": "HyperChrome",
+    "Demand": "Medium"
+  },
+  "Celsior (Vehicle)": {
+    "Cash Value": "34 000 000",
+    "Duped Value": "30 000 000",
+    "Type": "Vehicle",
+    "Demand": "High"
+  },
+  "Thrusters (Spoiler)": {
+    "Cash Value": "32 000 000",
+    "Duped Value": "29 000 000",
+    "Type": "Spoiler",
+    "Demand": "Decent"
+  },
+  "Vantablack (Body Color)": {
+    "Cash Value": "30 000 000",
+    "Duped Value": "N/A",
+    "Type": "Body Color",
+    "Demand": "Low"
+  },
+  "HyperPurple Level 4 (HyperChrome)": {
+    "Cash Value": "30 000 000",
+    "Duped Value": "N/A",
+    "Type": "HyperChrome",
+    "Demand": "Decent"
+  },
+  "HyperBlue Level 3 (HyperChrome)": {
+    "Cash Value": "29 000 000",
+    "Duped Value": "N/A",
+    "Type": "HyperChrome",
+    "Demand": "Decent"
+  },
+  "Proto 08 (Vehicle)": {
+    "Cash Value": "27 500 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Decent"
+  },
+  "HyperOrange Level 5 2023 (HyperChrome)": {
+    "Cash Value": "27 500 000",
+    "Duped Value": "26 500 000",
+    "Type": "HyperChrome",
+    "Demand": "Decent"
+  },
+  "Laser Cannon (Rim)": {
+    "Cash Value": "25 000 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Decent"
+  },
+  "HyperGreen Level 5 2023 (HyperChrome)": {
+    "Cash Value": "24 000 000",
+    "Duped Value": "22 500 000",
+    "Type": "HyperChrome",
+    "Demand": "Medium"
+  },
+  "Arachnid (Vehicle)": {
+    "Cash Value": "23 000 000",
+    "Duped Value": "19 500 000",
+    "Type": "Vehicle",
+    "Demand": "Low"
+  },
+  "HyperDiamond Level 3 (HyperChrome)": {
+    "Cash Value": "23 000 000",
+    "Duped Value": "N/A",
+    "Type": "HyperChrome",
+    "Demand": "Decent"
+  },
+  "Drip (Texture)": {
+    "Cash Value": 20000000,
+    "Duped Value": "N/A",
+    "Type": "Texture",
+    "Demand": "Decent"
+  },
+  "HyperGreen Level 4 (HyperChrome)": {
+    "Cash Value": "20 000 000",
+    "Duped Value": "N/A",
+    "Type": "HyperChrome",
+    "Demand": "Medium"
+  },
+  "HyperOrange Level 4 (HyperChrome)": {
+    "Cash Value": "20 000 000",
+    "Duped Value": "N/A",
+    "Type": "HyperChrome",
+    "Demand": "Decent"
+  },
+  "Beam Hybrid (Vehicle)": {
+    "Cash Value": "19 000 000",
+    "Duped Value": "15 500 000",
+    "Type": "Vehicle",
+    "Demand": "Decent"
+  },
+  "Spinner (Rim)": {
+    "Cash Value": "18 500 000",
+    "Duped Value": "14 000 000",
+    "Type": "Rim",
+    "Demand": "Decent"
+  },
+  "Banana Car (Vehicle)": {
+    "Cash Value": "18 500 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "High"
+  },
+  "Icebreaker (Vehicle)": {
+    "Cash Value": "17 500 000",
+    "Duped Value": "16 000 000",
+    "Type": "Vehicle",
+    "Demand": "Low"
+  },
+  "HyperYellow Level 5 2023 (HyperChrome)": {
+    "Cash Value": "17 500 000",
+    "Duped Value": "16 000 000",
+    "Type": "HyperChrome",
+    "Demand": "Decent"
+  },
+  "Power 1 (Vehicle)": {
+    "Cash Value": "16 000 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Medium"
+  },
+  "HyperYellow Level 4 (HyperChrome)": {
+    "Cash Value": "14 500 000",
+    "Duped Value": "N/A",
+    "Type": "HyperChrome",
+    "Demand": "Decent"
+  },
+  "RTX (Rim)": {
+    "Cash Value": "14 000 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Decent"
+  },
+  "Crew Capsule (Vehicle)": {
+    "Cash Value": "14 000 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Medium"
+  },
+  "Drip (Weapon Skin)": {
+    "Cash Value": "14 000 000",
+    "Duped Value": "N/A",
+    "Type": "Weapon Skin",
+    "Demand": "Very Low"
+  },
+  "Molten M12 (Vehicle)": {
+    "Cash Value": "13 500 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Decent"
+  },
+  "Volt 4x4 (Vehicle)": {
+    "Cash Value": "12 500 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Decent"
+  },
+  "Raptor (Vehicle)": {
+    "Cash Value": "12 000 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Low"
+  },
+  "2 Billion (Spoiler)": {
+    "Cash Value": "12 000 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Medium"
+  },
+  "HyperPink Level 3 (HyperChrome)": {
+    "Cash Value": "12 000 000",
+    "Duped Value": "N/A",
+    "Type": "HyperChrome",
+    "Demand": "Medium"
+  },
+  "Blue 50 (Tire Sticker)": {
+    "Cash Value": "11 000 000",
+    "Duped Value": "N/A",
+    "Type": "Tire Sticker",
+    "Demand": "Very Low"
+  },
+  "Spiked (Tire Style)": {
+    "Cash Value": "11 000 000",
+    "Duped Value": "N/A",
+    "Type": "Tire Style",
+    "Demand": "Decent"
+  },
+  "HyperRed Level 3 (HyperChrome)": {
+    "Cash Value": "11 000 000",
+    "Duped Value": "N/A",
+    "Type": "HyperChrome",
+    "Demand": "Medium"
+  },
+  "HyperPurple Level 3 (HyperChrome)": {
+    "Cash Value": "10 000 000",
+    "Duped Value": "N/A",
+    "Type": "HyperChrome",
+    "Demand": "Medium"
+  },
+  "Noob Scream (Furniture)": {
+    "Cash Value": "9 000 000",
+    "Duped Value": "N/A",
+    "Type": "Furniture",
+    "Demand": "Very Low"
+  },
+  "Parisian (Vehicle)": {
+    "Cash Value": "8 000 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Decent"
+  },
+  "HyperGreen Level 3 (HyperChrome)": {
+    "Cash Value": "8 000 000",
+    "Duped Value": "N/A",
+    "Type": "HyperChrome",
+    "Demand": "Medium"
+  },
+  "Aperture (Vehicle)": {
+    "Cash Value": "7 500 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Decent"
+  },
+  "Snow Shovel (Spoiler)": {
+    "Cash Value": "7 500 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Medium"
+  },
+  "Snow Face (Rim)": {
+    "Cash Value": "7 000 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Low"
+  },
+  "Shogun (Vehicle)": {
+    "Cash Value": "6 500 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Decent"
+  },
+  "Snowstorm (Texture)": {
+    "Cash Value": "6 500 000",
+    "Duped Value": "N/A",
+    "Type": "Texture",
+    "Demand": "Decent"
+  },
+  "Goliath (Vehicle)": {
+    "Cash Value": "6 000 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Low"
+  },
+  "Scorpion (Vehicle)": {
+    "Cash Value": "6 000 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Decent"
+  },
+  "Bicycle Rack (Spoiler)": {
+    "Cash Value": "6 000 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Very Low"
+  },
+  "Carbonara (Vehicle)": {
+    "Cash Value": "5 500 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Decent"
+  },
+  "Macaron (Vehicle)": {
+    "Cash Value": "5 500 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Decent"
+  },
+  "HyperBlue Level 2 (HyperChrome)": {
+    "Cash Value": "5 500 000",
+    "Duped Value": "N/A",
+    "Type": "HyperChrome",
+    "Demand": "Decent"
+  },
+  "Bandit (Vehicle)": {
+    "Cash Value": "5 000 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Medium"
+  },
+  "Red 50 (Tire Sticker)": {
+    "Cash Value": "5 000 000",
+    "Duped Value": "N/A",
+    "Type": "Tire Sticker",
+    "Demand": "Very Low"
+  },
+  "HyperOrange Level 3 (HyperChrome)": {
+    "Cash Value": "5 000 000",
+    "Duped Value": "N/A",
+    "Type": "HyperChrome",
+    "Demand": "Low"
+  },
+  "Snowstorm (Weapon Skin)": {
+    "Cash Value": "4 500 000",
+    "Duped Value": "N/A",
+    "Type": "Weapon Skin",
+    "Demand": "Very Low"
+  },
+  "Ionize (Rim)": {
+    "Cash Value": "4 000 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Decent"
+  },
+  "Rattler (Vehicle)": {
+    "Cash Value": "4 000 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Very Low"
+  },
+  "Torero (Vehicle)": {
+    "Cash Value": "4 000 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Decent"
+  },
+  "Galactic Carbon (Texture)": {
+    "Cash Value": "4 000 000",
+    "Duped Value": "N/A",
+    "Type": "Texture",
+    "Demand": "Low"
+  },
+  "Volt Wing (Spoiler)": {
+    "Cash Value": "4 000 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Low"
+  },
+  "HyperYellow Level 3 (HyperChrome)": {
+    "Cash Value": "4 000 000",
+    "Duped Value": "N/A",
+    "Type": "HyperChrome",
+    "Demand": "Low"
+  },
+  "JB8 (Vehicle)": {
+    "Cash Value": "3 750 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Medium"
+  },
+  "Icicle (Rim)": {
+    "Cash Value": "3 500 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Low"
+  },
+  "Snake (Vehicle)": {
+    "Cash Value": "3 500 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Decent"
+  },
+  "5 Star (Spoiler)": {
+    "Cash Value": "3 500 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Low"
+  },
+  "Eight Leg (Spoiler)": {
+    "Cash Value": "3 500 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Low"
+  },
+  "Brickset (Tire Style)": {
+    "Cash Value": "3 500 000",
+    "Duped Value": "N/A",
+    "Type": "Tire Style",
+    "Demand": "Medium"
+  },
+  "Snow Chain (Tire Style)": {
+    "Cash Value": "3 500 000",
+    "Duped Value": "N/A",
+    "Type": "Tire Style",
+    "Demand": "Medium"
+  },
+  "HyperDiamond Level 2 (HyperChrome)": {
+    "Cash Value": "3 500 000",
+    "Duped Value": "N/A",
+    "Type": "HyperChrome",
+    "Demand": "Decent"
+  },
+  "Cobra (Vehicle)": {
+    "Cash Value": "3 500 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Medium"
+  },
+  "Snowflake (Rim)": {
+    "Cash Value": "3 000 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Very Low"
+  },
+  "Brulee (Vehicle)": {
+    "Cash Value": "3 000 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Medium"
+  },
+  "Tiny Toy (Vehicle)": {
+    "Cash Value": "3 000 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Medium"
+  },
+  "Fire (Texture)": {
+    "Cash Value": "3 000 000",
+    "Duped Value": "N/A",
+    "Type": "Texture",
+    "Demand": "Low"
+  },
+  "Cash Spitter (Spoiler)": {
+    "Cash Value": "3 000 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Medium"
+  },
+  "Velocity (Spoiler)": {
+    "Cash Value": "3 000 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Low"
+  },
+  "Iceborn (Vehicle)": {
+    "Cash Value": "3 000 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Medium"
+  },
+  "Hot Chocolate Tub (Furniture)": {
+    "Cash Value": "3 000 000",
+    "Duped Value": "N/A",
+    "Type": "Furniture",
+    "Demand": "Very Low"
+  },
+  "Race Simulator (Furniture)": {
+    "Cash Value": "3 000 000",
+    "Duped Value": "N/A",
+    "Type": "Furniture",
+    "Demand": "Very Low"
+  },
+  "Sci-Fi Kitchen (Furniture)": {
+    "Cash Value": "3 000 000",
+    "Duped Value": "N/A",
+    "Type": "Furniture",
+    "Demand": "Very Low"
+  },
+  "Trapped Bookshelf (Furniture)": {
+    "Cash Value": "3 000 000",
+    "Duped Value": "N/A",
+    "Type": "Furniture",
+    "Demand": "Very Low"
+  },
+  "Orion (Vehicle)": {
+    "Cash Value": "3 000 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Medium"
+  },
+  "Brickset (Rim)": {
+    "Cash Value": "2 500 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Very Low"
+  },
+  "Hypno (Rim)": {
+    "Cash Value": "2 500 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Very Low"
+  },
+  "Planetary (Rim)": {
+    "Cash Value": "2 500 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Very Low"
+  },
+  "Bloxy (Vehicle)": {
+    "Cash Value": "2 500 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Decent"
+  },
+  "Concept (Vehicle)": {
+    "Cash Value": "2 500 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Very Low"
+  },
+  "Jackrabbit (Vehicle)": {
+    "Cash Value": "2 500 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Medium"
+  },
+  "Shell Classic (Vehicle)": {
+    "Cash Value": "2 500 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Decent"
+  },
+  "Wedge (Vehicle)": {
+    "Cash Value": "2 500 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Medium"
+  },
+  "Japanese (Tire Sticker)": {
+    "Cash Value": "2 500 000",
+    "Duped Value": "N/A",
+    "Type": "Tire Sticker",
+    "Demand": "Low"
+  },
+  "Black Ice (Texture)": {
+    "Cash Value": "2 500 000",
+    "Duped Value": "N/A",
+    "Type": "Texture",
+    "Demand": "Medium"
+  },
+  "Blue Pixel (Texture)": {
+    "Cash Value": "2 500 000",
+    "Duped Value": "N/A",
+    "Type": "Texture",
+    "Demand": "Very Low"
+  },
+  "Winter Camo (Texture)": {
+    "Cash Value": "2 500 000",
+    "Duped Value": "N/A",
+    "Type": "Texture",
+    "Demand": "Low"
+  },
+  "Clickbait (Spoiler)": {
+    "Cash Value": "2 500 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Low"
+  },
+  "Glider (Spoiler)": {
+    "Cash Value": "2 500 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Very Low"
+  },
+  "Tiki Torch (Spoiler)": {
+    "Cash Value": "2 500 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Very Low"
+  },
+  "Race Car Bed (Furniture)": {
+    "Cash Value": "2 500 000",
+    "Duped Value": "N/A",
+    "Type": "Furniture",
+    "Demand": "Very Low"
+  },
+  "Sarcophagus Bed (Furniture)": {
+    "Cash Value": "2 500 000",
+    "Duped Value": "N/A",
+    "Type": "Furniture",
+    "Demand": "Very Low"
+  },
+  "Doubloon (Rim)": {
+    "Cash Value": "2 000 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Very Low"
+  },
+  "Sakura (Rim)": {
+    "Cash Value": "2 000 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Medium"
+  },
+  "Stance (Rim)": {
+    "Cash Value": "2 000 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Medium"
+  },
+  "Track Toy (Rim)": {
+    "Cash Value": "2 000 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Low"
+  },
+  "Brickset (Drift)": {
+    "Cash Value": "2 000 000",
+    "Duped Value": "N/A",
+    "Type": "Drift",
+    "Demand": "Very Low"
+  },
+  "Spark (Drift)": {
+    "Cash Value": "2 000 000",
+    "Duped Value": "N/A",
+    "Type": "Drift",
+    "Demand": "Medium"
+  },
+  "Agent (Vehicle)": {
+    "Cash Value": "2 000 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Low"
+  },
+  "Airtail (Vehicle)": {
+    "Cash Value": "2 000 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Decent"
+  },
+  "Poseidon (Vehicle)": {
+    "Cash Value": "2 000 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Low"
+  },
+  "Jailbreak Army (Tire Sticker)": {
+    "Cash Value": "2 000 000",
+    "Duped Value": "N/A",
+    "Type": "Tire Sticker",
+    "Demand": "Low"
+  },
+  "Earthquake (Texture)": {
+    "Cash Value": "2 000 000",
+    "Duped Value": "N/A",
+    "Type": "Texture",
+    "Demand": "Low"
+  },
+  "Old Town Road (Texture)": {
+    "Cash Value": "2 000 000",
+    "Duped Value": "N/A",
+    "Type": "Texture",
+    "Demand": "Very Low"
+  },
+  "Brickset (Spoiler)": {
+    "Cash Value": "2 000 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Very Low"
+  },
+  "Dual Rockets (Spoiler)": {
+    "Cash Value": "2 000 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Very Low"
+  },
+  "Snow Trail (Tire Style)": {
+    "Cash Value": "2 000 000",
+    "Duped Value": "N/A",
+    "Type": "Tire Style",
+    "Demand": "Low"
+  },
+  "Iron Rock (Rim)": {
+    "Cash Value": "1 750 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Low"
+  },
+  "Tiger (Texture)": {
+    "Cash Value": "1 750 000",
+    "Duped Value": "N/A",
+    "Type": "Texture",
+    "Demand": "Medium"
+  },
+  "Stormrider (Vehicle)": {
+    "Cash Value": "1 750 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Medium"
+  },
+  "Donut (Tire Style)": {
+    "Cash Value": "1 750 000",
+    "Duped Value": "N/A",
+    "Type": "Tire Style",
+    "Demand": "Low"
+  },
+  "Blue Eyes (Rim)": {
+    "Cash Value": "1 500 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Very Low"
+  },
+  "Center Lock (Rim)": {
+    "Cash Value": "1 500 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Low"
+  },
+  "Daytona (Rim)": {
+    "Cash Value": "1 500 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Very Low"
+  },
+  "Diamond Engrave (Rim)": {
+    "Cash Value": "1 500 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Low"
+  },
+  "Radar (Rim)": {
+    "Cash Value": "1 500 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Low"
+  },
+  "Wagon Wheel (Rim)": {
+    "Cash Value": "1 500 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Very Low"
+  },
+  "Aurora (Drift)": {
+    "Cash Value": "1 500 000",
+    "Duped Value": "N/A",
+    "Type": "Drift",
+    "Demand": "Medium"
+  },
+  "LongHorn (Vehicle)": {
+    "Cash Value": "1 500 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Very Low"
+  },
+  "Manta (Vehicle)": {
+    "Cash Value": "1 500 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Very Low"
+  },
+  "Armor (Texture)": {
+    "Cash Value": "1 500 000",
+    "Duped Value": "N/A",
+    "Type": "Texture",
+    "Demand": "Very Low"
+  },
+  "Manga (Texture)": {
+    "Cash Value": "1 500 000",
+    "Duped Value": "N/A",
+    "Type": "Texture",
+    "Demand": "Medium"
+  },
+  "Orange Pixel (Texture)": {
+    "Cash Value": "1 500 000",
+    "Duped Value": "N/A",
+    "Type": "Texture",
+    "Demand": "Very Low"
+  },
+  "Colors Of Italy (Spoiler)": {
+    "Cash Value": "1 500 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Low"
+  },
+  "Endurance Wing (Spoiler)": {
+    "Cash Value": "1 500 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Low"
+  },
+  "Flamethrower (Spoiler)": {
+    "Cash Value": "1 500 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Low"
+  },
+  "Jetpack (Spoiler)": {
+    "Cash Value": "1 500 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Low"
+  },
+  "Mecha Arm (Spoiler)": {
+    "Cash Value": "1 500 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Low"
+  },
+  "Water Gun (Spoiler)": {
+    "Cash Value": "1 500 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Low"
+  },
+  "HyperPink Level 2 (HyperChrome)": {
+    "Cash Value": "1 500 000",
+    "Duped Value": "N/A",
+    "Type": "HyperChrome",
+    "Demand": "Low"
+  },
+  "Picnic Table (Furniture)": {
+    "Cash Value": "1 500 000",
+    "Duped Value": "N/A",
+    "Type": "Furniture",
+    "Demand": "Close to none"
+  },
+  "Revox (Vehicle)": {
+    "Cash Value": "1 500 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Medium"
+  },
+  "Flaming (Weapon Skin)": {
+    "Cash Value": "1 500 000",
+    "Duped Value": "N/A",
+    "Type": "Weapon Skin",
+    "Demand": "Close to none"
+  },
+  "Blue Portal (Rim)": {
+    "Cash Value": "1 500 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Very Low"
+  },
+  "Bull (Rim)": {
+    "Cash Value": "1 250 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Close to none"
+  },
+  "Frostburn (Rim)": {
+    "Cash Value": "1 250 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Close to none"
+  },
+  "Red Eyes (Rim)": {
+    "Cash Value": "1 250 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Close to none"
+  },
+  "Spider Leg (Rim)": {
+    "Cash Value": "1 250 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Close to none"
+  },
+  "Star Badge (Rim)": {
+    "Cash Value": "1 250 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Close to none"
+  },
+  "Frost Crawler (Vehicle)": {
+    "Cash Value": "1 250 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Very Low"
+  },
+  "Megalodon (Vehicle)": {
+    "Cash Value": "1 250 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Close to none"
+  },
+  "OG Monster (Vehicle)": {
+    "Cash Value": "1 250 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Very Low"
+  },
+  "Striker (Vehicle)": {
+    "Cash Value": "1 250 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Very Low"
+  },
+  "Blue S3 (Tire Sticker)": {
+    "Cash Value": "1 250 000",
+    "Duped Value": "N/A",
+    "Type": "Tire Sticker",
+    "Demand": "Very Low"
+  },
+  "Pixel (Texture)": {
+    "Cash Value": "1 250 000",
+    "Duped Value": "N/A",
+    "Type": "Texture",
+    "Demand": "Close to none"
+  },
+  "After Burner (Spoiler)": {
+    "Cash Value": "1 250 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Low"
+  },
+  "Blue Chute (Spoiler)": {
+    "Cash Value": "1 250 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Close to none"
+  },
+  "Death Ray (Spoiler)": {
+    "Cash Value": "1 250 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Very Low"
+  },
+  "Dual Flags (Spoiler)": {
+    "Cash Value": "1 250 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Close to none"
+  },
+  "Shell Speaker (Spoiler)": {
+    "Cash Value": "1 250 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Very Low"
+  },
+  "Gold (Body Color)": {
+    "Cash Value": "1 250 000",
+    "Duped Value": "N/A",
+    "Type": "Body Color",
+    "Demand": "Very Low"
+  },
+  "HyperPurple Level 2 (HyperChrome)": {
+    "Cash Value": "1 250 000",
+    "Duped Value": "N/A",
+    "Type": "HyperChrome",
+    "Demand": "Very Low"
+  },
+  "HyperRed Level 2 (HyperChrome)": {
+    "Cash Value": "1 250 000",
+    "Duped Value": "N/A",
+    "Type": "HyperChrome",
+    "Demand": "Low"
+  },
+  "RGB Wall (Furniture)": {
+    "Cash Value": "1 250 000",
+    "Duped Value": "N/A",
+    "Type": "Furniture",
+    "Demand": "Close to none"
+  },
+  "Teleporters (Furniture)": {
+    "Cash Value": "1 250 000",
+    "Duped Value": "N/A",
+    "Type": "Furniture",
+    "Demand": "Close to none"
+  },
+  "Circuit Board (Weapon Skin)": {
+    "Cash Value": "1 250 000",
+    "Duped Value": "N/A",
+    "Type": "Weapon Skin",
+    "Demand": "Close to none"
+  },
+  "Digital Confetti (Weapon Skin)": {
+    "Cash Value": "1 250 000",
+    "Duped Value": "N/A",
+    "Type": "Weapon Skin",
+    "Demand": "Close to none"
+  },
+  "Distorted (Rim)": {
+    "Cash Value": "1 000 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Very Low"
+  },
+  "Energized (Rim)": {
+    "Cash Value": "1 000 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Very Low"
+  },
+  "Nemesis (Rim)": {
+    "Cash Value": "1 000 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Very Low"
+  },
+  "Retrowave (Rim)": {
+    "Cash Value": "1 000 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Close to none"
+  },
+  "Rubber Ducky (Rim)": {
+    "Cash Value": "1 000 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Very Low"
+  },
+  "Soccer (Rim)": {
+    "Cash Value": "1 000 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Close to none"
+  },
+  "Sparkler (Rim)": {
+    "Cash Value": "1 000 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Close to none"
+  },
+  "Tumble Weed (Rim)": {
+    "Cash Value": "1 000 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Close to none"
+  },
+  "OG Fuel (Drift)": {
+    "Cash Value": "1 000 000",
+    "Duped Value": "N/A",
+    "Type": "Drift",
+    "Demand": "Very Low"
+  },
+  "Maverick (Vehicle)": {
+    "Cash Value": "1 000 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Very Low"
+  },
+  "Monster (Vehicle)": {
+    "Cash Value": "1 000 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Close to none"
+  },
+  "Sloop (Vehicle)": {
+    "Cash Value": "1 000 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Close to none"
+  },
+  "Tank (Vehicle)": {
+    "Cash Value": "1 000 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Close to none"
+  },
+  "Trail Blazer (Vehicle)": {
+    "Cash Value": "1 000 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Close to none"
+  },
+  "Volt (Vehicle)": {
+    "Cash Value": "1 000 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Very Low"
+  },
+  "Kanagawa (Tire Sticker)": {
+    "Cash Value": "1 000 000",
+    "Duped Value": "N/A",
+    "Type": "Tire Sticker",
+    "Demand": "Very Low"
+  },
+  "Nascar 75th (Tire Sticker)": {
+    "Cash Value": "1 000 000",
+    "Duped Value": "N/A",
+    "Type": "Tire Sticker",
+    "Demand": "Close to none"
+  },
+  "Berlin Graffiti (Texture)": {
+    "Cash Value": "1 000 000",
+    "Duped Value": "N/A",
+    "Type": "Texture",
+    "Demand": "Close to none"
+  },
+  "Circuits (Texture)": {
+    "Cash Value": "1 000 000",
+    "Duped Value": "N/A",
+    "Type": "Texture",
+    "Demand": "Close to none"
+  },
+  "Crimson Racer (Texture)": {
+    "Cash Value": "1 000 000",
+    "Duped Value": "N/A",
+    "Type": "Texture",
+    "Demand": "Very Low"
+  },
+  "Digital Confetti (Texture)": {
+    "Cash Value": "1 000 000",
+    "Duped Value": "N/A",
+    "Type": "Texture",
+    "Demand": "Close to none"
+  },
+  "Earth (Texture)": {
+    "Cash Value": "1 000 000",
+    "Duped Value": "N/A",
+    "Type": "Texture",
+    "Demand": "Close to none"
+  },
+  "Lightning (Texture)": {
+    "Cash Value": "1 000 000",
+    "Duped Value": "N/A",
+    "Type": "Texture",
+    "Demand": "Close to none"
+  },
+  "White Marble (Texture)": {
+    "Cash Value": "1 000 000",
+    "Duped Value": "N/A",
+    "Type": "Texture",
+    "Demand": "Very Low"
+  },
+  "Guitar Riff (Spoiler)": {
+    "Cash Value": "1 000 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Very Low"
+  },
+  "JDM (Spoiler)": {
+    "Cash Value": "1 000 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Very Low"
+  },
+  "Snow Cannon (Spoiler)": {
+    "Cash Value": "1 000 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Close to none"
+  },
+  "Spare (Spoiler)": {
+    "Cash Value": "1 000 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Close to none"
+  },
+  "Surfboard Rack (Spoiler)": {
+    "Cash Value": "1 000 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Close to none"
+  },
+  "UFO (Spoiler)": {
+    "Cash Value": "1 000 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Close to none"
+  },
+  "Windmill (Spoiler)": {
+    "Cash Value": "1 000 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Close to none"
+  },
+  "Black Hawk (Vehicle)": {
+    "Cash Value": "1 000 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Very Low"
+  },
+  "Jet (Vehicle)": {
+    "Cash Value": "1 000 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Very Low"
+  },
+  "Drone (Vehicle)": {
+    "Cash Value": "1 000 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Very Low"
+  },
+  "Ice Spike (Drift)": {
+    "Cash Value": "1 000 000",
+    "Duped Value": "N/A",
+    "Type": "Drift",
+    "Demand": "Low"
+  },
+  "Radiant Ice (Body Color)": {
+    "Cash Value": "1 000 000",
+    "Duped Value": "N/A",
+    "Type": "Body Color",
+    "Demand": "Very Low"
+  },
+  "HyperGreen Level 2 (HyperChrome)": {
+    "Cash Value": "1 000 000",
+    "Duped Value": "N/A",
+    "Type": "HyperChrome",
+    "Demand": "Close to none"
+  },
+  "HyperOrange Level 2 (HyperChrome)": {
+    "Cash Value": "1 000 000",
+    "Duped Value": "N/A",
+    "Type": "HyperChrome",
+    "Demand": "Close to none"
+  },
+  "Bloxy Lisa (Furniture)": {
+    "Cash Value": "1 000 000",
+    "Duped Value": "N/A",
+    "Type": "Furniture",
+    "Demand": "Close to none"
+  },
+  "Foosball Table (Furniture)": {
+    "Cash Value": "1 000 000",
+    "Duped Value": "N/A",
+    "Type": "Furniture",
+    "Demand": "Close to none"
+  },
+  "Gamer Chair (Furniture)": {
+    "Cash Value": "1 000 000",
+    "Duped Value": "N/A",
+    "Type": "Furniture",
+    "Demand": "Close to none"
+  },
+  "If I Had One (Furniture)": {
+    "Cash Value": "1 000 000",
+    "Duped Value": "N/A",
+    "Type": "Furniture",
+    "Demand": "Close to none"
+  },
+  "Tiger Rug (Furniture)": {
+    "Cash Value": "1 000 000",
+    "Duped Value": "N/A",
+    "Type": "Furniture",
+    "Demand": "Close to none"
+  },
+  "Cucaracha (Horn)": {
+    "Cash Value": "1 000 000",
+    "Duped Value": "N/A",
+    "Type": "Horn",
+    "Demand": "Very Low"
+  },
+  "Pixeltary (Rim)": {
+    "Cash Value": "1 000 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Very Low"
+  },
+  "Fire (Weapon Skin)": {
+    "Cash Value": "1 000 000",
+    "Duped Value": "N/A",
+    "Type": "Weapon Skin",
+    "Demand": "Close to none"
+  },
+  "Galactic Carbon (Weapon Skin)": {
+    "Cash Value": "1 000 000",
+    "Duped Value": "N/A",
+    "Type": "Weapon Skin",
+    "Demand": "Close to none"
+  },
+  "White Marble (Weapon Skin)": {
+    "Cash Value": "1 000 000",
+    "Duped Value": "N/A",
+    "Type": "Weapon Skin",
+    "Demand": "Close to none"
+  },
+  "Storm (Rim)": {
+    "Cash Value": "1 000 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Close to none"
+  },
+  "Bamboo Shooters (Spoiler)": {
+    "Cash Value": "1 000 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Very Low"
+  },
+  "Baller (Rim)": {
+    "Cash Value": "750 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Close to none"
+  },
+  "Biohazard (Rim)": {
+    "Cash Value": "750 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Close to none"
+  },
+  "Bonded (Rim)": {
+    "Cash Value": "750 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Close to none"
+  },
+  "Euro Clover Leaf (Rim)": {
+    "Cash Value": "750 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Close to none"
+  },
+  "Fore (Rim)": {
+    "Cash Value": "750 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Close to none"
+  },
+  "Handcuff (Rim)": {
+    "Cash Value": "750 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Close to none"
+  },
+  "Shutter Shade (Rim)": {
+    "Cash Value": "750 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Close to none"
+  },
+  "Red S3 (Tire Sticker)": {
+    "Cash Value": "750 000",
+    "Duped Value": "N/A",
+    "Type": "Tire Sticker",
+    "Demand": "Close to none"
+  },
+  "Bacon (Texture)": {
+    "Cash Value": "750 000",
+    "Duped Value": "N/A",
+    "Type": "Texture",
+    "Demand": "Close to none"
+  },
+  "Field (Texture)": {
+    "Cash Value": "750 000",
+    "Duped Value": "N/A",
+    "Type": "Texture",
+    "Demand": "Close to none"
+  },
+  "Flaming (Texture)": {
+    "Cash Value": "750 000",
+    "Duped Value": "N/A",
+    "Type": "Texture",
+    "Demand": "Close to none"
+  },
+  "Glowing Yellow (Texture)": {
+    "Cash Value": "750 000",
+    "Duped Value": "N/A",
+    "Type": "Texture",
+    "Demand": "Close to none"
+  },
+  "Hotdog (Texture)": {
+    "Cash Value": "750 000",
+    "Duped Value": "N/A",
+    "Type": "Texture",
+    "Demand": "Close to none"
+  },
+  "Money (Texture)": {
+    "Cash Value": "750 000",
+    "Duped Value": "N/A",
+    "Type": "Texture",
+    "Demand": "Close to none"
+  },
+  "Wavy (Texture)": {
+    "Cash Value": "750 000",
+    "Duped Value": "N/A",
+    "Type": "Texture",
+    "Demand": "Close to none"
+  },
+  "Orange Chute (Spoiler)": {
+    "Cash Value": "750 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Close to none"
+  },
+  "Overdrive (Spoiler)": {
+    "Cash Value": "750 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Close to none"
+  },
+  "Star Wing (Spoiler)": {
+    "Cash Value": "750 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Close to none"
+  },
+  "Triple Fin (Spoiler)": {
+    "Cash Value": "750 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Close to none"
+  },
+  "Sled Void (Rim)": {
+    "Cash Value": "750 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Close to none"
+  },
+  "Hazards (Spoiler)": {
+    "Cash Value": "750 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Close to none"
+  },
+  "HyperYellow Level 2 (HyperChrome)": {
+    "Cash Value": "750 000",
+    "Duped Value": "N/A",
+    "Type": "HyperChrome",
+    "Demand": "Close to none"
+  },
+  "Air Hockey Table (Furniture)": {
+    "Cash Value": "750 000",
+    "Duped Value": "N/A",
+    "Type": "Furniture",
+    "Demand": "Close to none"
+  },
+  "Puzzle Couch (Furniture)": {
+    "Cash Value": "750 000",
+    "Duped Value": "N/A",
+    "Type": "Furniture",
+    "Demand": "Close to none"
+  },
+  "Royal Throne (Furniture)": {
+    "Cash Value": "750 000",
+    "Duped Value": "N/A",
+    "Type": "Furniture",
+    "Demand": "Close to none"
+  },
+  "Track Car Bed (Furniture)": {
+    "Cash Value": "750 000",
+    "Duped Value": "N/A",
+    "Type": "Furniture",
+    "Demand": "Close to none"
+  },
+  "Walk Of Fame (Furniture)": {
+    "Cash Value": "750 000",
+    "Duped Value": "N/A",
+    "Type": "Furniture",
+    "Demand": "Close to none"
+  },
+  "Arcade Racer (Spoiler)": {
+    "Cash Value": "750 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Close to none"
+  },
+  "Crown (Vehicle)": {
+    "Cash Value": "666 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Close to none"
+  },
+  "Venom (Vehicle)": {
+    "Cash Value": "650 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Close to none"
+  },
+  "Successor (Vehicle)": {
+    "Cash Value": "649 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Very Low"
+  },
+  "Eclaire (Vehicle)": {
+    "Cash Value": "600 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Close to none"
+  },
+  "Nascar 75th (Vehicle)": {
+    "Cash Value": "600 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Close to none"
+  },
+  "Roadster (Vehicle)": {
+    "Cash Value": "600 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Low"
+  },
+  "Beachball (Rim)": {
+    "Cash Value": "500 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Close to none"
+  },
+  "Beadlock (Rim)": {
+    "Cash Value": "500 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Close to none"
+  },
+  "Compass (Rim)": {
+    "Cash Value": "500 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Close to none"
+  },
+  "Live 2020 (Rim)": {
+    "Cash Value": "500 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Close to none"
+  },
+  "Marshmallow (Rim)": {
+    "Cash Value": "500 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Close to none"
+  },
+  "Roll-X (Rim)": {
+    "Cash Value": "500 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Close to none"
+  },
+  "SawBlade (Rim)": {
+    "Cash Value": "500 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Close to none"
+  },
+  "Ship Wheel (Rim)": {
+    "Cash Value": "500 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Close to none"
+  },
+  "UK Heritage (Rim)": {
+    "Cash Value": "500 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Close to none"
+  },
+  "Shooting Star (Drift)": {
+    "Cash Value": "500 000",
+    "Duped Value": "N/A",
+    "Type": "Drift",
+    "Demand": "Close to none"
+  },
+  "Classic (Vehicle)": {
+    "Cash Value": "500 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Close to none"
+  },
+  "Mighty (Vehicle)": {
+    "Cash Value": "500 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Close to none"
+  },
+  "Posh (Vehicle)": {
+    "Cash Value": "500 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Close to none"
+  },
+  "SUV (Vehicle)": {
+    "Cash Value": "500 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Close to none"
+  },
+  "Steed (Vehicle)": {
+    "Cash Value": "500 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Close to none"
+  },
+  "3 Billion (Tire Sticker)": {
+    "Cash Value": "500 000",
+    "Duped Value": "N/A",
+    "Type": "Tire Sticker",
+    "Demand": "Close to none"
+  },
+  "Aquatic (Texture)": {
+    "Cash Value": "500 000",
+    "Duped Value": "N/A",
+    "Type": "Texture",
+    "Demand": "Close to none"
+  },
+  "Bandana (Texture)": {
+    "Cash Value": "500 000",
+    "Duped Value": "N/A",
+    "Type": "Texture",
+    "Demand": "Close to none"
+  },
+  "Camo Radar (Texture)": {
+    "Cash Value": "500 000",
+    "Duped Value": "N/A",
+    "Type": "Texture",
+    "Demand": "Close to none"
+  },
+  "Gulf (Texture)": {
+    "Cash Value": "500 000",
+    "Duped Value": "N/A",
+    "Type": "Texture",
+    "Demand": "Close to none"
+  },
+  "Lava (Texture)": {
+    "Cash Value": "500 000",
+    "Duped Value": "N/A",
+    "Type": "Texture",
+    "Demand": "Close to none"
+  },
+  "Superstar (Texture)": {
+    "Cash Value": "500 000",
+    "Duped Value": "N/A",
+    "Type": "Texture",
+    "Demand": "Close to none"
+  },
+  "3 Billion (Spoiler)": {
+    "Cash Value": "500 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Close to none"
+  },
+  "Bull (Spoiler)": {
+    "Cash Value": "500 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Close to none"
+  },
+  "Death Trap (Spoiler)": {
+    "Cash Value": "500 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Close to none"
+  },
+  "Glider Shop (Spoiler)": {
+    "Cash Value": "500 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Close to none"
+  },
+  "Japanese Lantern (Spoiler)": {
+    "Cash Value": "500 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Close to none"
+  },
+  "Live Glider (Spoiler)": {
+    "Cash Value": "500 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Close to none"
+  },
+  "OG Rocket Thrusters (Spoiler)": {
+    "Cash Value": "500 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Close to none"
+  },
+  "Robo Wing (Spoiler)": {
+    "Cash Value": "500 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Close to none"
+  },
+  "SawBlade (Spoiler)": {
+    "Cash Value": "500 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Close to none"
+  },
+  "Snow Log (Spoiler)": {
+    "Cash Value": "500 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Close to none"
+  },
+  "Trade Sail (Spoiler)": {
+    "Cash Value": "500 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Close to none"
+  },
+  "Tuner (Spoiler)": {
+    "Cash Value": "500 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Close to none"
+  },
+  "Turning Key (Spoiler)": {
+    "Cash Value": "500 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Close to none"
+  },
+  "Waving Flag (Spoiler)": {
+    "Cash Value": "500 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Close to none"
+  },
+  "UFO (Vehicle)": {
+    "Cash Value": "500 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Unknown"
+  },
+  "Radiant Orange (Body Color)": {
+    "Cash Value": "500 000",
+    "Duped Value": "N/A",
+    "Type": "Body Color",
+    "Demand": "Close to none"
+  },
+  "America (Tire Style)": {
+    "Cash Value": "500 000",
+    "Duped Value": "N/A",
+    "Type": "Tire Style",
+    "Demand": "Close to none"
+  },
+  "Arcade Sports Machine (Furniture)": {
+    "Cash Value": "500 000",
+    "Duped Value": "N/A",
+    "Type": "Furniture",
+    "Demand": "Close to none"
+  },
+  "Cryo Chamber (Furniture)": {
+    "Cash Value": "500 000",
+    "Duped Value": "N/A",
+    "Type": "Furniture",
+    "Demand": "Close to none"
+  },
+  "Liberty (Furniture)": {
+    "Cash Value": "500 000",
+    "Duped Value": "N/A",
+    "Type": "Furniture",
+    "Demand": "Close to none"
+  },
+  "Missile Bed (Furniture)": {
+    "Cash Value": "500 000",
+    "Duped Value": "N/A",
+    "Type": "Furniture",
+    "Demand": "Close to none"
+  },
+  "Sakura Tree (Furniture)": {
+    "Cash Value": "500 000",
+    "Duped Value": "N/A",
+    "Type": "Furniture",
+    "Demand": "Close to none"
+  },
+  "Fall Chrome (Body Color)": {
+    "Cash Value": "500 000",
+    "Duped Value": "N/A",
+    "Type": "Body Color",
+    "Demand": "Close to none"
+  },
+  "Winner (Horn)": {
+    "Cash Value": "500 000",
+    "Duped Value": "N/A",
+    "Type": "Horn",
+    "Demand": "Close to none"
+  },
+  "Spixel (Rim)": {
+    "Cash Value": "500 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Close to none"
+  },
+  "PixelCoin (Drift)": {
+    "Cash Value": "500 000",
+    "Duped Value": "N/A",
+    "Type": "Drift",
+    "Demand": "Close to none"
+  },
+  "Black Ice (Weapon Skin)": {
+    "Cash Value": "500 000",
+    "Duped Value": "N/A",
+    "Type": "Weapon Skin",
+    "Demand": "Close to none"
+  },
+  "Earthquake (Weapon Skin)": {
+    "Cash Value": "500 000",
+    "Duped Value": "N/A",
+    "Type": "Weapon Skin",
+    "Demand": "Close to none"
+  },
+  "Jungle Palm (Rim)": {
+    "Cash Value": "500 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Close to none"
+  },
+  "Jungle Vine (Drift)": {
+    "Cash Value": "500 000",
+    "Duped Value": "N/A",
+    "Type": "Drift",
+    "Demand": "Close to none"
+  },
+  "Lightning (Drift)": {
+    "Cash Value": "400 000",
+    "Duped Value": "N/A",
+    "Type": "Drift",
+    "Demand": "Unknown"
+  },
+  "Carbon Fire (Texture)": {
+    "Cash Value": "325 000",
+    "Duped Value": "N/A",
+    "Type": "Texture",
+    "Demand": "Unknown"
+  },
+  "Forged (Rim)": {
+    "Cash Value": "300 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Close to none"
+  },
+  "Flamethrower (Drift)": {
+    "Cash Value": "300 000",
+    "Duped Value": "N/A",
+    "Type": "Drift",
+    "Demand": "Unknown"
+  },
+  "Hammer Head (Vehicle)": {
+    "Cash Value": "300 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Close to none"
+  },
+  "Stunt (Vehicle)": {
+    "Cash Value": "300 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Unknown"
+  },
+  "XRK (Vehicle)": {
+    "Cash Value": "299 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Unknown"
+  },
+  "Booming Speaker (Rim)": {
+    "Cash Value": "250 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Close to none"
+  },
+  "Dino (Rim)": {
+    "Cash Value": "250 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Close to none"
+  },
+  "Peppermint (Rim)": {
+    "Cash Value": "250 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Close to none"
+  },
+  "Piggy (Rim)": {
+    "Cash Value": "250 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Close to none"
+  },
+  "Retro Racer (Rim)": {
+    "Cash Value": "250 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Close to none"
+  },
+  "Scope (Rim)": {
+    "Cash Value": "250 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Close to none"
+  },
+  "Spyglass (Rim)": {
+    "Cash Value": "250 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Close to none"
+  },
+  "Teddy Bear (Rim)": {
+    "Cash Value": "250 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Close to none"
+  },
+  "Tesseract (Rim)": {
+    "Cash Value": "250 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Close to none"
+  },
+  "Trion (Rim)": {
+    "Cash Value": "250 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Close to none"
+  },
+  "Unknown Signal (Rim)": {
+    "Cash Value": "250 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Close to none"
+  },
+  "Synth (Drift)": {
+    "Cash Value": "250 000",
+    "Duped Value": "N/A",
+    "Type": "Drift",
+    "Demand": "Close to none"
+  },
+  "OG La Matador (Vehicle)": {
+    "Cash Value": "250 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Close to none"
+  },
+  "Sentinel (Vehicle)": {
+    "Cash Value": "250 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Unknown"
+  },
+  "Speed Yacht (Vehicle)": {
+    "Cash Value": "250 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Unknown"
+  },
+  "80s Style (Tire Sticker)": {
+    "Cash Value": "250 000",
+    "Duped Value": "N/A",
+    "Type": "Tire Sticker",
+    "Demand": "Unknown"
+  },
+  "Aurora (Texture)": {
+    "Cash Value": "250 000",
+    "Duped Value": "N/A",
+    "Type": "Texture",
+    "Demand": "Close to none"
+  },
+  "Comic Convict (Texture)": {
+    "Cash Value": "250 000",
+    "Duped Value": "N/A",
+    "Type": "Texture",
+    "Demand": "Close to none"
+  },
+  "Ogre 2017 (Texture)": {
+    "Cash Value": "250 000",
+    "Duped Value": "N/A",
+    "Type": "Texture",
+    "Demand": "Close to none"
+  },
+  "Retrowave (Texture)": {
+    "Cash Value": "250 000",
+    "Duped Value": "N/A",
+    "Type": "Texture",
+    "Demand": "Close to none"
+  },
+  "Road Hazard (Texture)": {
+    "Cash Value": "250 000",
+    "Duped Value": "N/A",
+    "Type": "Texture",
+    "Demand": "Close to none"
+  },
+  "Star Spangled (Texture)": {
+    "Cash Value": "250 000",
+    "Duped Value": "N/A",
+    "Type": "Texture",
+    "Demand": "Close to none"
+  },
+  "Touchdown (Texture)": {
+    "Cash Value": "250 000",
+    "Duped Value": "N/A",
+    "Type": "Texture",
+    "Demand": "Close to none"
+  },
+  "Wooden Toy (Texture)": {
+    "Cash Value": "250 000",
+    "Duped Value": "N/A",
+    "Type": "Texture",
+    "Demand": "Close to none"
+  },
+  "5B Flags (Spoiler)": {
+    "Cash Value": "250 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Close to none"
+  },
+  "DoYouLift (Spoiler)": {
+    "Cash Value": "250 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Close to none"
+  },
+  "Leaning Wing Of Pisa (Spoiler)": {
+    "Cash Value": "250 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Close to none"
+  },
+  "RC Antenna (Spoiler)": {
+    "Cash Value": "250 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Close to none"
+  },
+  "Skull (Spoiler)": {
+    "Cash Value": "250 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Close to none"
+  },
+  "Tank Wing (Spoiler)": {
+    "Cash Value": "250 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Close to none"
+  },
+  "Torii Gate (Spoiler)": {
+    "Cash Value": "250 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Close to none"
+  },
+  "Travel Case (Spoiler)": {
+    "Cash Value": "250 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Close to none"
+  },
+  "Trophy Wings (Spoiler)": {
+    "Cash Value": "250 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Close to none"
+  },
+  "Vintage Wings (Spoiler)": {
+    "Cash Value": "250 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Close to none"
+  },
+  "Alpine Racer (Texture)": {
+    "Cash Value": "250 000",
+    "Duped Value": "N/A",
+    "Type": "Texture",
+    "Demand": "Close to none"
+  },
+  "Rally Spotlight (Spoiler)": {
+    "Cash Value": "250 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Close to none"
+  },
+  "Radiant Green (Body Color)": {
+    "Cash Value": "250 000",
+    "Duped Value": "N/A",
+    "Type": "Body Color",
+    "Demand": "Close to none"
+  },
+  "Radiant Pink (Body Color)": {
+    "Cash Value": "250 000",
+    "Duped Value": "N/A",
+    "Type": "Body Color",
+    "Demand": "Close to none"
+  },
+  "Radiant Purple (Body Color)": {
+    "Cash Value": "250 000",
+    "Duped Value": "N/A",
+    "Type": "Body Color",
+    "Demand": "Close to none"
+  },
+  "Radiant Red (Body Color)": {
+    "Cash Value": "250 000",
+    "Duped Value": "N/A",
+    "Type": "Body Color",
+    "Demand": "Close to none"
+  },
+  "Radiant Yellow (Body Color)": {
+    "Cash Value": "250 000",
+    "Duped Value": "N/A",
+    "Type": "Body Color",
+    "Demand": "Close to none"
+  },
+  "Glacier (Tire Style)": {
+    "Cash Value": "250 000",
+    "Duped Value": "N/A",
+    "Type": "Tire Style",
+    "Demand": "Close to none"
+  },
+  "Rollerblade (Tire Style)": {
+    "Cash Value": "250 000",
+    "Duped Value": "N/A",
+    "Type": "Tire Style",
+    "Demand": "Close to none"
+  },
+  "Aurora Chandelier (Furniture)": {
+    "Cash Value": "250 000",
+    "Duped Value": "N/A",
+    "Type": "Furniture",
+    "Demand": "Close to none"
+  },
+  "Beach Hammock (Furniture)": {
+    "Cash Value": "250 000",
+    "Duped Value": "N/A",
+    "Type": "Furniture",
+    "Demand": "Close to none"
+  },
+  "Car Pool Table (Furniture)": {
+    "Cash Value": "250 000",
+    "Duped Value": "N/A",
+    "Type": "Furniture",
+    "Demand": "Close to none"
+  },
+  "Hero Zapper (Furniture)": {
+    "Cash Value": "250 000",
+    "Duped Value": "N/A",
+    "Type": "Furniture",
+    "Demand": "Close to none"
+  },
+  "Japanese Neon Sign (Furniture)": {
+    "Cash Value": "250 000",
+    "Duped Value": "N/A",
+    "Type": "Furniture",
+    "Demand": "Close to none"
+  },
+  "London Telephone Sofa (Furniture)": {
+    "Cash Value": "250 000",
+    "Duped Value": "N/A",
+    "Type": "Furniture",
+    "Demand": "Close to none"
+  },
+  "Nukamo Fridge (Furniture)": {
+    "Cash Value": "250 000",
+    "Duped Value": "N/A",
+    "Type": "Furniture",
+    "Demand": "Close to none"
+  },
+  "Super Star Rug (Furniture)": {
+    "Cash Value": "250 000",
+    "Duped Value": "N/A",
+    "Type": "Furniture",
+    "Demand": "Close to none"
+  },
+  "Tiki Tea Bar (Furniture)": {
+    "Cash Value": "250 000",
+    "Duped Value": "N/A",
+    "Type": "Furniture",
+    "Demand": "Close to none"
+  },
+  "Arcade Portal (Furniture)": {
+    "Cash Value": "250 000",
+    "Duped Value": "N/A",
+    "Type": "Furniture",
+    "Demand": "Close to none"
+  },
+  "Snake Guard (Spoiler)": {
+    "Cash Value": "250 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Close to none"
+  },
+  "Snake Skin (Texture)": {
+    "Cash Value": "250 000",
+    "Duped Value": "N/A",
+    "Type": "Texture",
+    "Demand": "Close to none"
+  },
+  "Rok (Tire Style)": {
+    "Cash Value": "250 000",
+    "Duped Value": "N/A",
+    "Type": "Tire Style",
+    "Demand": "Close to none"
+  },
+  "Banana Chandelier (Furniture)": {
+    "Cash Value": "250 000",
+    "Duped Value": "N/A",
+    "Type": "Furniture",
+    "Demand": "Close to none"
+  },
+  "Radiant White (Body Color)": {
+    "Cash Value": "250 000",
+    "Duped Value": "N/A",
+    "Type": "Body Color",
+    "Demand": "Close to none"
+  },
+  "Magmatic Glow (Tire Style)": {
+    "Cash Value": "250 000",
+    "Duped Value": "N/A",
+    "Type": "Tire Style",
+    "Demand": "Unknown"
+  },
+  "Desert Crawler (Vehicle)": {
+    "Cash Value": "229 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Unknown"
+  },
+  "Dragon Chaser (Rim)": {
+    "Cash Value": "200 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Close to none"
+  },
+  "Fiasco (Vehicle)": {
+    "Cash Value": "200 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Close to none"
+  },
+  "Stallion (Vehicle)": {
+    "Cash Value": "200 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Unknown"
+  },
+  "Darkest Purple (Body Color)": {
+    "Cash Value": "200 000",
+    "Duped Value": "N/A",
+    "Type": "Body Color",
+    "Demand": "Close to none"
+  },
+  "OG Snow Machine (Furniture)": {
+    "Cash Value": "200 000",
+    "Duped Value": "N/A",
+    "Type": "Furniture",
+    "Demand": "Close to none"
+  },
+  "Blue Pixel Racer (Texture)": {
+    "Cash Value": "200 000",
+    "Duped Value": "N/A",
+    "Type": "Texture",
+    "Demand": "Close to none"
+  },
+  "Pixel Campfire (Furniture)": {
+    "Cash Value": "200 000",
+    "Duped Value": "N/A",
+    "Type": "Furniture",
+    "Demand": "Close to none"
+  },
+  "Ray 9 (Vehicle)": {
+    "Cash Value": "199 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Unknown"
+  },
+  "Lightning (Tire Sticker)": {
+    "Cash Value": "190 000",
+    "Duped Value": "N/A",
+    "Type": "Tire Sticker",
+    "Demand": "Unknown"
+  },
+  "Little Bird (Vehicle)": {
+    "Cash Value": "190 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Unknown"
+  },
+  "Delorean (Vehicle)": {
+    "Cash Value": "175 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Unknown"
+  },
+  "Fire Truck (Vehicle)": {
+    "Cash Value": "175 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Unknown"
+  },
+  "RTX (Tire Style)": {
+    "Cash Value": "175 000",
+    "Duped Value": "N/A",
+    "Type": "Tire Style",
+    "Demand": "Unknown"
+  },
+  "RFX (Rim)": {
+    "Cash Value": "150 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Unknown"
+  },
+  "Falcon S (Vehicle)": {
+    "Cash Value": "150 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Unknown"
+  },
+  "Prison Bus (Vehicle)": {
+    "Cash Value": "150 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Unknown"
+  },
+  "King (Spoiler)": {
+    "Cash Value": "150 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Unknown"
+  },
+  "Spares (Spoiler)": {
+    "Cash Value": "150 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Unknown"
+  },
+  "80s Casette Table (Furniture)": {
+    "Cash Value": "150 000",
+    "Duped Value": "N/A",
+    "Type": "Furniture",
+    "Demand": "Close to none"
+  },
+  "Giant OG Snowman (Furniture)": {
+    "Cash Value": "150 000",
+    "Duped Value": "N/A",
+    "Type": "Furniture",
+    "Demand": "Close to none"
+  },
+  "Abstracts (Rim)": {
+    "Cash Value": "120 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Close to none"
+  },
+  "Cosmic (Drift)": {
+    "Cash Value": "120 000",
+    "Duped Value": "N/A",
+    "Type": "Drift",
+    "Demand": "Close to none"
+  },
+  "Surus (Vehicle)": {
+    "Cash Value": "109 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Unknown"
+  },
+  "Belgian Waffle (Rim)": {
+    "Cash Value": "100 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Close to none"
+  },
+  "Cassette (Rim)": {
+    "Cash Value": "100 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Close to none"
+  },
+  "Electrostatic (Rim)": {
+    "Cash Value": "100 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Close to none"
+  },
+  "Evil Eye (Rim)": {
+    "Cash Value": "100 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Close to none"
+  },
+  "Gun Fire (Rim)": {
+    "Cash Value": "100 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Close to none"
+  },
+  "Radioactive (Rim)": {
+    "Cash Value": "100 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Close to none"
+  },
+  "Revolver (Rim)": {
+    "Cash Value": "100 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Close to none"
+  },
+  "Road Warrior (Rim)": {
+    "Cash Value": "100 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Close to none"
+  },
+  "Vault Door (Rim)": {
+    "Cash Value": "100 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Close to none"
+  },
+  "VolleyBall (Rim)": {
+    "Cash Value": "100 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Close to none"
+  },
+  "Magic Purple (Drift)": {
+    "Cash Value": "100 000",
+    "Duped Value": "N/A",
+    "Type": "Drift",
+    "Demand": "Unknown"
+  },
+  "CyberTruck (Vehicle)": {
+    "Cash Value": "100 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Unknown"
+  },
+  "La Matador (Vehicle)": {
+    "Cash Value": "100 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Unknown"
+  },
+  "Laviolette (Vehicle)": {
+    "Cash Value": "100 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Close to none"
+  },
+  "Semi Truck (Vehicle)": {
+    "Cash Value": "100 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Unknown"
+  },
+  "Tokyo (Tire Sticker)": {
+    "Cash Value": "100 000",
+    "Duped Value": "N/A",
+    "Type": "Tire Sticker",
+    "Demand": "Close to none"
+  },
+  "Dragon Scales (Texture)": {
+    "Cash Value": "100 000",
+    "Duped Value": "N/A",
+    "Type": "Texture",
+    "Demand": "Unknown"
+  },
+  "Electronic (Texture)": {
+    "Cash Value": "100 000",
+    "Duped Value": "N/A",
+    "Type": "Texture",
+    "Demand": "Close to none"
+  },
+  "Road Warrior (Texture)": {
+    "Cash Value": "100 000",
+    "Duped Value": "N/A",
+    "Type": "Texture",
+    "Demand": "Close to none"
+  },
+  "6 Billion (Spoiler)": {
+    "Cash Value": "100 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Close to none"
+  },
+  "Dragon Breath (Spoiler)": {
+    "Cash Value": "100 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Close to none"
+  },
+  "Harpoon (Spoiler)": {
+    "Cash Value": "100 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Close to none"
+  },
+  "Meteor Magnet (Spoiler)": {
+    "Cash Value": "100 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Close to none"
+  },
+  "Nitro Tank (Spoiler)": {
+    "Cash Value": "100 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Close to none"
+  },
+  "Skater Wing (Spoiler)": {
+    "Cash Value": "100 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Close to none"
+  },
+  "T Rex Bone (Spoiler)": {
+    "Cash Value": "100 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Close to none"
+  },
+  "Tesla (Spoiler)": {
+    "Cash Value": "100 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Close to none"
+  },
+  "Torero (Spoiler)": {
+    "Cash Value": "100 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Close to none"
+  },
+  "Trouble Wing (Spoiler)": {
+    "Cash Value": "100 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Unknown"
+  },
+  "Cheese Burger (Tire Style)": {
+    "Cash Value": "100 000",
+    "Duped Value": "N/A",
+    "Type": "Tire Style",
+    "Demand": "Close to none"
+  },
+  "French Croissant Sofa (Furniture)": {
+    "Cash Value": "100 000",
+    "Duped Value": "N/A",
+    "Type": "Furniture",
+    "Demand": "Close to none"
+  },
+  "Champion Trumpets (Horn)": {
+    "Cash Value": "100 000",
+    "Duped Value": "N/A",
+    "Type": "Horn",
+    "Demand": "Close to none"
+  },
+  "8-Bit (Rim)": {
+    "Cash Value": "100 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Close to none"
+  },
+  "DPad (Rim)": {
+    "Cash Value": "100 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Close to none"
+  },
+  "Python (Rim)": {
+    "Cash Value": "100 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Close to none"
+  },
+  "Jungle Ruins (Tire Style)": {
+    "Cash Value": "100 000",
+    "Duped Value": "N/A",
+    "Type": "Tire Style",
+    "Demand": "Close to none"
+  },
+  "Shell Mark 5 (Vehicle)": {
+    "Cash Value": "92 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Unknown"
+  },
+  "Ambulance (Vehicle)": {
+    "Cash Value": "90 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Unknown"
+  },
+  "Tow Truck (Vehicle)": {
+    "Cash Value": "80 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Unknown"
+  },
+  "Desert Camo (Texture)": {
+    "Cash Value": "80 000",
+    "Duped Value": "N/A",
+    "Type": "Texture",
+    "Demand": "Unknown"
+  },
+  "Tanker (Vehicle)": {
+    "Cash Value": "80 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Unknown"
+  },
+  "Camper (Vehicle)": {
+    "Cash Value": "79 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Unknown"
+  },
+  "4 Billion (Rim)": {
+    "Cash Value": "75 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "None"
+  },
+  "Subcarbon (Rim)": {
+    "Cash Value": "75 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Unknown"
+  },
+  "Pixel (Drift)": {
+    "Cash Value": "75 000",
+    "Duped Value": "N/A",
+    "Type": "Drift",
+    "Demand": "Unknown"
+  },
+  "Escape Bot (Vehicle)": {
+    "Cash Value": "75 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Close to none"
+  },
+  "Wild West Wagon (Furniture)": {
+    "Cash Value": "75 000",
+    "Duped Value": "N/A",
+    "Type": "Furniture",
+    "Demand": "Close to none"
+  },
+  "Construction (Tire Sticker)": {
+    "Cash Value": "60 000",
+    "Duped Value": "N/A",
+    "Type": "Tire Sticker",
+    "Demand": "Unknown"
+  },
+  "Challenger (Vehicle)": {
+    "Cash Value": "59 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Unknown"
+  },
+  "Boxer (Vehicle)": {
+    "Cash Value": "55 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Unknown"
+  },
+  "Heli Prop (Rim)": {
+    "Cash Value": "50 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Close to none"
+  },
+  "Hold E (Rim)": {
+    "Cash Value": "50 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Close to none"
+  },
+  "Propeller (Rim)": {
+    "Cash Value": "50 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Close to none"
+  },
+  "Quarter Dollar (Rim)": {
+    "Cash Value": "50 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Close to none"
+  },
+  "Rally (Rim)": {
+    "Cash Value": "50 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Close to none"
+  },
+  "Roulette (Rim)": {
+    "Cash Value": "50 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Close to none"
+  },
+  "ATV (Vehicle)": {
+    "Cash Value": "50 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Unknown"
+  },
+  "Buoy (Tire Sticker)": {
+    "Cash Value": "50 000",
+    "Duped Value": "N/A",
+    "Type": "Tire Sticker",
+    "Demand": "Close to none"
+  },
+  "Champion (Tire Sticker)": {
+    "Cash Value": "50 000",
+    "Duped Value": "N/A",
+    "Type": "Tire Sticker",
+    "Demand": "Close to none"
+  },
+  "Flags Of Europe (Tire Sticker)": {
+    "Cash Value": "50 000",
+    "Duped Value": "N/A",
+    "Type": "Tire Sticker",
+    "Demand": "Close to none"
+  },
+  "Speed (Tire Sticker)": {
+    "Cash Value": "50 000",
+    "Duped Value": "N/A",
+    "Type": "Tire Sticker",
+    "Demand": "Close to none"
+  },
+  "USA (Tire Sticker)": {
+    "Cash Value": "50 000",
+    "Duped Value": "N/A",
+    "Type": "Tire Sticker",
+    "Demand": "Close to none"
+  },
+  "Camo (Texture)": {
+    "Cash Value": "50 000",
+    "Duped Value": "N/A",
+    "Type": "Texture",
+    "Demand": "Unknown"
+  },
+  "Ladybug (Texture)": {
+    "Cash Value": "50 000",
+    "Duped Value": "N/A",
+    "Type": "Texture",
+    "Demand": "Close to none"
+  },
+  "Nuclear Waste (Texture)": {
+    "Cash Value": "50 000",
+    "Duped Value": "N/A",
+    "Type": "Texture",
+    "Demand": "Unknown"
+  },
+  "Watermelon (Texture)": {
+    "Cash Value": "50 000",
+    "Duped Value": "N/A",
+    "Type": "Texture",
+    "Demand": "Unknown"
+  },
+  "Aerial Support (Spoiler)": {
+    "Cash Value": "50 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Close to none"
+  },
+  "BatWings (Spoiler)": {
+    "Cash Value": "50 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Unknown"
+  },
+  "Campout (Spoiler)": {
+    "Cash Value": "50 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Close to none"
+  },
+  "Flame Spitter (Spoiler)": {
+    "Cash Value": "50 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Close to none"
+  },
+  "GTR (Spoiler)": {
+    "Cash Value": "50 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Close to none"
+  },
+  "Jailbreak Hills (Spoiler)": {
+    "Cash Value": "50 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Close to none"
+  },
+  "Laser Wire (Spoiler)": {
+    "Cash Value": "50 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Close to none"
+  },
+  "Native (Spoiler)": {
+    "Cash Value": "50 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Close to none"
+  },
+  "Racer (Spoiler)": {
+    "Cash Value": "50 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Close to none"
+  },
+  "Scythes (Spoiler)": {
+    "Cash Value": "50 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Close to none"
+  },
+  "Ski Wing (Spoiler)": {
+    "Cash Value": "50 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Close to none"
+  },
+  "Terminator (Spoiler)": {
+    "Cash Value": "50 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Close to none"
+  },
+  "Jet Ski (Vehicle)": {
+    "Cash Value": "50 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Unknown"
+  },
+  "Ice Crystal (Rim)": {
+    "Cash Value": "50 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Close to none"
+  },
+  "Radiant Polar Blue (Body Color)": {
+    "Cash Value": "50 000",
+    "Duped Value": "N/A",
+    "Type": "Body Color",
+    "Demand": "Close to none"
+  },
+  "Radiant Sun (Body Color)": {
+    "Cash Value": "50 000",
+    "Duped Value": "N/A",
+    "Type": "Body Color",
+    "Demand": "Close to none"
+  },
+  "Trail Trek (Tire Style)": {
+    "Cash Value": "50 000",
+    "Duped Value": "N/A",
+    "Type": "Tire Style",
+    "Demand": "Close to none"
+  },
+  "Cosmetic Safe (Furniture)": {
+    "Cash Value": "50 000",
+    "Duped Value": "N/A",
+    "Type": "Furniture",
+    "Demand": "Close to none"
+  },
+  "CyberBlue Couch (Furniture)": {
+    "Cash Value": "50 000",
+    "Duped Value": "N/A",
+    "Type": "Furniture",
+    "Demand": "Close to none"
+  },
+  "Fabulous Sign (Furniture)": {
+    "Cash Value": "50 000",
+    "Duped Value": "N/A",
+    "Type": "Furniture",
+    "Demand": "Close to none"
+  },
+  "Radiation Radio (Furniture)": {
+    "Cash Value": "50 000",
+    "Duped Value": "N/A",
+    "Type": "Furniture",
+    "Demand": "Close to none"
+  },
+  "Toy Plane (Furniture)": {
+    "Cash Value": "50 000",
+    "Duped Value": "N/A",
+    "Type": "Furniture",
+    "Demand": "Close to none"
+  },
+  "Wanted Background (Furniture)": {
+    "Cash Value": "50 000",
+    "Duped Value": "N/A",
+    "Type": "Furniture",
+    "Demand": "Close to none"
+  },
+  "Winter Rally Lamp (Furniture)": {
+    "Cash Value": "50 000",
+    "Duped Value": "N/A",
+    "Type": "Furniture",
+    "Demand": "Close to none"
+  },
+  "Voxel (Spoiler)": {
+    "Cash Value": "50 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Close to none"
+  },
+  "Expeditioner (Vehicle)": {
+    "Cash Value": "50 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Close to none"
+  },
+  "Bubble Wand (Drift)": {
+    "Cash Value": "45 000",
+    "Duped Value": "N/A",
+    "Type": "Drift",
+    "Demand": "Unknown"
+  },
+  "Badger (Vehicle)": {
+    "Cash Value": "45 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Unknown"
+  },
+  "Dune Buggy (Vehicle)": {
+    "Cash Value": "45 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Unknown"
+  },
+  "Patrol Bike (Vehicle)": {
+    "Cash Value": "45 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Unknown"
+  },
+  "WireFrame (Texture)": {
+    "Cash Value": "45 000",
+    "Duped Value": "N/A",
+    "Type": "Texture",
+    "Demand": "Unknown"
+  },
+  "Unified (Rim)": {
+    "Cash Value": "40 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Unknown"
+  },
+  "Candy Cane (Texture)": {
+    "Cash Value": "40 000",
+    "Duped Value": "N/A",
+    "Type": "Texture",
+    "Demand": "Unknown"
+  },
+  "Diamond (Texture)": {
+    "Cash Value": "40 000",
+    "Duped Value": "N/A",
+    "Type": "Texture",
+    "Demand": "Unknown"
+  },
+  "Donut (Texture)": {
+    "Cash Value": "40 000",
+    "Duped Value": "N/A",
+    "Type": "Texture",
+    "Demand": "Unknown"
+  },
+  "Galaxy (Texture)": {
+    "Cash Value": "40 000",
+    "Duped Value": "N/A",
+    "Type": "Texture",
+    "Demand": "Unknown"
+  },
+  "Scorch (Texture)": {
+    "Cash Value": "40 000",
+    "Duped Value": "N/A",
+    "Type": "Texture",
+    "Demand": "Unknown"
+  },
+  "Zebra (Texture)": {
+    "Cash Value": "40 000",
+    "Duped Value": "N/A",
+    "Type": "Texture",
+    "Demand": "Unknown"
+  },
+  "Volcano (Texture)": {
+    "Cash Value": "39 000",
+    "Duped Value": "N/A",
+    "Type": "Texture",
+    "Demand": "Unknown"
+  },
+  "Wingo (Spoiler)": {
+    "Cash Value": "37 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Close to none"
+  },
+  "Police Chase (Rim)": {
+    "Cash Value": "35 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Unknown"
+  },
+  "Slashers (Rim)": {
+    "Cash Value": "35 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Close to none"
+  },
+  "VFX (Rim)": {
+    "Cash Value": "35 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Unknown"
+  },
+  "Cartoon (Drift)": {
+    "Cash Value": "35 000",
+    "Duped Value": "N/A",
+    "Type": "Drift",
+    "Demand": "Unknown"
+  },
+  "Dirt Bike (Vehicle)": {
+    "Cash Value": "35 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Unknown"
+  },
+  "Badonuts (Tire Sticker)": {
+    "Cash Value": "35 000",
+    "Duped Value": "N/A",
+    "Type": "Tire Sticker",
+    "Demand": "Close to none"
+  },
+  "Tracer (Tire Sticker)": {
+    "Cash Value": "35 000",
+    "Duped Value": "N/A",
+    "Type": "Tire Sticker",
+    "Demand": "Unknown"
+  },
+  "Lines (Texture)": {
+    "Cash Value": "35 000",
+    "Duped Value": "N/A",
+    "Type": "Texture",
+    "Demand": "Unknown"
+  },
+  "Volt (Texture)": {
+    "Cash Value": "35 000",
+    "Duped Value": "N/A",
+    "Type": "Texture",
+    "Demand": "Close to none"
+  },
+  "Interrogator (Vehicle)": {
+    "Cash Value": "30 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Unknown"
+  },
+  "Patchy Jeans (Texture)": {
+    "Cash Value": "30 000",
+    "Duped Value": "N/A",
+    "Type": "Texture",
+    "Demand": "Unknown"
+  },
+  "Park Bench (Spoiler)": {
+    "Cash Value": "30 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Unknown"
+  },
+  "Badimo Bros Wall Light (Furniture)": {
+    "Cash Value": "30 000",
+    "Duped Value": "N/A",
+    "Type": "Furniture",
+    "Demand": "Unknown"
+  },
+  "Sloopwreck Bed (Furniture)": {
+    "Cash Value": "30 000",
+    "Duped Value": "N/A",
+    "Type": "Furniture",
+    "Demand": "Close to none"
+  },
+  "Mark 5 (Spoiler)": {
+    "Cash Value": "29 900",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Unknown"
+  },
+  "Bloxy (Rim)": {
+    "Cash Value": "25 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Unknown"
+  },
+  "Cobweb (Rim)": {
+    "Cash Value": "25 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Close to none"
+  },
+  "EXP 1 (Rim)": {
+    "Cash Value": "25 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Close to none"
+  },
+  "Reactor (Rim)": {
+    "Cash Value": "25 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Close to none"
+  },
+  "SRT (Rim)": {
+    "Cash Value": "25 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Close to none"
+  },
+  "Space-R (Rim)": {
+    "Cash Value": "25 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Unknown"
+  },
+  "Melons (Drift)": {
+    "Cash Value": "25 000",
+    "Duped Value": "N/A",
+    "Type": "Drift",
+    "Demand": "Unknown"
+  },
+  "Performance (Drift)": {
+    "Cash Value": "25 000",
+    "Duped Value": "N/A",
+    "Type": "Drift",
+    "Demand": "Unknown"
+  },
+  "Ray (Vehicle)": {
+    "Cash Value": "25 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Unknown"
+  },
+  "Leap Year (Tire Sticker)": {
+    "Cash Value": "25 000",
+    "Duped Value": "N/A",
+    "Type": "Tire Sticker",
+    "Demand": "Unknown"
+  },
+  "Radar (Tire Sticker)": {
+    "Cash Value": "25 000",
+    "Duped Value": "N/A",
+    "Type": "Tire Sticker",
+    "Demand": "Close to none"
+  },
+  "Camo Shark (Texture)": {
+    "Cash Value": "25 000",
+    "Duped Value": "N/A",
+    "Type": "Texture",
+    "Demand": "Close to none"
+  },
+  "Dragster (Spoiler)": {
+    "Cash Value": "25 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Unknown"
+  },
+  "Police That Way (Spoiler)": {
+    "Cash Value": "25 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Close to none"
+  },
+  "TailFin (Spoiler)": {
+    "Cash Value": "25 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Unknown"
+  },
+  "Dino Exhibit (Furniture)": {
+    "Cash Value": "25 000",
+    "Duped Value": "N/A",
+    "Type": "Furniture",
+    "Demand": "Close to none"
+  },
+  "Grand Piano (Furniture)": {
+    "Cash Value": "25 000",
+    "Duped Value": "N/A",
+    "Type": "Furniture",
+    "Demand": "Close to none"
+  },
+  "Missile Sofa (Furniture)": {
+    "Cash Value": "25 000",
+    "Duped Value": "N/A",
+    "Type": "Furniture",
+    "Demand": "Close to none"
+  },
+  "TNT Barrel (Furniture)": {
+    "Cash Value": "25 000",
+    "Duped Value": "N/A",
+    "Type": "Furniture",
+    "Demand": "Close to none"
+  },
+  "Safari (Tire Style)": {
+    "Cash Value": "25 000",
+    "Duped Value": "N/A",
+    "Type": "Tire Style",
+    "Demand": "Close to none"
+  },
+  "LeEclair (Texture)": {
+    "Cash Value": "21 000",
+    "Duped Value": "N/A",
+    "Type": "Texture",
+    "Demand": "Close to none"
+  },
+  "Vecchio (Rim)": {
+    "Cash Value": "20 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Unknown"
+  },
+  "Crash Nation (Tire Sticker)": {
+    "Cash Value": "20 000",
+    "Duped Value": "N/A",
+    "Type": "Tire Sticker",
+    "Demand": "Unknown"
+  },
+  "Criminal (Tire Sticker)": {
+    "Cash Value": "20 000",
+    "Duped Value": "N/A",
+    "Type": "Tire Sticker",
+    "Demand": "Unknown"
+  },
+  "DatBrian (Tire Sticker)": {
+    "Cash Value": "20 000",
+    "Duped Value": "N/A",
+    "Type": "Tire Sticker",
+    "Demand": "Unknown"
+  },
+  "DenisDaily (Tire Sticker)": {
+    "Cash Value": "20 000",
+    "Duped Value": "N/A",
+    "Type": "Tire Sticker",
+    "Demand": "Unknown"
+  },
+  "JBMS (Tire Sticker)": {
+    "Cash Value": "20 000",
+    "Duped Value": "N/A",
+    "Type": "Tire Sticker",
+    "Demand": "Unknown"
+  },
+  "Jailbreak (Tire Sticker)": {
+    "Cash Value": "20 000",
+    "Duped Value": "N/A",
+    "Type": "Tire Sticker",
+    "Demand": "Unknown"
+  },
+  "KraoESP (Tire Sticker)": {
+    "Cash Value": "20 000",
+    "Duped Value": "N/A",
+    "Type": "Tire Sticker",
+    "Demand": "Unknown"
+  },
+  "KreekCraft (Tire Sticker)": {
+    "Cash Value": "20 000",
+    "Duped Value": "N/A",
+    "Type": "Tire Sticker",
+    "Demand": "Unknown"
+  },
+  "Line (Tire Sticker)": {
+    "Cash Value": "20 000",
+    "Duped Value": "N/A",
+    "Type": "Tire Sticker",
+    "Demand": "Unknown"
+  },
+  "MyUsernamesThis (Tire Sticker)": {
+    "Cash Value": "20 000",
+    "Duped Value": "N/A",
+    "Type": "Tire Sticker",
+    "Demand": "Unknown"
+  },
+  "NapkinNate (Tire Sticker)": {
+    "Cash Value": "20 000",
+    "Duped Value": "N/A",
+    "Type": "Tire Sticker",
+    "Demand": "Unknown"
+  },
+  "NoobFreak (Tire Sticker)": {
+    "Cash Value": "20 000",
+    "Duped Value": "N/A",
+    "Type": "Tire Sticker",
+    "Demand": "Unknown"
+  },
+  "PGHLFilms (Tire Sticker)": {
+    "Cash Value": "20 000",
+    "Duped Value": "N/A",
+    "Type": "Tire Sticker",
+    "Demand": "Unknown"
+  },
+  "Phindr (Tire Sticker)": {
+    "Cash Value": "20 000",
+    "Duped Value": "N/A",
+    "Type": "Tire Sticker",
+    "Demand": "Unknown"
+  },
+  "Police (Tire Sticker)": {
+    "Cash Value": "20 000",
+    "Duped Value": "N/A",
+    "Type": "Tire Sticker",
+    "Demand": "Unknown"
+  },
+  "Thin (Tire Sticker)": {
+    "Cash Value": "20 000",
+    "Duped Value": "N/A",
+    "Type": "Tire Sticker",
+    "Demand": "Unknown"
+  },
+  "Ball (Texture)": {
+    "Cash Value": "20 000",
+    "Duped Value": "N/A",
+    "Type": "Texture",
+    "Demand": "Unknown"
+  },
+  "Frit (Texture)": {
+    "Cash Value": "20 000",
+    "Duped Value": "N/A",
+    "Type": "Texture",
+    "Demand": "Unknown"
+  },
+  "Galaxy Wave (Texture)": {
+    "Cash Value": "20 000",
+    "Duped Value": "N/A",
+    "Type": "Texture",
+    "Demand": "Unknown"
+  },
+  "Ice (Texture)": {
+    "Cash Value": "20 000",
+    "Duped Value": "N/A",
+    "Type": "Texture",
+    "Demand": "Unknown"
+  },
+  "Swirl (Texture)": {
+    "Cash Value": "20 000",
+    "Duped Value": "N/A",
+    "Type": "Texture",
+    "Demand": "Unknown"
+  },
+  "Two Sided (Texture)": {
+    "Cash Value": "20 000",
+    "Duped Value": "N/A",
+    "Type": "Texture",
+    "Demand": "Unknown"
+  },
+  "Boomerang (Spoiler)": {
+    "Cash Value": "20 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Unknown"
+  },
+  "Racing Wing (Spoiler)": {
+    "Cash Value": "20 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Unknown"
+  },
+  "Tall Arch (Spoiler)": {
+    "Cash Value": "20 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Unknown"
+  },
+  "Tsutek (Spoiler)": {
+    "Cash Value": "20 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Unknown"
+  },
+  "Clown (Horn)": {
+    "Cash Value": "20 000",
+    "Duped Value": "N/A",
+    "Type": "Horn",
+    "Demand": "Unknown"
+  },
+  "Prehistoric (Texture)": {
+    "Cash Value": "20 000",
+    "Duped Value": "N/A",
+    "Type": "Texture",
+    "Demand": "Close to none"
+  },
+  "Dual Wingbeat (Spoiler)": {
+    "Cash Value": "20 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Close to none"
+  },
+  "147 (Rim)": {
+    "Cash Value": "20 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Close to none"
+  },
+  "Settima (Rim)": {
+    "Cash Value": "20 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Close to none"
+  },
+  "8-Bit Rug (Furniture)": {
+    "Cash Value": "18 000",
+    "Duped Value": "N/A",
+    "Type": "Furniture",
+    "Demand": "Unknown"
+  },
+  "Model 3 (Vehicle)": {
+    "Cash Value": "16 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Unknown"
+  },
+  "RX-1 (Rim)": {
+    "Cash Value": "15 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Unknown"
+  },
+  "Taxi (Texture)": {
+    "Cash Value": "15 000",
+    "Duped Value": "N/A",
+    "Type": "Texture",
+    "Demand": "Unknown"
+  },
+  "Arch (Spoiler)": {
+    "Cash Value": "15 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Unknown"
+  },
+  "Tiny Wing (Spoiler)": {
+    "Cash Value": "15 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Unknown"
+  },
+  "Treasure Island (Rim)": {
+    "Cash Value": "15 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Close to none"
+  },
+  "Captain Table (Furniture)": {
+    "Cash Value": "15 000",
+    "Duped Value": "N/A",
+    "Type": "Furniture",
+    "Demand": "Close to none"
+  },
+  "Parisian (Tire Sticker)": {
+    "Cash Value": "12 500",
+    "Duped Value": "N/A",
+    "Type": "Tire Sticker",
+    "Demand": "Unknown"
+  },
+  "Deep Purple (Body Color)": {
+    "Cash Value": "12 000",
+    "Duped Value": "N/A",
+    "Type": "Body Color",
+    "Demand": "Close to none"
+  },
+  "7 billion (Rim)": {
+    "Cash Value": "10 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Unknown"
+  },
+  "Billion (Rim)": {
+    "Cash Value": "10 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Unknown"
+  },
+  "Jet (Rim)": {
+    "Cash Value": "10 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Unknown"
+  },
+  "Landmine (Rim)": {
+    "Cash Value": "10 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Close to none"
+  },
+  "Mystic (Rim)": {
+    "Cash Value": "10 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Close to none"
+  },
+  "Spike (Rim)": {
+    "Cash Value": "10 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Close to none"
+  },
+  "Deja (Vehicle)": {
+    "Cash Value": "10 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Unknown"
+  },
+  "Classic Var 3 (Texture)": {
+    "Cash Value": "10 000",
+    "Duped Value": "N/A",
+    "Type": "Texture",
+    "Demand": "Unknown"
+  },
+  "Frost (Texture)": {
+    "Cash Value": "10 000",
+    "Duped Value": "N/A",
+    "Type": "Texture",
+    "Demand": "Unknown"
+  },
+  "Paint (Texture)": {
+    "Cash Value": "10 000",
+    "Duped Value": "N/A",
+    "Type": "Texture",
+    "Demand": "Unknown"
+  },
+  "Peach (Texture)": {
+    "Cash Value": "10 000",
+    "Duped Value": "N/A",
+    "Type": "Texture",
+    "Demand": "Unknown"
+  },
+  "Racer (Texture)": {
+    "Cash Value": "10 000",
+    "Duped Value": "N/A",
+    "Type": "Texture",
+    "Demand": "Unknown"
+  },
+  "Box O Cash (Spoiler)": {
+    "Cash Value": "10 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Close to none"
+  },
+  "Eternal Flame (Spoiler)": {
+    "Cash Value": "10 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Close to none"
+  },
+  "Rocket (Spoiler)": {
+    "Cash Value": "10 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Unknown"
+  },
+  "Hot Orange (Body Color)": {
+    "Cash Value": "10 000",
+    "Duped Value": "N/A",
+    "Type": "Body Color",
+    "Demand": "Close to none"
+  },
+  "Super Lime (Body Color)": {
+    "Cash Value": "10 000",
+    "Duped Value": "N/A",
+    "Type": "Body Color",
+    "Demand": "Unknown"
+  },
+  "Rally Lights (Spoiler)": {
+    "Cash Value": "10 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Close to none"
+  },
+  "Bananas (Drift)": {
+    "Cash Value": "10 000",
+    "Duped Value": "N/A",
+    "Type": "Drift",
+    "Demand": "Close to none"
+  },
+  "Parrot (Spoiler)": {
+    "Cash Value": "10 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Close to none"
+  },
+  "Captain Chandelier (Furniture)": {
+    "Cash Value": "10 000",
+    "Duped Value": "N/A",
+    "Type": "Furniture",
+    "Demand": "Close to none"
+  },
+  "Pickup (Vehicle)": {
+    "Cash Value": "9 000",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Unknown"
+  },
+  "Flower (Rim)": {
+    "Cash Value": "5 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Close to none"
+  },
+  "Money (Rim)": {
+    "Cash Value": "5 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Unknown"
+  },
+  "Speed (Texture)": {
+    "Cash Value": "5 000",
+    "Duped Value": "N/A",
+    "Type": "Texture",
+    "Demand": "Close to none"
+  },
+  "Block Wing (Spoiler)": {
+    "Cash Value": "5 000",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Unknown"
+  },
+  "Darkest Blue (Body Color)": {
+    "Cash Value": "5 000",
+    "Duped Value": "N/A",
+    "Type": "Body Color",
+    "Demand": "Unknown"
+  },
+  "Darkest Brown (Body Color)": {
+    "Cash Value": "5 000",
+    "Duped Value": "N/A",
+    "Type": "Body Color",
+    "Demand": "Unknown"
+  },
+  "Darkest Green (Body Color)": {
+    "Cash Value": "5 000",
+    "Duped Value": "N/A",
+    "Type": "Body Color",
+    "Demand": "Unknown"
+  },
+  "Darkest Marine (Body Color)": {
+    "Cash Value": "5 000",
+    "Duped Value": "N/A",
+    "Type": "Body Color",
+    "Demand": "Unknown"
+  },
+  "Darkest Red (Body Color)": {
+    "Cash Value": "5 000",
+    "Duped Value": "N/A",
+    "Type": "Body Color",
+    "Demand": "Unknown"
+  },
+  "Hottest Pink (Body Color)": {
+    "Cash Value": "5 000",
+    "Duped Value": "N/A",
+    "Type": "Body Color",
+    "Demand": "Unknown"
+  },
+  "Maroon (Body Color)": {
+    "Cash Value": "5 000",
+    "Duped Value": "N/A",
+    "Type": "Body Color",
+    "Demand": "Unknown"
+  },
+  "Military Green (Body Color)": {
+    "Cash Value": "5 000",
+    "Duped Value": "N/A",
+    "Type": "Body Color",
+    "Demand": "Unknown"
+  },
+  "Navy Blue (Body Color)": {
+    "Cash Value": "5 000",
+    "Duped Value": "N/A",
+    "Type": "Body Color",
+    "Demand": "Unknown"
+  },
+  "Jungle Mosaic (Tire Sticker)": {
+    "Cash Value": "5 000",
+    "Duped Value": "N/A",
+    "Type": "Tire Sticker",
+    "Demand": "Close to none"
+  },
+  "Mud (Body Color)": {
+    "Cash Value": "5 000",
+    "Duped Value": "N/A",
+    "Type": "Body Color",
+    "Demand": "Unknown"
+  },
+  "Tiki Stack Of Badimo (Furniture)": {
+    "Cash Value": "5 000",
+    "Duped Value": "N/A",
+    "Type": "Furniture",
+    "Demand": "Close to none"
+  },
+  "Bamboo (Rim)": {
+    "Cash Value": "5 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Close to none"
+  },
+  "Rally Signage (Furniture)": {
+    "Cash Value": "5 000",
+    "Duped Value": "N/A",
+    "Type": "Furniture",
+    "Demand": "Close to none"
+  },
+  "Classic Var 1 (Texture)": {
+    "Cash Value": "4 000",
+    "Duped Value": "N/A",
+    "Type": "Texture",
+    "Demand": "Unknown"
+  },
+  "Classic Var 2 (Texture)": {
+    "Cash Value": "4 000",
+    "Duped Value": "N/A",
+    "Type": "Texture",
+    "Demand": "Unknown"
+  },
+  "Cow (Texture)": {
+    "Cash Value": "4 000",
+    "Duped Value": "N/A",
+    "Type": "Texture",
+    "Demand": "Unknown"
+  },
+  "Rainbow (Texture)": {
+    "Cash Value": "4 000",
+    "Duped Value": "N/A",
+    "Type": "Texture",
+    "Demand": "Unknown"
+  },
+  "Police (Texture)": {
+    "Cash Value": "2 000",
+    "Duped Value": "N/A",
+    "Type": "Texture",
+    "Demand": "Unknown"
+  },
+  "Arachnid (Rim)": {
+    "Cash Value": "1 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Unknown"
+  },
+  "Turbine (Rim)": {
+    "Cash Value": "1 000",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Unknown"
+  },
+  "Flat Black (Tire Sticker)": {
+    "Cash Value": "1 000",
+    "Duped Value": "N/A",
+    "Type": "Tire Sticker",
+    "Demand": "Unknown"
+  },
+  "Black (Body Color)": {
+    "Cash Value": "1 000",
+    "Duped Value": "N/A",
+    "Type": "Body Color",
+    "Demand": "Close to none"
+  },
+  "Blue (Body Color)": {
+    "Cash Value": "1 000",
+    "Duped Value": "N/A",
+    "Type": "Body Color",
+    "Demand": "Unknown"
+  },
+  "Cyan (Body Color)": {
+    "Cash Value": "1 000",
+    "Duped Value": "N/A",
+    "Type": "Body Color",
+    "Demand": "Unknown"
+  },
+  "Forest Green (Body Color)": {
+    "Cash Value": "1 000",
+    "Duped Value": "N/A",
+    "Type": "Body Color",
+    "Demand": "Unknown"
+  },
+  "Green (Body Color)": {
+    "Cash Value": "1 000",
+    "Duped Value": "N/A",
+    "Type": "Body Color",
+    "Demand": "Unknown"
+  },
+  "Grey (Body Color)": {
+    "Cash Value": "1 000",
+    "Duped Value": "N/A",
+    "Type": "Body Color",
+    "Demand": "Unknown"
+  },
+  "Matte (Body Color)": {
+    "Cash Value": "1 000",
+    "Duped Value": "N/A",
+    "Type": "Body Color",
+    "Demand": "Unknown"
+  },
+  "White (Body Color)": {
+    "Cash Value": "1 000",
+    "Duped Value": "N/A",
+    "Type": "Body Color",
+    "Demand": "Unknown"
+  },
+  "Blade (Rim)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Unknown"
+  },
+  "Cyclone (Rim)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Unknown"
+  },
+  "Halo (Rim)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Unknown"
+  },
+  "Star (Rim)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Unknown"
+  },
+  "Blue Fire (Drift)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Drift",
+    "Demand": "Unknown"
+  },
+  "Gradient Pixel (Drift)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Drift",
+    "Demand": "Unknown"
+  },
+  "Camaro (Vehicle)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Unknown"
+  },
+  "Celestial (Vehicle)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Unknown"
+  },
+  "Cruiser (Vehicle)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Unknown"
+  },
+  "Jeep (Vehicle)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Unknown"
+  },
+  "Lia (Vehicle)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Unknown"
+  },
+  "MCL36 (Vehicle)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Unknown"
+  },
+  "Nascar (Vehicle)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Unknown"
+  },
+  "Nascar Free (Vehicle)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Unknown"
+  },
+  "Swat Van (Vehicle)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Unknown"
+  },
+  "HelloItsVG (Tire Sticker)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Tire Sticker",
+    "Demand": "Unknown"
+  },
+  "Nascar (Tire Sticker)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Tire Sticker",
+    "Demand": "Unknown"
+  },
+  "Creator (Texture)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Texture",
+    "Demand": "Unknown"
+  },
+  "Deep Purple Flame (Texture)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Texture",
+    "Demand": "Close to none"
+  },
+  "Live 2024 (Rim)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Unknown"
+  },
+  "Carbonara (Spoiler)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Unknown"
+  },
+  "Catch Me (Spoiler)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Unknown"
+  },
+  "Classic (Spoiler)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Unknown"
+  },
+  "Shogun (Spoiler)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Unknown"
+  },
+  "XRK Aero (Spoiler)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Unknown"
+  },
+  "Heli (Vehicle)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Unknown"
+  },
+  "Orange (Body Color)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Body Color",
+    "Demand": "Unknown"
+  },
+  "Pastel Blue (Body Color)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Body Color",
+    "Demand": "Unknown"
+  },
+  "Pastel Brown (Body Color)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Body Color",
+    "Demand": "Unknown"
+  },
+  "Pastel Gray (Body Color)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Body Color",
+    "Demand": "Unknown"
+  },
+  "Pastel Green (Body Color)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Body Color",
+    "Demand": "Unknown"
+  },
+  "Pastel Orange (Body Color)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Body Color",
+    "Demand": "Unknown"
+  },
+  "Pastel Pink (Body Color)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Body Color",
+    "Demand": "Unknown"
+  },
+  "Pastel Violet (Body Color)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Body Color",
+    "Demand": "Unknown"
+  },
+  "Pastel Yellow (Body Color)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Body Color",
+    "Demand": "Unknown"
+  },
+  "Pink (Body Color)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Body Color",
+    "Demand": "Unknown"
+  },
+  "Purple (Body Color)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Body Color",
+    "Demand": "Unknown"
+  },
+  "Real Green (Body Color)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Body Color",
+    "Demand": "Unknown"
+  },
+  "Red (Body Color)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Body Color",
+    "Demand": "Unknown"
+  },
+  "Sakura Pink (Body Color)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Body Color",
+    "Demand": "Unknown"
+  },
+  "Sand (Body Color)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Body Color",
+    "Demand": "Unknown"
+  },
+  "Yellow (Body Color)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Body Color",
+    "Demand": "Unknown"
+  },
+  "Classic Sport (Tire Style)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Tire Style",
+    "Demand": "Unknown"
+  },
+  "Classic Thick (Tire Style)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Tire Style",
+    "Demand": "Unknown"
+  },
+  "Classic (Tire Style)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Tire Style",
+    "Demand": "Unknown"
+  },
+  "Monster (Tire Style)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Tire Style",
+    "Demand": "Unknown"
+  },
+  "Offroad (Tire Style)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Tire Style",
+    "Demand": "Unknown"
+  },
+  "Treaded Sport (Tire Style)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Tire Style",
+    "Demand": "Unknown"
+  },
+  "Treaded Thick (Tire Style)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Tire Style",
+    "Demand": "Unknown"
+  },
+  "Treaded (Tire Style)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Tire Style",
+    "Demand": "Unknown"
+  },
+  "HyperBlue Level 1 (HyperChrome)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "HyperChrome",
+    "Demand": "Unknown"
+  },
+  "HyperDiamond Level 1 (HyperChrome)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "HyperChrome",
+    "Demand": "Unknown"
+  },
+  "HyperGreen Level 1 (HyperChrome)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "HyperChrome",
+    "Demand": "Unknown"
+  },
+  "HyperOrange Level 1 (HyperChrome)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "HyperChrome",
+    "Demand": "Unknown"
+  },
+  "HyperPink Level 1 (HyperChrome)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "HyperChrome",
+    "Demand": "Unknown"
+  },
+  "HyperPurple Level 1 (HyperChrome)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "HyperChrome",
+    "Demand": "Unknown"
+  },
+  "HyperRed Level 1 (HyperChrome)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "HyperChrome",
+    "Demand": "Unknown"
+  },
+  "HyperYellow Level 1 (HyperChrome)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "HyperChrome",
+    "Demand": "Unknown"
+  },
+  "VIP Radio (Furniture)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Furniture",
+    "Demand": "Unknown"
+  },
+  "VIP Chrome (Body Color)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Body Color",
+    "Demand": "Unknown"
+  },
+  "Ahooga (Horn)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Horn",
+    "Demand": "Unknown"
+  },
+  "Airhorn (Horn)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Horn",
+    "Demand": "Unknown"
+  },
+  "Bicycle (Horn)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Horn",
+    "Demand": "Unknown"
+  },
+  "City (Horn)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Horn",
+    "Demand": "Unknown"
+  },
+  "Countdown (Horn)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Horn",
+    "Demand": "Unknown"
+  },
+  "Cruise Liner (Horn)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Horn",
+    "Demand": "Unknown"
+  },
+  "Drop Weapons (Horn)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Horn",
+    "Demand": "Unknown"
+  },
+  "Fire Brigade (Horn)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Horn",
+    "Demand": "Unknown"
+  },
+  "Injan (Horn)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Horn",
+    "Demand": "Unknown"
+  },
+  "Meep Meep (Horn)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Horn",
+    "Demand": "Unknown"
+  },
+  "Original (Horn)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Horn",
+    "Demand": "Unknown"
+  },
+  "Quack (Horn)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Horn",
+    "Demand": "Unknown"
+  },
+  "Realistic (Horn)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Horn",
+    "Demand": "Unknown"
+  },
+  "Rumble Siren (Horn)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Horn",
+    "Demand": "Unknown"
+  },
+  "Sendoff (Horn)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Horn",
+    "Demand": "Unknown"
+  },
+  "Steamer (Horn)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Horn",
+    "Demand": "Unknown"
+  },
+  "Train (Horn)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Horn",
+    "Demand": "Unknown"
+  },
+  "3 Lives (Spoiler)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Unknown"
+  },
+  "Gamer TV Set (Furniture)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Furniture",
+    "Demand": "Unknown"
+  },
+  "Grande Punto (Rim)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Unknown"
+  },
+  "Insert Coin (Tire Sticker)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Tire Sticker",
+    "Demand": "Unknown"
+  },
+  "HungrySnake (Tire Sticker)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Tire Sticker",
+    "Demand": "Unknown"
+  },
+  "Pixel Wardrobe (Furniture)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Furniture",
+    "Demand": "Unknown"
+  },
+  "Voxel Sofa (Furniture)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Furniture",
+    "Demand": "Unknown"
+  },
+  "Aquatic (Weapon Skin)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Weapon Skin",
+    "Demand": "Unknown"
+  },
+  "Aurora (Weapon Skin)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Weapon Skin",
+    "Demand": "Unknown"
+  },
+  "Camo (Weapon Skin)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Weapon Skin",
+    "Demand": "Unknown"
+  },
+  "Candy Cane (Weapon Skin)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Weapon Skin",
+    "Demand": "Unknown"
+  },
+  "Diamond (Weapon Skin)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Weapon Skin",
+    "Demand": "Unknown"
+  },
+  "Donut (Weapon Skin)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Weapon Skin",
+    "Demand": "Unknown"
+  },
+  "Manga (Weapon Skin)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Weapon Skin",
+    "Demand": "Unknown"
+  },
+  "Money (Weapon Skin)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Weapon Skin",
+    "Demand": "Unknown"
+  },
+  "Camo Radar (Weapon Skin)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Weapon Skin",
+    "Demand": "Unknown"
+  },
+  "Rainbow (Weapon Skin)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Weapon Skin",
+    "Demand": "Unknown"
+  },
+  "Scorch (Weapon Skin)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Weapon Skin",
+    "Demand": "Unknown"
+  },
+  "Tiger (Weapon Skin)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Weapon Skin",
+    "Demand": "Unknown"
+  },
+  "Wooden Toy (Weapon Skin)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Weapon Skin",
+    "Demand": "Unknown"
+  },
+  "Zebra (Weapon Skin)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Weapon Skin",
+    "Demand": "Unknown"
+  },
+  "Nascar Hauler (Texture)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Texture",
+    "Demand": "Unknown"
+  },
+  "Swat Graffiti (Texture)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Texture",
+    "Demand": "Unknown"
+  },
+  "MCL36 (Tire Sticker)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Tire Sticker",
+    "Demand": "Unknown"
+  },
+  "MCL36 (Rim)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Unknown"
+  },
+  "Cannonfire (Spoiler)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Unknown"
+  },
+  "Kraken Attack (Spoiler)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Unknown"
+  },
+  "Yarg Cap (Spoiler)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Spoiler",
+    "Demand": "Unknown"
+  },
+  "Blackbeard (Vehicle)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Vehicle",
+    "Demand": "Unknown"
+  },
+  "Figurehead (Furniture)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Furniture",
+    "Demand": "Unknown"
+  },
+  "Brig Bone (Rim)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Unknown"
+  },
+  "Kraken (Rim)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Unknown"
+  },
+  "laughability (Tire Sticker)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Tire Sticker",
+    "Demand": "Unknown"
+  },
+  "Skull And Sails (Tire Sticker)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Tire Sticker",
+    "Demand": "Unknown"
+  },
+  "Buccaneer (Texture)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Texture",
+    "Demand": "Unknown"
+  },
+  "Hatch Void (Rim)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Rim",
+    "Demand": "Unknown"
+  },
+  "Ocean Water (Drift)": {
+    "Cash Value": "N/A",
+    "Duped Value": "N/A",
+    "Type": "Drift",
+    "Demand": "Unknown"
+  }
+}
