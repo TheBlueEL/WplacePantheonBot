@@ -1,0 +1,50 @@
+{
+  "Void (Rim)": {
+    "Cash Value": "37 500 000",
+    "Duped Value": "35 000 000",
+    "Type": "Rim",
+    "Demand": "Medium",
+    "quantity": 1,
+    "status": "Clean"
+  },
+  "Torpedo (Vehicle)": {
+    "Cash Value": "48 000 000",
+    "Duped Value": "42 500 000",
+    "Type": "Vehicle",
+    "Demand": "Decent",
+    "quantity": 2,
+    "status": "Clean"
+  },
+  "HyperBlue Level 5 2023 (HyperChrome)": {
+    "Cash Value": "60 000 000",
+    "Duped Value": "50 000 000",
+    "Type": "HyperChrome",
+    "Demand": "Low",
+    "quantity": 1,
+    "status": "Clean"
+  },
+  "Drip (Weapon Skin)": {
+    "Cash Value": 20000000,
+    "Duped Value": "N/A",
+    "Type": "Texture",
+    "Demand": "Decent",
+    "quantity": 1,
+    "status": "Clean"
+  },
+  "Drip (Texture)": {
+    "Cash Value": 20000000,
+    "Duped Value": "N/A",
+    "Type": "Texture",
+    "Demand": "Decent",
+    "quantity": 3,
+    "status": "Clean"
+  },
+  "Brickset (Tire Style)": {
+    "Cash Value": "3 500 000",
+    "Duped Value": "N/A",
+    "Type": "Tire Style",
+    "Demand": "Medium",
+    "quantity": 1,
+    "status": "Clean"
+  }
+}
